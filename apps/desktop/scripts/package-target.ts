@@ -1,14 +1,14 @@
 /** Build one release target with matching Electron, Node.js, and dsh architecture. */
 
 import { spawn } from 'node:child_process'
-import { mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs'
 import { parseArgs } from 'node:util'
 import { join, resolve } from 'node:path'
 import {
   desktopBuildRecordFilename,
   resolveDesktopAutoUpdateConfig,
 } from './desktop-auto-update-environment.mjs'
-import { desktopTargetBuildPaths } from './desktop-build-paths.mjs'
+import { desktopTargetBuildPaths, type DesktopTargetBuildPaths } from './desktop-build-paths.mjs'
 import { shellVersionExtendsEngine } from '../src/release-version.ts'
 
 const APP_ROOT = resolve(import.meta.dirname, '..')
@@ -113,6 +113,7 @@ interface DesktopPackageInvocation {
   readonly target: DesktopPackageTarget
   readonly directory: boolean
   readonly prepareOnly: boolean
+  readonly builderOnly: boolean
 }
 
 function hostTargetName(platform: NodeJS.Platform, arch: string): DesktopPackageTargetName {
@@ -126,7 +127,7 @@ function hostTargetName(platform: NodeJS.Platform, arch: string): DesktopPackage
  * @param argv - Arguments after the script entry point.
  * @param hostPlatform - Build-host Node.js platform.
  * @param hostArch - Build-host Node.js architecture.
- * @returns The validated target and whether to emit an unpacked directory.
+ * @returns The validated target, directory flag, and which of prepare-only or builder-only apply.
  */
 export function parseDesktopPackageInvocation(
   argv: readonly string[],
@@ -139,14 +140,21 @@ export function parseDesktopPackageInvocation(
     options: {
       dir: { type: 'boolean', default: false },
       'prepare-only': { type: 'boolean', default: false },
+      'builder-only': { type: 'boolean', default: false },
     },
   })
   if (positionals.length > 1) throw new Error('desktop package: expected at most one target')
   const name = positionals[0] ?? hostTargetName(hostPlatform, hostArch)
+  const prepareOnly = values['prepare-only']
+  const builderOnly = values['builder-only']
+  if (prepareOnly && builderOnly) {
+    throw new Error('desktop package: --prepare-only and --builder-only are mutually exclusive')
+  }
   return {
     target: resolveDesktopPackageTarget(name, hostPlatform, hostArch),
     directory: values.dir,
-    prepareOnly: values['prepare-only'],
+    prepareOnly,
+    builderOnly,
   }
 }
 
@@ -201,7 +209,7 @@ async function main(): Promise<void> {
   const { target } = invocation
   const buildPaths = desktopTargetBuildPaths(target.name)
   const releaseRecordPath = join(buildPaths.artifacts, desktopBuildRecordFilename(target.name))
-  if (!invocation.prepareOnly) {
+  if (!invocation.prepareOnly && !invocation.builderOnly) {
     rmSync(releaseRecordPath, { force: true })
     rmSync(`${releaseRecordPath}.tmp`, { force: true })
   }
@@ -211,32 +219,52 @@ async function main(): Promise<void> {
     DSH_DESKTOP_TARGET_PLATFORM: target.platform,
     DSH_DESKTOP_TARGET_ARCH: target.arch,
   }
-  await runPnpm(['run', 'build:official'], buildEnv, REPOSITORY_ROOT)
-  await runPnpm(['run', 'release:pack', '--family', 'dsh', '--out', buildPaths.packedDsh], buildEnv, REPOSITORY_ROOT)
-  await runPnpm([
-    '--dir',
-    'apps/desktop-host',
-    'pack',
-    '--pack-destination',
-    buildPaths.packedDsh,
-  ], buildEnv, REPOSITORY_ROOT)
-  await runPnpm(['run', 'release:pack', '--family', 'vendor', '--out', buildPaths.packedVendor], buildEnv, REPOSITORY_ROOT)
-  rmSync(buildPaths.packedLandlock, { recursive: true, force: true })
-  mkdirSync(buildPaths.packedLandlock, { recursive: true })
-  await runPnpm(['--dir', 'native/system', 'run', 'build:ts'], buildEnv, REPOSITORY_ROOT)
-  await runPnpm([
-    '--dir',
-    'native/system/packages/entry',
-    'pack',
-    '--pack-destination',
-    buildPaths.packedLandlock,
-  ], buildEnv, REPOSITORY_ROOT)
-  await runPnpm(['run', 'prepare:runtime'], targetEnv)
-  await runPnpm(['run', 'prepare:packages'], targetEnv)
-  await runPnpm(['run', 'prepare:dsh'], targetEnv)
+  if (invocation.builderOnly) {
+    assertBuilderInputsPresent(buildPaths)
+  } else {
+    await runPnpm(['run', 'build:official'], buildEnv, REPOSITORY_ROOT)
+    await runPnpm(['run', 'release:pack', '--family', 'dsh', '--out', buildPaths.packedDsh], buildEnv, REPOSITORY_ROOT)
+    await runPnpm([
+      '--dir',
+      'apps/desktop-host',
+      'pack',
+      '--pack-destination',
+      buildPaths.packedDsh,
+    ], buildEnv, REPOSITORY_ROOT)
+    await runPnpm(['run', 'release:pack', '--family', 'vendor', '--out', buildPaths.packedVendor], buildEnv, REPOSITORY_ROOT)
+    rmSync(buildPaths.packedLandlock, { recursive: true, force: true })
+    mkdirSync(buildPaths.packedLandlock, { recursive: true })
+    await runPnpm(['--dir', 'native/system', 'run', 'build:ts'], buildEnv, REPOSITORY_ROOT)
+    await runPnpm([
+      '--dir',
+      'native/system/packages/entry',
+      'pack',
+      '--pack-destination',
+      buildPaths.packedLandlock,
+    ], buildEnv, REPOSITORY_ROOT)
+    await runPnpm(['run', 'prepare:runtime'], targetEnv)
+    await runPnpm(['run', 'prepare:packages'], targetEnv)
+    await runPnpm(['run', 'prepare:dsh'], targetEnv)
+  }
   if (invocation.prepareOnly) return
   await runPnpm(desktopElectronBuilderArguments(target, invocation.directory), targetEnv)
   if (!invocation.directory) writeReleaseRecord(target, targetEnv, buildPaths.artifacts)
+}
+
+/**
+ * Verify every prepared input electron-builder consumes exists before a cache-backed build.
+ * @param buildPaths - Target paths whose prepared engine and runtime directories are required.
+ */
+function assertBuilderInputsPresent(buildPaths: DesktopTargetBuildPaths): void {
+  const required: ReadonlyArray<readonly [string, string]> = [
+    ['desktop main bundle', join(APP_ROOT, 'lib', 'main.js')],
+    ['Node.js runtime', join(buildPaths.runtime, 'node', 'node')],
+    ['dsh runtime manifest', join(buildPaths.dsh, 'package.json')],
+  ]
+  const missing = required.filter(([, path]) => !existsSync(path))
+  if (missing.length > 0) {
+    throw new Error(`desktop package: --builder-only needs prepared outputs missing: ${missing.map(([label]) => label).join(', ')}`)
+  }
 }
 
 if (process.argv[1] !== undefined && import.meta.filename === resolve(process.argv[1])) await main()

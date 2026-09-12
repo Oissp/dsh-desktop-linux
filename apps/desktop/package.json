@@ -19,6 +19,8 @@
     "package": "tsx scripts/package-target.ts",
     "package:dir": "tsx scripts/package-target.ts --dir",
     "package:linux:x64": "tsx scripts/package-target.ts linux-x64",
+    "prepare:linux:x64": "tsx scripts/package-target.ts linux-x64 --prepare-only",
+    "package:linux:x64:builder": "tsx scripts/package-target.ts linux-x64 --builder-only",
     "package:linux:x64:dir": "tsx scripts/package-target.ts linux-x64 --dir",
     "upload:linux:x64": "tsx scripts/upload-target.ts linux-x64"
   },

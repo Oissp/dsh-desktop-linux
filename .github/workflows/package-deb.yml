@@ -15,6 +15,9 @@ name: Package (Debian deb + AppImage)
 #
 # 幂等：发布仓库中 v<version> release 已存在则跳过发布，避免重复发版。
 # 并发：同一 ref 同时只允许一个打包 run，且不取消进行中的——避免产物被中途杀掉导致残缺。
+# 引擎缓存：build:official + release:pack + prepare:* 的产物只依赖引擎源码（不含壳版本号），
+# 纯 .N 版本 bump 完全不变。把它们缓存起来（key 排除 apps/desktop/package.json），命中时用
+# package-target.ts --builder-only 跳过准备、直接跑 electron-builder。
 
 on:
   push:
@@ -112,13 +115,40 @@ jobs:
       - name: Run desktop packaging tests
         run: pnpm exec vitest run apps/desktop/tests
 
+      - name: Restore engine build cache
+        id: engine-cache
+        uses: actions/cache/restore@v6
+        with:
+          path: |
+            apps/desktop/lib
+            apps/desktop/.desktop-build/targets/linux-x64/runtime
+            apps/desktop/.desktop-build/targets/linux-x64/dsh
+          # 键覆盖所有会改变这些产物的源码（引擎 + 壳代码 + 打包脚本 + 构建配置）；
+          # 刻意排除 apps/desktop/package.json，让纯版本 bump 命中缓存（依赖版本变化已由
+          # pnpm-lock.yaml 捕获）。
+          key: ${{ runner.os }}-dsh-engine-${{ hashFiles('package.json', 'pnpm-lock.yaml', 'pnpm-workspace.yaml', 'tsconfig*.json', 'scripts/**', 'packages/**', 'vendor/**', 'native/**', 'apps/desktop-host/**', 'apps/desktop/src/**', 'apps/desktop/renderer/**', 'apps/desktop/scripts/**', 'apps/desktop/electron-builder.config.mjs', 'apps/desktop/tsdown.config.ts', 'apps/desktop/tsconfig.json') }}
+
+      - name: Prepare engine + runtime (linux x64)
+        if: steps.engine-cache.outputs.cache-hit != 'true'
+        run: pnpm run prepare:desktop:linux:x64
+
+      - name: Save engine build cache
+        if: steps.engine-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v6
+        with:
+          path: |
+            apps/desktop/lib
+            apps/desktop/.desktop-build/targets/linux-x64/runtime
+            apps/desktop/.desktop-build/targets/linux-x64/dsh
+          key: ${{ runner.os }}-dsh-engine-${{ hashFiles('package.json', 'pnpm-lock.yaml', 'pnpm-workspace.yaml', 'tsconfig*.json', 'scripts/**', 'packages/**', 'vendor/**', 'native/**', 'apps/desktop-host/**', 'apps/desktop/src/**', 'apps/desktop/renderer/**', 'apps/desktop/scripts/**', 'apps/desktop/electron-builder.config.mjs', 'apps/desktop/tsdown.config.ts', 'apps/desktop/tsconfig.json') }}
+
       - name: Package .deb + AppImage (linux x64)
         run: |
           # electron-builder 打包时会读到环境里的 GITHUB_TOKEN；为避免其被写进 app-update.yml，
           # 本步骤只做 --publish never 本地打包（不需要 token），运行时走公开 GitHub Releases
-          # 也不需要凭据，因此先摘掉它。
+          # 也不需要凭据，因此先摘掉它。缓存命中时直接用 --builder-only 跳过引擎准备。
           unset GITHUB_TOKEN
-          pnpm run package:desktop:linux:x64
+          pnpm run package:desktop:linux:x64:builder
 
       - name: Verify artifacts
         run: |
