@@ -98,7 +98,7 @@ function createWindow(preload: string, show = false): BrowserWindow {
     minHeight: 600,
     show,
     // Linux 窗口/任务栏图标用随包携带的品牌图标（macOS 由 bundle 决定，忽略此项）。
-    icon: app.isPackaged ? join(process.resourcesPath, 'icon.png') : undefined,
+    ...(app.isPackaged ? { icon: join(process.resourcesPath, 'icon.png') } : {}),
     webPreferences: {
       preload,
       nodeIntegration: false,
