@@ -85,11 +85,14 @@ jobs:
       - name: Install build prerequisites
         run: |
           sudo apt-get update -qq
+          # Ubuntu 24.04 将 libasound2 改名为 libasound2t64；按镜像可用性取其一。
+          (sudo apt-get install -y --no-install-recommends libasound2t64 || \
+           sudo apt-get install -y --no-install-recommends libasound2) >/dev/null 2>&1 || { echo "::error::libasound 安装失败"; exit 1; }
           sudo apt-get install -y --no-install-recommends \
             python3 make g++ fakeroot xz-utils file \
             libnss3 libnspr4 libatk1.0-0 libatk-bridge2.0-0 libcups2 libdrm2 \
             libxkbcommon0 libxcomposite1 libxdamage1 libxfixes3 libxrandr2 \
-            libgbm1 libasound2 libpango-1.0-0 libcairo2 libgtk-3-0 \
+            libgbm1 libpango-1.0-0 libcairo2 libgtk-3-0 \
             xvfb xauth
 
       - name: Install dependencies
