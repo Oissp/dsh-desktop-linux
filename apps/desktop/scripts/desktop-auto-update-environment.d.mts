@@ -4,8 +4,8 @@ export const DESKTOP_AUTO_UPDATE_ENV: 'DSH_DESKTOP_AUTO_UPDATE_ENV'
 /** Supported Desktop update deployment. */
 export type DesktopAutoUpdateEnvironment = 'test' | 'production'
 
-/** Directory name of one supported Desktop release target. */
-export type DesktopAutoUpdateTarget = 'mac-arm64' | 'mac-x64' | 'win-x64'
+/** Directory name of the supported Desktop release target. */
+export type DesktopAutoUpdateTarget = 'linux-x64'
 
 /** Public updater URL for one release target. */
 export interface DesktopAutoUpdateConfig {

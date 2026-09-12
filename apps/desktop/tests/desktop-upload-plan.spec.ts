@@ -24,7 +24,6 @@ function digest(contents: string): string {
 }
 
 async function fixture(
-  target: DesktopPackageTargetName,
   version = '1.2.3',
   environment: 'test' | 'production' = 'test',
 ): Promise<Fixture> {
@@ -37,8 +36,8 @@ async function fixture(
   await writeFile(join(repositoryRoot, 'package.json'), `${JSON.stringify({ version })}\n`)
   await writeFile(join(appRoot, 'package.json'), `${JSON.stringify({ version })}\n`)
 
-  const [os, arch] = target.split('-') as ['mac' | 'win', 'arm64' | 'x64']
-  const base = `deepseek-harness-${version}-${os}-${arch}`
+  const target: DesktopPackageTargetName = 'linux-x64'
+  const base = `deepseek-harness-${version}-linux-x64`
   const origin = environment === 'test'
     ? TEST_ORIGIN
     : 'https://download.deepseek.com'
@@ -50,29 +49,18 @@ async function fixture(
     publicUrl: `${origin}/_/harness/desktop/stable/${target}/`,
   })}\n`)
 
-  if (os === 'mac') {
-    const zip = 'signed macOS ZIP fixture'
-    await writeFile(join(artifactsRoot, `${base}.zip`), zip)
-    await writeFile(join(artifactsRoot, `${base}.zip.blockmap`), 'blockmap')
-    await writeFile(join(artifactsRoot, `${base}.dmg`), 'notarized DMG fixture')
-    await writeFile(join(artifactsRoot, desktopUpdateMetadataFilename(version, 'darwin')), `${JSON.stringify({
-      version,
-      files: [{ url: `${base}.zip`, size: Buffer.byteLength(zip), sha512: digest(zip) }],
-    })}\n`)
-  }
-  else {
-    const executable = 'signed NSIS executable fixture'
-    await writeFile(join(artifactsRoot, `${base}.exe`), executable)
-    await writeFile(join(artifactsRoot, desktopUpdateMetadataFilename(version, 'win32')), `${JSON.stringify({
-      version,
-      files: [{
-        url: `${base}.exe`,
-        size: Buffer.byteLength(executable),
-        sha512: digest(executable),
-        blockMapSize: 128,
-      }],
-    })}\n`)
-  }
+  const appImage = 'Linux AppImage fixture'
+  await writeFile(join(artifactsRoot, `${base}.AppImage`), appImage)
+  await writeFile(join(artifactsRoot, `${base}.deb`), 'Debian package fixture')
+  await writeFile(join(artifactsRoot, desktopUpdateMetadataFilename(version, 'linux')), `${JSON.stringify({
+    version,
+    files: [{
+      url: `${base}.AppImage`,
+      size: Buffer.byteLength(appImage),
+      sha512: digest(appImage),
+      blockMapSize: 128,
+    }],
+  })}\n`)
   return {
     repositoryRoot,
     appRoot,
@@ -98,20 +86,19 @@ afterEach(async () => {
 })
 
 describe('desktop upload plan', () => {
-  it('validates macOS artifacts and puts channel metadata last', async () => {
-    const paths = await fixture('mac-arm64')
-    const plan = await createDesktopUploadPlan('mac-arm64', paths)
+  it('validates Linux artifacts and puts channel metadata last', async () => {
+    const paths = await fixture()
+    const plan = await createDesktopUploadPlan('linux-x64', paths)
     expect(plan).toMatchObject({
       environment: 'test',
       version: '1.2.3',
-      publicUrl: 'https://desktop-updates.example.com/_/harness/desktop/stable/mac-arm64/',
+      publicUrl: 'https://desktop-updates.example.com/_/harness/desktop/stable/linux-x64/',
       bucket: TEST_BUCKET,
     })
     expect(plan.artifacts.map(artifact => artifact.filename)).toEqual([
-      'deepseek-harness-1.2.3-mac-arm64.dmg',
-      'deepseek-harness-1.2.3-mac-arm64.zip',
-      'deepseek-harness-1.2.3-mac-arm64.zip.blockmap',
-      'latest-mac.yml',
+      'deepseek-harness-1.2.3-linux-x64.AppImage',
+      'deepseek-harness-1.2.3-linux-x64.deb',
+      'latest-linux.yml',
     ])
     expect(plan.artifacts.at(-1)).toMatchObject({
       channelMetadata: true,
@@ -120,51 +107,51 @@ describe('desktop upload plan', () => {
   })
 
   it('uploads the prerelease channel metadata emitted by electron-builder', async () => {
-    const paths = await fixture('mac-arm64', '1.2.3-alpha.4')
-    const plan = await createDesktopUploadPlan('mac-arm64', paths)
+    const paths = await fixture('1.2.3-alpha.4')
+    const plan = await createDesktopUploadPlan('linux-x64', paths)
     expect(plan.artifacts.map(artifact => artifact.filename)).toEqual([
-      'deepseek-harness-1.2.3-alpha.4-mac-arm64.dmg',
-      'deepseek-harness-1.2.3-alpha.4-mac-arm64.zip',
-      'deepseek-harness-1.2.3-alpha.4-mac-arm64.zip.blockmap',
-      'alpha-mac.yml',
+      'deepseek-harness-1.2.3-alpha.4-linux-x64.AppImage',
+      'deepseek-harness-1.2.3-alpha.4-linux-x64.deb',
+      'alpha-linux.yml',
     ])
   })
 
-  it('validates the Windows installer with its embedded blockmap and production destination', async () => {
-    const paths = await fixture('win-x64', '2.0.0', 'production')
-    const plan = await createDesktopUploadPlan('win-x64', paths)
+  it('validates the Linux AppImage updater with its embedded blockmap and deb installer and production destination', async () => {
+    const paths = await fixture('2.0.0', 'production')
+    const plan = await createDesktopUploadPlan('linux-x64', paths)
     expect(plan.artifacts.map(artifact => artifact.filename)).toEqual([
-      'deepseek-harness-2.0.0-win-x64.exe',
-      'latest.yml',
+      'deepseek-harness-2.0.0-linux-x64.AppImage',
+      'deepseek-harness-2.0.0-linux-x64.deb',
+      'latest-linux.yml',
     ])
     expect(plan).toMatchObject({
-      publicUrl: 'https://download.deepseek.com/_/harness/desktop/stable/win-x64/',
+      publicUrl: 'https://download.deepseek.com/_/harness/desktop/stable/linux-x64/',
       bucket: PRODUCTION_BUCKET,
     })
   })
 
-  it('rejects Windows metadata without an embedded blockmap size', async () => {
-    const paths = await fixture('win-x64')
-    const executable = 'signed NSIS executable fixture'
-    await writeFile(join(paths.artifactsRoot, 'latest.yml'), `${JSON.stringify({
+  it('rejects Linux metadata without an embedded blockmap size', async () => {
+    const paths = await fixture()
+    const appImage = 'Linux AppImage fixture'
+    await writeFile(join(paths.artifactsRoot, 'latest-linux.yml'), `${JSON.stringify({
       version: '1.2.3',
       files: [{
-        url: 'deepseek-harness-1.2.3-win-x64.exe',
-        size: Buffer.byteLength(executable),
-        sha512: digest(executable),
+        url: 'deepseek-harness-1.2.3-linux-x64.AppImage',
+        size: Buffer.byteLength(appImage),
+        sha512: digest(appImage),
       }],
     })}\n`)
-    await expect(createDesktopUploadPlan('win-x64', paths)).rejects.toThrow(/blockMapSize/u)
+    await expect(createDesktopUploadPlan('linux-x64', paths)).rejects.toThrow(/blockMapSize/u)
   })
 
   it('rejects a completed build from another dsh version or deployment', async () => {
-    const paths = await fixture('mac-x64')
+    const paths = await fixture()
     await writeFile(join(paths.repositoryRoot, 'package.json'), '{"version":"1.2.4"}\n')
     await writeFile(join(paths.appRoot, 'package.json'), '{"version":"1.2.4"}\n')
-    await expect(createDesktopUploadPlan('mac-x64', paths)).rejects.toThrow(/completion record.*1\.2\.4/u)
+    await expect(createDesktopUploadPlan('linux-x64', paths)).rejects.toThrow(/completion record.*1\.2\.4/u)
 
-    const productionPaths = await fixture('mac-x64', '1.2.3', 'production')
-    await expect(createDesktopUploadPlan('mac-x64', {
+    const productionPaths = await fixture('1.2.3', 'production')
+    await expect(createDesktopUploadPlan('linux-x64', {
       ...productionPaths,
       environment: {
         DSH_DESKTOP_AUTO_UPDATE_ENV: 'test',
@@ -175,21 +162,22 @@ describe('desktop upload plan', () => {
   })
 
   it('rejects stale architecture metadata and modified updater bytes', async () => {
-    const paths = await fixture('mac-arm64')
-    const metadataPath = join(paths.artifactsRoot, 'latest-mac.yml')
-    const zipPath = join(paths.artifactsRoot, 'deepseek-harness-1.2.3-mac-arm64.zip')
-    await writeFile(zipPath, 'modified')
-    await expect(createDesktopUploadPlan('mac-arm64', paths)).rejects.toThrow(/size.*metadata/u)
+    const paths = await fixture()
+    const metadataPath = join(paths.artifactsRoot, 'latest-linux.yml')
+    const appImagePath = join(paths.artifactsRoot, 'deepseek-harness-1.2.3-linux-x64.AppImage')
+    await writeFile(appImagePath, 'modified')
+    await expect(createDesktopUploadPlan('linux-x64', paths)).rejects.toThrow(/size.*metadata/u)
 
-    const x64 = 'wrong architecture'
+    const otherArch = 'wrong architecture'
     await writeFile(metadataPath, `${JSON.stringify({
       version: '1.2.3',
       files: [{
-        url: 'deepseek-harness-1.2.3-mac-x64.zip',
-        size: Buffer.byteLength(x64),
-        sha512: digest(x64),
+        url: 'deepseek-harness-1.2.3-linux-arm64.AppImage',
+        size: Buffer.byteLength(otherArch),
+        sha512: digest(otherArch),
+        blockMapSize: 128,
       }],
     })}\n`)
-    await expect(createDesktopUploadPlan('mac-arm64', paths)).rejects.toThrow(/mac-arm64\.zip/u)
+    await expect(createDesktopUploadPlan('linux-x64', paths)).rejects.toThrow(/linux-x64\.AppImage/u)
   })
 })

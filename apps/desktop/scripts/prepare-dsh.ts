@@ -17,13 +17,6 @@ import {
 } from '../src/core-package-set.ts'
 import { smokeDesktopRuntime } from './smoke-runtime.ts'
 import { writeDesktopRuntime, verifyDesktopRuntime } from '../src/runtime-tree.ts'
-import {
-  resolveDesktopAppId,
-  resolveMacOSSigningEnvironment,
-} from './desktop-release-environment.mjs'
-import {
-  signMacOSRuntime,
-} from './macos-runtime.ts'
 import { resolveDesktopBuildTarget, resolveDesktopTargetBuildPaths } from './desktop-build-paths.mjs'
 import { desktopRuntimeFileExclusion } from './runtime-file-policy.ts'
 
@@ -132,9 +125,6 @@ async function main(): Promise<void> {
       if (!existsSync(join(DSH_OUTPUT_ROOT, 'node_modules', DESKTOP_HOST_PACKAGE, file))) {
         throw new Error(`desktop runtime: missing private Host file ${file}`)
       }
-    }
-    if (process.platform === 'darwin') {
-      await signMacOSRuntime(DSH_OUTPUT_ROOT, resolveDesktopAppId(process.env), resolveMacOSSigningEnvironment(process.env))
     }
     writeDesktopRuntime(DSH_OUTPUT_ROOT, release, packageSet.packages.map(entry => entry.name), target)
     const descriptor = await verifyDesktopRuntime(DSH_OUTPUT_ROOT, release.version, target)

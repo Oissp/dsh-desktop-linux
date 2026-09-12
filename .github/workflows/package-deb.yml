@@ -1,0 +1,202 @@
+name: Package (Debian deb + AppImage)
+
+# Linux x64 打包发版：构建 .deb 安装包 + AppImage（electron-updater 更新负载）+ 频道元数据，
+# 上传产物并创建 GitHub Release（tag = v<root package.json version>）。
+#
+# 触发：
+#   - push 到 main 且 package.json 变更（功能更新 / 上游同步 bump 版本）→ 发版
+#   - 手动 workflow_dispatch（可强制重建当前版本）
+#
+# 幂等：v<version> release 已存在则跳过发布，避免重复发版。
+# 并发：同一 ref 同时只允许一个打包 run，且不取消进行中的——避免产物被中途杀掉导致残缺。
+
+on:
+  push:
+    branches: [main]
+    paths: ['package.json']
+  workflow_dispatch:
+    inputs:
+      force:
+        description: '强制重建当前版本（即使 v<version> release 已存在）'
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: package-deb-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  # 打包必需的反向 DNS 应用 ID。可在仓库 Secret 覆盖（DSH_DESKTOP_APP_ID）。
+  DSH_DESKTOP_APP_ID: ${{ secrets.DSH_DESKTOP_APP_ID || 'com.deepseek.harness.desktop' }}
+  # 打包默认 test 环境要求 DOWNLOAD_TEST_ORIGIN（任意无路径 HTTPS origin）。自动更新暂未
+  # 接入 GitHub Releases：用占位值即可，频道元数据 404 不阻塞安装与运行。
+  DOWNLOAD_TEST_ORIGIN: ${{ secrets.DOWNLOAD_TEST_ORIGIN || 'https://desktop-updates.example.com' }}
+  PNPM_NODE_LINKER: hoisted
+
+jobs:
+  package:
+    name: Build .deb + AppImage (linux x64)
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          package-manager-cache: false
+
+      - name: Enable Corepack & pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@11.7.0 --activate
+          pnpm --version
+
+      - name: Resolve pnpm store path
+        id: pnpm-store
+        run: echo "dir=$(pnpm store path)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache pnpm store
+        uses: actions/cache@v6
+        with:
+          path: ${{ steps.pnpm-store.outputs.dir }}
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-
+
+      - name: Cache electron & electron-builder binaries
+        uses: actions/cache@v6
+        with:
+          path: |
+            ~/.cache/electron
+            ~/.cache/electron-builder
+          key: ${{ runner.os }}-eb-${{ hashFiles('apps/desktop/electron-builder.config.mjs') }}
+
+      - name: Install build prerequisites
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends \
+            python3 make g++ fakeroot xz-utils file \
+            libnss3 libnspr4 libatk1.0-0 libatk-bridge2.0-0 libcups2 libdrm2 \
+            libxkbcommon0 libxcomposite1 libxdamage1 libxfixes3 libxrandr2 \
+            libgbm1 libasound2 libpango-1.0-0 libcairo2 libgtk-3-0 \
+            xvfb xauth
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Read version
+        id: version
+        run: echo "version=$(node -e "console.log(require('./package.json').version)")" >> "$GITHUB_OUTPUT"
+
+      - name: Run desktop packaging tests
+        run: pnpm exec vitest run apps/desktop/tests
+
+      - name: Package .deb + AppImage (linux x64)
+        run: pnpm run package:desktop:linux:x64
+
+      - name: Verify artifacts
+        run: |
+          ART=apps/desktop/.desktop-build/targets/linux-x64/artifacts
+          VERSION="${{ steps.version.outputs.version }}"
+          DEB="$ART/deepseek-harness-$VERSION-linux-x64.deb"
+          APPIMAGE="$ART/deepseek-harness-$VERSION-linux-x64.AppImage"
+          test -f "$DEB" || { echo "::error::缺少 .deb 产物: $DEB"; exit 1; }
+          test -f "$APPIMAGE" || { echo "::error::缺少 AppImage 产物: $APPIMAGE"; exit 1; }
+          ls -lh "$ART/"
+          echo "--- deb control ---"
+          dpkg-deb -I "$DEB" | head -30
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: release-assets
+          path: |
+            apps/desktop/.desktop-build/targets/linux-x64/artifacts/*.deb
+            apps/desktop/.desktop-build/targets/linux-x64/artifacts/*.AppImage
+            apps/desktop/.desktop-build/targets/linux-x64/artifacts/*.yml
+          # 制品只是 build → release 的中间传递载体，最终文件已进 GitHub Release。
+          retention-days: 1
+
+  release:
+    name: Publish GitHub Release
+    needs: package
+    if: ${{ !cancelled() && needs.package.result == 'success' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v7
+        with:
+          name: release-assets
+          path: release-assets
+
+      - name: Decide release
+        id: decide
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION="${{ needs.package.outputs.version }}"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          FORCE="${{ inputs.force }}"
+          if [ "$FORCE" = "true" ]; then
+            echo "::notice::强制重建模式，跳过已发布检查"
+            SHOULD_RELEASE=true
+          elif gh release view "v$VERSION" --repo "${{ github.repository }}" >/dev/null 2>&1; then
+            echo "v$VERSION release 已存在，跳过发布"
+            SHOULD_RELEASE=false
+          else
+            echo "v$VERSION release 不存在，继续发布"
+            SHOULD_RELEASE=true
+          fi
+          echo "should_release=$SHOULD_RELEASE" >> "$GITHUB_OUTPUT"
+          {
+            echo "## 发版决策"
+            echo "- 触发: \`${{ github.event_name }}\`"
+            echo "- 版本: \`$VERSION\`"
+            echo "- should_release: \`$SHOULD_RELEASE\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Generate changelog
+        run: |
+          PREV_TAG=$(git describe --tags --abbrev=0 2>/dev/null || true)
+          if [ -n "$PREV_TAG" ]; then
+            LOG=$(git log --no-merges --pretty=format:"- %s" "$PREV_TAG"..HEAD)
+          else
+            LOG=$(git log --no-merges --pretty=format:"- %s" -50)
+          fi
+          { echo "body<<EOF"; echo "$LOG"; echo "EOF"; } >> "$GITHUB_ENV"
+
+      - name: Create GitHub Release
+        if: steps.decide.outputs.should_release == 'true'
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: v${{ steps.decide.outputs.version }}
+          name: DeepSeek Harness Desktop ${{ steps.decide.outputs.version }} (Linux x64)
+          body: |
+            ## DeepSeek Harness Desktop ${{ steps.decide.outputs.version }} (Linux x64)
+
+            - **.deb** 安装包（Ubuntu / Debian）
+            - **AppImage** 免安装可执行文件
+
+            ### 变更
+            ${{ env.body }}
+          files: |
+            release-assets/*.deb
+            release-assets/*.AppImage
+            release-assets/*.yml
+          draft: false
+          # 任何含 '-' 的版本号都是 semver 预发布（alpha/beta/rc/dev 等）。
+          prerelease: ${{ contains(steps.decide.outputs.version, '-') }}

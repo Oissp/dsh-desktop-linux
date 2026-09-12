@@ -11,7 +11,7 @@ import {
   type DesktopUploadArtifact,
 } from './desktop-upload-plan.ts'
 
-const SUPPORTED_TARGETS = new Set<DesktopPackageTargetName>(['mac-arm64', 'mac-x64', 'win-x64'])
+const SUPPORTED_TARGETS = new Set<DesktopPackageTargetName>(['linux-x64'])
 
 function targetName(value: string): DesktopPackageTargetName {
   if (!SUPPORTED_TARGETS.has(value as DesktopPackageTargetName)) {

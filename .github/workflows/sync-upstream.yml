@@ -1,0 +1,141 @@
+name: Sync upstream deepseek-harness
+
+# 跟随官方上游：把 deepseek-ai/deepseek-harness master 合并进本分支。
+# 仅当上游根 package.json 版本语义化严格大于当前版本时合并并推送（保持发版节奏与官方对齐，
+# 避免把上游未发版的中间提交/回退批量带入）；需要手动跟随非版本变更时可用 force 强制合并。
+# 合并冲突时中止合并并开 issue 通知人工处理（linux 裁剪过的文件可能与上游改动冲突）。
+#
+# 推送 main 会自然触发 package-deb.yml（push + paths: package.json）→ 版本变更即打包发版。
+
+on:
+  schedule:
+    # 每日 UTC 06:00（= 北京时间 14:00）；GitHub cron 不保证准点，但会执行。
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+    inputs:
+      force:
+        description: '强制合并上游（即使版本未严格升级）'
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: write   # 推送合并结果
+  issues: write     # 合并冲突时开 issue
+
+concurrency:
+  group: sync-upstream
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    name: Merge upstream master
+    runs-on: ubuntu-latest
+    outputs:
+      changed: ${{ steps.compare.outputs.changed }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Add upstream remote
+        run: |
+          git remote add upstream https://github.com/deepseek-ai/deepseek-harness.git
+          git fetch upstream master
+
+      - name: Compare root versions (semver strict upgrade)
+        id: compare
+        run: |
+          CURRENT=$(node -e "console.log(require('./package.json').version)")
+          TARGET=$(git show "upstream/master:package.json" | node -e "const d=JSON.parse(require('fs').readFileSync(0,'utf8'));console.log(d.version)")
+          echo "current=$CURRENT" >> "$GITHUB_OUTPUT"
+          echo "target=$TARGET" >> "$GITHUB_OUTPUT"
+          FORCE="${{ inputs.force }}"
+          echo "当前版本: $CURRENT"
+          echo "上游版本: $TARGET"
+          if [ "$FORCE" = "true" ]; then
+            echo "::notice::强制模式，跳过版本比较"
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          elif [ "$CURRENT" = "$TARGET" ]; then
+            echo "版本相同，无需同步"
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          elif node -e '
+            const split=(v)=>{const[c,p]=v.split("-");return{c:c.split(".").map(Number),p:p?p.split("."):null}};
+            const cmp=(x,y)=>{
+              for(let i=0;i<3;i++){if(x.c[i]!==y.c[i])return x.c[i]>y.c[i]?1:-1}
+              const a=x.p,b=y.p;
+              if(!a&&!b)return 0;
+              if(!a)return 1;
+              if(!b)return -1;
+              for(let i=0;i<Math.max(a.length,b.length);i++){
+                if(a[i]===undefined)return -1;
+                if(b[i]===undefined)return 1;
+                const na=Number(a[i]),nb=Number(b[i]);
+                const ia=Number.isInteger(na),ib=Number.isInteger(nb);
+                if(ia&&ib){if(na!==nb)return na>nb?1:-1;continue}
+                if(ia)return -1;
+                if(ib)return 1;
+                if(a[i]!==b[i])return a[i]>b[i]?1:-1;
+              }
+              return 0;
+            };
+            process.exit(cmp(split(process.argv[1]),split(process.argv[2]))>0?0:1)
+          ' "$TARGET" "$CURRENT"; then
+            echo "检测到上游新版本（semver 严格大于）：$CURRENT → $TARGET"
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "上游版本不更新（无变化或更老），跳过"
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Merge upstream master
+        id: merge
+        if: steps.compare.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          UPSTREAM_HEAD=$(git rev-parse --short upstream/master)
+          echo "上游 HEAD: $UPSTREAM_HEAD"
+          echo "合并 ${{ steps.compare.outputs.target }} (upstream/master @ $UPSTREAM_HEAD) → 当前分支"
+          if git merge upstream/master --no-edit; then
+            echo "merge_ok=true" >> "$GITHUB_OUTPUT"
+            echo "合并成功，推送 main"
+            git push origin main
+            {
+              echo "## 上游同步完成"
+              echo "- 上游版本: \`${{ steps.compare.outputs.target }}\`"
+              echo "- 上游 HEAD: \`$UPSTREAM_HEAD\`"
+              echo "- 变更文件: \`$(git diff --name-only HEAD~1 HEAD | wc -l | tr -d ' ')\`"
+            } >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "::error::与上游存在合并冲突"
+            echo "merge_ok=false" >> "$GITHUB_OUTPUT"
+            CONFLICTS=$(git diff --name-only --diff-filter=U)
+            echo "冲突文件:"
+            echo "$CONFLICTS"
+            BODY_FILE="$RUNNER_TEMP/sync-conflict-body.md"
+            {
+              echo "上游同步失败：${{ steps.compare.outputs.target }} 与当前分支存在合并冲突。"
+              echo ""
+              echo "冲突文件："
+              echo '```'
+              echo "$CONFLICTS"
+              echo '```'
+              echo ""
+              echo "需要人工解决：保留 linux 裁剪结果，或按需接受上游改动。解决后可在 Actions 手动重跑本 workflow（force=true）。"
+            } > "$BODY_FILE"
+            git merge --abort
+            gh issue create \
+              --title "上游同步冲突: deepseek-harness ${{ steps.compare.outputs.target }} → $(date +%F)" \
+              --body-file "$BODY_FILE" \
+              --repo "${{ github.repository }}" \
+              || echo "::warning::开 issue 失败"
+            exit 1
+          fi
+
+      - name: Skipped (no upstream change)
+        if: steps.compare.outputs.changed != 'true'
+        run: echo "上游无新版本，本次不合并"

@@ -16,9 +16,7 @@ import { desktopTargetBuildPaths } from './desktop-build-paths.mjs'
 const APP_ROOT = resolve(import.meta.dirname, '..')
 const REPOSITORY_ROOT = resolve(APP_ROOT, '..', '..')
 const TARGETS = {
-  'mac-arm64': { platform: 'darwin', arch: 'arm64', os: 'mac' },
-  'mac-x64': { platform: 'darwin', arch: 'x64', os: 'mac' },
-  'win-x64': { platform: 'win32', arch: 'x64', os: 'win' },
+  'linux-x64': { platform: 'linux', arch: 'x64', os: 'linux' },
 } as const satisfies Record<DesktopPackageTargetName, {
   readonly platform: NodeJS.Platform
   readonly arch: string
@@ -219,29 +217,17 @@ export async function createDesktopUploadPlan(
   }
 
   const base = `deepseek-harness-${dshVersion}-${target.os}-${target.arch}`
-  const updaterExtension = target.platform === 'darwin' ? 'zip' : 'exe'
-  const updaterInfo = updateFileInfo(metadata.files[0], `${metadataFilename}.files[0]`, `${base}.${updaterExtension}`)
+  const updaterInfo = updateFileInfo(metadata.files[0], `${metadataFilename}.files[0]`, `${base}.AppImage`)
   const updaterPath = await verifyChecksummedArtifact(artifactsRoot, updaterInfo)
   const artifacts: DesktopUploadArtifact[] = []
 
-  if (target.platform === 'darwin') {
-    const dmgPath = await requireArtifact(artifactsRoot, `${base}.dmg`)
-    const blockmapPath = await requireArtifact(artifactsRoot, `${base}.zip.blockmap`)
-    artifacts.push(
-      uploadArtifact(dmgPath, update.keyPrefix, 'application/x-apple-diskimage'),
-      uploadArtifact(updaterPath, update.keyPrefix, 'application/zip'),
-      uploadArtifact(blockmapPath, update.keyPrefix, 'application/octet-stream'),
-    )
-  }
-  else {
-    const blockMapSize = object(metadata.files[0], `${metadataFilename}.files[0]`).blockMapSize
-    numberField(blockMapSize, `${metadataFilename}.files[0].blockMapSize`)
-    artifacts.push(uploadArtifact(
-      updaterPath,
-      update.keyPrefix,
-      'application/vnd.microsoft.portable-executable',
-    ))
-  }
+  const blockMapSize = object(metadata.files[0], `${metadataFilename}.files[0]`).blockMapSize
+  numberField(blockMapSize, `${metadataFilename}.files[0].blockMapSize`)
+  const debPath = await requireArtifact(artifactsRoot, `${base}.deb`)
+  artifacts.push(
+    uploadArtifact(updaterPath, update.keyPrefix, 'application/vnd.appimage'),
+    uploadArtifact(debPath, update.keyPrefix, 'application/vnd.debian.binary-package'),
+  )
 
   artifacts.push(uploadArtifact(metadataPath, update.keyPrefix, 'application/yaml', true))
   return {

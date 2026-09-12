@@ -6,10 +6,8 @@ import {
 } from '../scripts/desktop-build-paths.mjs'
 
 describe('desktop build paths', () => {
-  it('isolates every mutable build directory by complete target', () => {
-    const arm64 = desktopTargetBuildPaths('mac-arm64')
-    const x64 = desktopTargetBuildPaths('mac-x64')
-    const windows = desktopTargetBuildPaths('win-x64')
+  it('owns every mutable build directory under the linux-x64 target', () => {
+    const linux = desktopTargetBuildPaths('linux-x64')
     const mutableKeys = [
       'root',
       'artifacts',
@@ -24,27 +22,25 @@ describe('desktop build paths', () => {
     ] as const
 
     for (const key of mutableKeys) {
-      expect(new Set([arm64[key], x64[key], windows[key]]).size).toBe(3)
+      expect(linux[key]).toContain(join('targets', 'linux-x64'))
     }
-    expect(arm64.artifacts).toContain(join('targets', 'mac-arm64', 'artifacts'))
-    expect(x64.dsh).toContain(join('targets', 'mac-x64', 'dsh'))
-    expect(windows.runtime).toContain(join('targets', 'win-x64', 'runtime'))
+    expect(linux.artifacts).toContain(join('targets', 'linux-x64', 'artifacts'))
   })
 
-  it('shares only the immutable upstream download cache', () => {
-    const arm64 = desktopTargetBuildPaths('mac-arm64')
-    const x64 = desktopTargetBuildPaths('mac-x64')
-    expect(arm64.downloads).toBe(x64.downloads)
-    expect(arm64.downloads).not.toContain(`${sep}targets${sep}`)
+  it('keeps the immutable upstream download cache outside the target directory', () => {
+    const linux = desktopTargetBuildPaths('linux-x64')
+    expect(linux.downloads).not.toContain(`${sep}targets${sep}`)
   })
 
   it('resolves environment overrides and rejects unsupported targets', () => {
+    expect(resolveDesktopBuildTarget({}, 'linux', 'x64')).toBe('linux-x64')
     expect(resolveDesktopBuildTarget({
-      DSH_DESKTOP_TARGET_PLATFORM: 'darwin',
+      DSH_DESKTOP_TARGET_PLATFORM: 'linux',
       DSH_DESKTOP_TARGET_ARCH: 'x64',
-    }, 'darwin', 'arm64')).toBe('mac-x64')
-    expect(resolveDesktopBuildTarget({}, 'win32', 'x64')).toBe('win-x64')
-    expect(() => resolveDesktopBuildTarget({}, 'linux', 'x64')).toThrow(/unsupported target/u)
-    expect(() => desktopTargetBuildPaths('linux-x64' as 'mac-x64')).toThrow(/unsupported target/u)
+    }, 'linux', 'arm64')).toBe('linux-x64')
+    expect(() => resolveDesktopBuildTarget({}, 'linux', 'arm64')).toThrow(/unsupported target/u)
+    expect(() => resolveDesktopBuildTarget({}, 'darwin', 'arm64')).toThrow(/unsupported target/u)
+    expect(() => resolveDesktopBuildTarget({}, 'win32', 'x64')).toThrow(/unsupported target/u)
+    expect(() => desktopTargetBuildPaths('linux-arm64' as 'linux-x64')).toThrow(/unsupported target/u)
   })
 })
