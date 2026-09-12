@@ -84,8 +84,10 @@ describe('desktop appearance', () => {
     const controller = new DesktopAppearanceController(path, (appearance) => { applied.push(appearance) })
     await controller.start()
     expect(applied).toEqual(['dark'])
-    // 与引擎改写 settings.yaml 的方式一致：先删后建，触发目录 watcher 的 rename 事件。
+    // 与引擎改写 settings.yaml 的方式一致：先删后建。两次操作之间留出事件交付窗口，
+    // 避免 FSEvents 合并事件导致第二次（可读）刷新丢失；重建后再等待偏好切换。
     rmSync(path)
+    await settle()
     writeFileSync(path, 'ui-theme:\n  preference: system\n')
     await waitForAppearances(applied, ['dark', 'light'])
     controller.dispose()
