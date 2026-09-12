@@ -48,7 +48,13 @@ export function createElectronBuilderConfig(
     },
     linux: {
       category: 'Development',
+      // scoped 包名 @deepseek-ai/dsh-desktop 会被 electron-builder 算成非法的
+      // @deepseek-aidsh-desktop（含 @/ 分隔符），必须显式给安全的可执行名。
+      executableName: 'deepseek-harness-desktop',
       target: ['deb', 'AppImage'],
+    },
+    deb: {
+      packageName: 'deepseek-harness-desktop',
     },
     publish: [{ provider: 'generic', url: update.publicUrl }],
   }
