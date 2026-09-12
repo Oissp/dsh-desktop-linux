@@ -6,6 +6,7 @@ import { tmpdir } from 'node:os'
 import { delimiter, dirname, join, relative, resolve } from 'node:path'
 import { createRuntimeProjectMetadata } from '../src/project-manager.ts'
 import { DESKTOP_HOST_PROTOCOL_VERSION } from '../src/host-protocol.ts'
+import { shellVersionExtendsEngine } from '../src/release-version.ts'
 import { parseDesktopRelease, type DesktopRelease } from '../src/release.ts'
 import {
   DESKTOP_HOST_PACKAGE,
@@ -38,15 +39,17 @@ function manifestVersion(path: string, subject: string): string {
 }
 
 function desktopRelease(): DesktopRelease {
-  const version = manifestVersion(join(APP_ROOT, 'package.json'), 'desktop package')
+  const desktopVersion = manifestVersion(join(APP_ROOT, 'package.json'), 'desktop package')
   const dshVersion = manifestVersion(resolve(APP_ROOT, '..', '..', 'package.json'), 'root dsh package')
-  if (version !== dshVersion) {
-    throw new Error(`desktop runtime: Electron ${version} must bind the same version of @deepseek-ai/dsh, found ${dshVersion}`)
+  if (!shellVersionExtendsEngine(desktopVersion, dshVersion)) {
+    throw new Error(`desktop runtime: Electron ${desktopVersion} must bind @deepseek-ai/dsh ${dshVersion} or a ${dshVersion}.N extension`)
   }
   const runtime = JSON.parse(readFileSync(join(RUNTIME_ROOT, 'versions.json'), 'utf8')) as Record<string, unknown>
   return parseDesktopRelease({
     schemaVersion: 1,
-    version,
+    // 描述符携带内置引擎版本（运行时用它与 @deepseek-ai/dsh / host 包版本比对）；
+    // 壳的 .N 构建后缀只体现在 apps/desktop 版本上。
+    version: dshVersion,
     hostProtocolVersion: DESKTOP_HOST_PROTOCOL_VERSION,
     nodeVersion: runtime.node,
     pnpmVersion: runtime.pnpm,

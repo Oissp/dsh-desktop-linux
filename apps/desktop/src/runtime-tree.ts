@@ -6,6 +6,7 @@ import { isAbsolute, join, relative, sep } from 'node:path'
 import { promisify } from 'node:util'
 import { valid } from 'semver'
 import { DESKTOP_HOST_PACKAGE } from './core-package-set.ts'
+import { shellVersionExtendsEngine } from './release-version.ts'
 import { parseDesktopRelease, type DesktopRelease } from './release.ts'
 
 /** Descriptor at the root of the immutable Desktop resource tree. */
@@ -195,7 +196,9 @@ export async function verifyDesktopRuntime(
     throw new Error('desktop runtime: invalid descriptor or incompatible platform/architecture')
   }
   const release = parseDesktopRelease(descriptor.release)
-  if (release.version !== electronVersion) throw new Error(`desktop runtime: ${release.version} does not match Electron ${electronVersion}`)
+  if (!shellVersionExtendsEngine(electronVersion, release.version)) {
+    throw new Error(`desktop runtime: ${release.version} does not match Electron ${electronVersion}`)
+  }
   for (const entry of descriptor.sharedPackages) {
     const manifest: unknown = JSON.parse(readFileSync(join(runtimePath(root, entry.path), 'package.json'), 'utf8'))
     if (!record(manifest) || manifest.name !== entry.name || manifest.version !== entry.version) {

@@ -1,14 +1,16 @@
 name: Package (Debian deb + AppImage)
 
 # Linux x64 打包发版：构建 .deb 安装包 + AppImage（electron-updater 更新负载）+ 频道元数据，
-# 上传产物并把 GitHub Release（tag = v<root package.json version>）发到独立发布仓库
+# 上传产物并把 GitHub Release（tag = v<desktop package.json version>）发到独立发布仓库
 # Oissp/dsh-desktop-linux-release（需要 RELEASE_TOKEN secret，一个拥有 repo 权限的 PAT）。
+# 桌面版本跟随内置 dsh 引擎版本（可带 .N 构建后缀，如 0.1.5-rc.2.1），所以版本号
+# 取 apps/desktop/package.json，而不是根 package.json（引擎版本）。
 # 自动更新频道（app-update.yml 里 provider=github，指向同一发布仓库）由 electron-updater 从
 # 各 release 的 <channel>-linux.yml + 安装资产拉取。
 # 源码与发布分离：本仓库（fork）保留上游 tag/历史用于跟随官方，.deb/AppImage 资产进专用仓库。
 #
 # 触发：
-#   - push 到 main 且 package.json 变更（功能更新 / 上游同步 bump 版本）→ 发版
+#   - push 到 main 且 package.json 或 apps/desktop/** 变更（壳功能/构建号 bump / 上游同步）→ 发版
 #   - 手动 workflow_dispatch（可强制重建当前版本）
 #
 # 幂等：发布仓库中 v<version> release 已存在则跳过发布，避免重复发版。
@@ -17,7 +19,7 @@ name: Package (Debian deb + AppImage)
 on:
   push:
     branches: [main]
-    paths: ['package.json']
+    paths: ['package.json', 'apps/desktop/**']
   workflow_dispatch:
     inputs:
       force:
@@ -102,8 +104,10 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Read version
+        # 桌面 release 版本 = apps/desktop 版本（跟随引擎版本，可带 .N 构建后缀）；
+        # electron-builder 产物名也用同一版本，保证 tag / 产物 / 自动更新一致。
         id: version
-        run: echo "version=$(node -e "console.log(require('./package.json').version)")" >> "$GITHUB_OUTPUT"
+        run: echo "version=$(node -e "console.log(require('./apps/desktop/package.json').version)")" >> "$GITHUB_OUTPUT"
 
       - name: Run desktop packaging tests
         run: pnpm exec vitest run apps/desktop/tests
