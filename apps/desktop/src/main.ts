@@ -518,7 +518,7 @@ async function main(): Promise<void> {
         if (!window.isDestroyed()) window.setIcon(windowIconPath(appearance))
       }
     })
-    disposeAppearance = controller.dispose
+    disposeAppearance = () => controller.dispose()
     await controller.start()
     tray = new Tray(trayIconPath(iconAppearance))
     tray.setToolTip(app.name)
