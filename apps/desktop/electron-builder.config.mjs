@@ -26,7 +26,9 @@ export function createElectronBuilderConfig(
   return {
     appId,
     productName: 'DeepSeek Harness',
-    artifactName: 'deepseek-harness-${version}-${os}-${arch}.${ext}',
+    // electron-builder 的 linux ${arch} 宏是 amd64/x86_64（非 x64），本仓库仅构建
+    // linux-x64，硬编码命名以与 README/校验/发布 glob 保持一致。
+    artifactName: 'deepseek-harness-${version}-linux-x64.${ext}',
     directories: { output: buildPaths.artifacts },
     asar: true,
     files: [
