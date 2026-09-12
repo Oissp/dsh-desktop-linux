@@ -3,6 +3,8 @@ name: Package (Debian deb + AppImage)
 # Linux x64 打包发版：构建 .deb 安装包 + AppImage（electron-updater 更新负载）+ 频道元数据，
 # 上传产物并把 GitHub Release（tag = v<root package.json version>）发到独立发布仓库
 # Oissp/dsh-desktop-linux-release（需要 RELEASE_TOKEN secret，一个拥有 repo 权限的 PAT）。
+# 自动更新频道（app-update.yml 里 provider=github，指向同一发布仓库）由 electron-updater 从
+# 各 release 的 <channel>-linux.yml + 安装资产拉取。
 # 源码与发布分离：本仓库（fork）保留上游 tag/历史用于跟随官方，.deb/AppImage 资产进专用仓库。
 #
 # 触发：
@@ -34,8 +36,9 @@ concurrency:
 env:
   # 打包必需的反向 DNS 应用 ID。可在仓库 Secret 覆盖（DSH_DESKTOP_APP_ID）。
   DSH_DESKTOP_APP_ID: ${{ secrets.DSH_DESKTOP_APP_ID || 'com.deepseek.harness.desktop' }}
-  # 打包默认 test 环境要求 DOWNLOAD_TEST_ORIGIN（任意无路径 HTTPS origin）。自动更新暂未
-  # 接入 GitHub Releases：用占位值即可，频道元数据 404 不阻塞安装与运行。
+  # package-target.ts 的 writeReleaseRecord 在 test 环境要求 DOWNLOAD_TEST_ORIGIN（任意无路径
+  # HTTPS origin）。自动更新已指向 GitHub Releases（app-update.yml 里 provider=github），该
+  # 占位 origin 只写入本地 ${target}-release.json 记录，不影响运行时更新源。
   DOWNLOAD_TEST_ORIGIN: ${{ secrets.DOWNLOAD_TEST_ORIGIN || 'https://desktop-updates.example.com' }}
   PNPM_NODE_LINKER: hoisted
 
@@ -106,7 +109,12 @@ jobs:
         run: pnpm exec vitest run apps/desktop/tests
 
       - name: Package .deb + AppImage (linux x64)
-        run: pnpm run package:desktop:linux:x64
+        run: |
+          # electron-builder 打包时会读到环境里的 GITHUB_TOKEN；为避免其被写进 app-update.yml，
+          # 本步骤只做 --publish never 本地打包（不需要 token），运行时走公开 GitHub Releases
+          # 也不需要凭据，因此先摘掉它。
+          unset GITHUB_TOKEN
+          pnpm run package:desktop:linux:x64
 
       - name: Verify artifacts
         run: |
@@ -119,6 +127,16 @@ jobs:
           ls -lh "$ART/"
           echo "--- deb control ---"
           dpkg-deb -I "$DEB" | head -30
+          echo "--- app-update.yml (自动更新源) ---"
+          UPDATE_YML="$ART/linux-unpacked/resources/app-update.yml"
+          test -f "$UPDATE_YML" || { echo "::error::缺少 app-update.yml: $UPDATE_YML"; exit 1; }
+          cat "$UPDATE_YML"
+          grep -q 'provider: github' "$UPDATE_YML" || { echo "::error::app-update.yml 缺少 provider=github"; exit 1; }
+          grep -q 'dsh-desktop-linux-release' "$UPDATE_YML" || { echo "::error::app-update.yml 未指向 Oissp/dsh-desktop-linux-release"; exit 1; }
+          if grep -qiE 'token|ghp_|github_pat_' "$UPDATE_YML"; then
+            echo "::error::app-update.yml 疑似包含 GitHub token，禁止发布"
+            exit 1
+          fi
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v7

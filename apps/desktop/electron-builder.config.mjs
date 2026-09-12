@@ -2,7 +2,6 @@ import { join } from 'node:path'
 import {
   resolveDesktopAppId,
 } from './scripts/desktop-release-environment.mjs'
-import { resolveDesktopAutoUpdateConfig } from './scripts/desktop-auto-update-environment.mjs'
 import { desktopTargetBuildPaths, resolveDesktopBuildTarget } from './scripts/desktop-build-paths.mjs'
 
 /**
@@ -21,7 +20,6 @@ export function createElectronBuilderConfig(
   const targetPlatform = env.DSH_DESKTOP_TARGET_PLATFORM
   const resolvedPlatform = targetPlatform ?? hostPlatform
   const resolvedArch = env.DSH_DESKTOP_TARGET_ARCH ?? hostArch
-  const update = resolveDesktopAutoUpdateConfig(env, resolvedPlatform, resolvedArch)
   const buildPaths = desktopTargetBuildPaths(resolveDesktopBuildTarget(env, hostPlatform, hostArch))
   return {
     appId,
@@ -58,7 +56,13 @@ export function createElectronBuilderConfig(
     deb: {
       packageName: 'deepseek-harness-desktop',
     },
-    publish: [{ provider: 'generic', url: update.publicUrl }],
+    publish: [{
+      // 自动更新走独立发布仓库的 GitHub Releases：electron-updater 读取 app-update.yml
+      // 里的 provider=github，从该仓库各 release 的 <channel>-linux.yml 与安装资产拉取更新。
+      provider: 'github',
+      owner: 'Oissp',
+      repo: 'dsh-desktop-linux-release',
+    }],
   }
 }
 
