@@ -55,10 +55,14 @@ it.each(['missing', 'directory'])('checks a %s Host entry only during build veri
   await expect(verifyDesktopRuntime(dsh, '1.0.0')).rejects.toThrow(/integrity/u)
 })
 it('checks the shell version only during build verification', async () => {
-  const dsh = join(fixture(), 'dsh')
-  expect(readDesktopRuntime(dsh).release.version).toBe('1.0.0')
-  // Shell-only patch builds extend the engine version (1.0.0 → 1.0.0.1).
-  await expect(verifyDesktopRuntime(dsh, '1.0.0.1')).resolves.toMatchObject({ release: { version: '1.0.0' } })
+  const root = mkdtempSync(join(tmpdir(), 'desktop-runtime-'))
+  roots.push(root)
+  // Shell-only patch builds extend a prerelease engine version (1.0.0-rc.1 → 1.0.0-rc.1.1);
+  // stable engine versions have no legal semver suffix (1.0.0.1 is invalid).
+  runtimeFixture(join(root, 'dsh'), '1.0.0-rc.1')
+  const dsh = join(root, 'dsh')
+  expect(readDesktopRuntime(dsh).release.version).toBe('1.0.0-rc.1')
+  await expect(verifyDesktopRuntime(dsh, '1.0.0-rc.1.1')).resolves.toMatchObject({ release: { version: '1.0.0-rc.1' } })
   await expect(verifyDesktopRuntime(dsh, '2.0.0')).rejects.toThrow(/does not match Electron/u)
 })
 it.each([
