@@ -6,6 +6,7 @@ import { readFile, stat } from 'node:fs/promises'
 import { basename, join, resolve } from 'node:path'
 import { load } from 'js-yaml'
 import type { DesktopPackageTargetName } from './package-target.ts'
+import { shellVersionExtendsEngine } from '../src/release-version.ts'
 import {
   desktopBuildRecordFilename,
   desktopUpdateMetadataFilename,
@@ -181,8 +182,8 @@ export async function createDesktopUploadPlan(
   const artifactsRoot = options.artifactsRoot ?? desktopTargetBuildPaths(targetName).artifacts
   const dshVersion = await manifestVersion(join(repositoryRoot, 'package.json'), 'dsh package')
   const desktopVersion = await manifestVersion(join(appRoot, 'package.json'), 'desktop package')
-  if (dshVersion !== desktopVersion) {
-    throw new Error(`desktop upload: desktop version ${desktopVersion} does not match current dsh version ${dshVersion}`)
+  if (!shellVersionExtendsEngine(desktopVersion, dshVersion)) {
+    throw new Error(`desktop upload: desktop version ${desktopVersion} does not extend dsh version ${dshVersion}`)
   }
 
   const update = resolveDesktopUploadConfig(environment, target.platform, target.arch)
@@ -198,7 +199,7 @@ export async function createDesktopUploadPlan(
     throw new Error(`desktop upload: ${targetName} package completion record does not match dsh ${dshVersion} and ${update.environment} update destination`)
   }
 
-  const metadataFilename = desktopUpdateMetadataFilename(dshVersion, target.platform)
+  const metadataFilename = desktopUpdateMetadataFilename(desktopVersion, target.platform)
   const metadataPath = join(artifactsRoot, metadataFilename)
   let metadataValue: unknown
   try {
@@ -209,14 +210,14 @@ export async function createDesktopUploadPlan(
   }
   const metadata = object(metadataValue, metadataFilename)
   const metadataVersion = stringField(metadata.version, `${metadataFilename}.version`)
-  if (metadataVersion !== dshVersion) {
-    throw new Error(`desktop upload: ${metadataFilename} version ${metadataVersion} does not match current dsh version ${dshVersion}`)
+  if (metadataVersion !== desktopVersion) {
+    throw new Error(`desktop upload: ${metadataFilename} version ${metadataVersion} does not match current dsh version ${desktopVersion}`)
   }
   if (!Array.isArray(metadata.files) || metadata.files.length !== 1) {
     throw new Error(`desktop upload: ${metadataFilename}.files must contain exactly one target update file`)
   }
 
-  const base = `deepseek-harness-${dshVersion}-${target.os}-${target.arch}`
+  const base = `deepseek-harness-${desktopVersion}-${target.os}-${target.arch}`
   const updaterInfo = updateFileInfo(metadata.files[0], `${metadataFilename}.files[0]`, `${base}.AppImage`)
   const updaterPath = await verifyChecksummedArtifact(artifactsRoot, updaterInfo)
   const artifacts: DesktopUploadArtifact[] = []
@@ -224,16 +225,22 @@ export async function createDesktopUploadPlan(
   const blockMapSize = object(metadata.files[0], `${metadataFilename}.files[0]`).blockMapSize
   numberField(blockMapSize, `${metadataFilename}.files[0].blockMapSize`)
   const debPath = await requireArtifact(artifactsRoot, `${base}.deb`)
+  const blockMapPath = await requireArtifact(artifactsRoot, `${base}.AppImage.blockmap`)
+  const blockMapDetails = await stat(blockMapPath)
+  if (blockMapDetails.size !== blockMapSize) {
+    throw new Error(`desktop upload: ${base}.AppImage.blockmap size ${blockMapDetails.size} does not match update metadata ${blockMapSize}`)
+  }
   artifacts.push(
     uploadArtifact(updaterPath, update.keyPrefix, 'application/vnd.appimage'),
     uploadArtifact(debPath, update.keyPrefix, 'application/vnd.debian.binary-package'),
+    uploadArtifact(blockMapPath, update.keyPrefix, 'application/octet-stream'),
   )
 
   artifacts.push(uploadArtifact(metadataPath, update.keyPrefix, 'application/yaml', true))
   return {
     environment: update.environment,
     target: targetName,
-    version: dshVersion,
+    version: desktopVersion,
     publicUrl: update.publicUrl,
     bucket: update.bucket,
     secretIdEnvName: update.secretIdEnvName,

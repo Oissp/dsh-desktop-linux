@@ -26,6 +26,7 @@ function digest(contents: string): string {
 async function fixture(
   version = '1.2.3',
   environment: 'test' | 'production' = 'test',
+  desktopVersion = version,
 ): Promise<Fixture> {
   const root = await mkdtemp(join(tmpdir(), 'dsh-desktop-upload-'))
   temporaryDirectories.push(root)
@@ -34,10 +35,10 @@ async function fixture(
   const artifactsRoot = join(appRoot, '.desktop-build', 'artifacts')
   await mkdir(artifactsRoot, { recursive: true })
   await writeFile(join(repositoryRoot, 'package.json'), `${JSON.stringify({ version })}\n`)
-  await writeFile(join(appRoot, 'package.json'), `${JSON.stringify({ version })}\n`)
+  await writeFile(join(appRoot, 'package.json'), `${JSON.stringify({ version: desktopVersion })}\n`)
 
   const target: DesktopPackageTargetName = 'linux-x64'
-  const base = `deepseek-harness-${version}-linux-x64`
+  const base = `deepseek-harness-${desktopVersion}-linux-x64`
   const origin = environment === 'test'
     ? TEST_ORIGIN
     : 'https://download.deepseek.com'
@@ -50,15 +51,17 @@ async function fixture(
   })}\n`)
 
   const appImage = 'Linux AppImage fixture'
+  const blockmap = 'AppImage blockmap fixture'
   await writeFile(join(artifactsRoot, `${base}.AppImage`), appImage)
+  await writeFile(join(artifactsRoot, `${base}.AppImage.blockmap`), blockmap)
   await writeFile(join(artifactsRoot, `${base}.deb`), 'Debian package fixture')
-  await writeFile(join(artifactsRoot, desktopUpdateMetadataFilename(version, 'linux')), `${JSON.stringify({
-    version,
+  await writeFile(join(artifactsRoot, desktopUpdateMetadataFilename(desktopVersion, 'linux')), `${JSON.stringify({
+    version: desktopVersion,
     files: [{
       url: `${base}.AppImage`,
       size: Buffer.byteLength(appImage),
       sha512: digest(appImage),
-      blockMapSize: 128,
+      blockMapSize: Buffer.byteLength(blockmap),
     }],
   })}\n`)
   return {
@@ -98,6 +101,7 @@ describe('desktop upload plan', () => {
     expect(plan.artifacts.map(artifact => artifact.filename)).toEqual([
       'deepseek-harness-1.2.3-linux-x64.AppImage',
       'deepseek-harness-1.2.3-linux-x64.deb',
+      'deepseek-harness-1.2.3-linux-x64.AppImage.blockmap',
       'latest-linux.yml',
     ])
     expect(plan.artifacts.at(-1)).toMatchObject({
@@ -112,6 +116,7 @@ describe('desktop upload plan', () => {
     expect(plan.artifacts.map(artifact => artifact.filename)).toEqual([
       'deepseek-harness-1.2.3-alpha.4-linux-x64.AppImage',
       'deepseek-harness-1.2.3-alpha.4-linux-x64.deb',
+      'deepseek-harness-1.2.3-alpha.4-linux-x64.AppImage.blockmap',
       'alpha-linux.yml',
     ])
   })
@@ -122,12 +127,36 @@ describe('desktop upload plan', () => {
     expect(plan.artifacts.map(artifact => artifact.filename)).toEqual([
       'deepseek-harness-2.0.0-linux-x64.AppImage',
       'deepseek-harness-2.0.0-linux-x64.deb',
+      'deepseek-harness-2.0.0-linux-x64.AppImage.blockmap',
       'latest-linux.yml',
     ])
     expect(plan).toMatchObject({
       publicUrl: 'https://download.deepseek.com/_/harness/desktop/stable/linux-x64/',
       bucket: PRODUCTION_BUCKET,
     })
+  })
+
+  it('accepts a shell version that extends the engine version and names artifacts with it', async () => {
+    const paths = await fixture('1.2.3-alpha.4', 'test', '1.2.3-alpha.4.1')
+    const plan = await createDesktopUploadPlan('linux-x64', paths)
+    expect(plan.version).toBe('1.2.3-alpha.4.1')
+    expect(plan.artifacts.map(artifact => artifact.filename)).toEqual([
+      'deepseek-harness-1.2.3-alpha.4.1-linux-x64.AppImage',
+      'deepseek-harness-1.2.3-alpha.4.1-linux-x64.deb',
+      'deepseek-harness-1.2.3-alpha.4.1-linux-x64.AppImage.blockmap',
+      'alpha-linux.yml',
+    ])
+  })
+
+  it('rejects a desktop version that does not extend the engine version', async () => {
+    const paths = await fixture('1.2.3', 'test', '2.0.0')
+    await expect(createDesktopUploadPlan('linux-x64', paths)).rejects.toThrow(/does not extend/u)
+  })
+
+  it('rejects a blockmap whose size does not match the update metadata', async () => {
+    const paths = await fixture()
+    await writeFile(join(paths.artifactsRoot, 'deepseek-harness-1.2.3-linux-x64.AppImage.blockmap'), 'stale')
+    await expect(createDesktopUploadPlan('linux-x64', paths)).rejects.toThrow(/blockmap size.*metadata/u)
   })
 
   it('rejects Linux metadata without an embedded blockmap size', async () => {

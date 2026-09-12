@@ -518,7 +518,7 @@ async function main(): Promise<void> {
         if (!window.isDestroyed()) window.setIcon(windowIconPath(appearance))
       }
     })
-    disposeAppearance = () => controller.dispose()
+    disposeAppearance = () => { controller.dispose() }
     await controller.start()
     tray = new Tray(trayIconPath(iconAppearance))
     tray.setToolTip(app.name)
@@ -546,11 +546,15 @@ async function main(): Promise<void> {
     if (process.platform !== 'darwin') app.quit()
   })
   app.on('before-quit', (event) => {
-    if (shellInstallerOwnsQuit || quitting) return
-    event.preventDefault()
+    if (quitting) return
     quitting = true
-    disposeAppearance?.()
-    void backend.close().catch((error: unknown) => { console.error(error) }).finally(() => { app.quit() })
+    // 更新安装的退出由 shellInstallerOwnsQuit 接管（backend 已被 beforeRestart 停掉），
+    // 但仍需置 quitting，否则窗口 close 处理器会 preventDefault 并隐藏到托盘，取消安装退出。
+    if (!shellInstallerOwnsQuit) {
+      event.preventDefault()
+      disposeAppearance?.()
+      void backend.close().catch((error: unknown) => { console.error(error) }).finally(() => { app.quit() })
+    }
   })
 
   mainWindow = createMainWindow()

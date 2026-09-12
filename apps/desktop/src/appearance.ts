@@ -38,16 +38,26 @@ function preferenceOf(sections: unknown): string | undefined {
 
 /** Read the stored appearance preference; `undefined` when absent or unreadable. */
 export async function readAppearancePreference(path: string): Promise<string | undefined> {
+  return (await readPreferenceDocument(path)).preference
+}
+
+/** One appearance read: the stored preference and whether the document was readable. */
+interface AppearancePreferenceSnapshot {
+  readonly preference: string | undefined
+  readonly readable: boolean
+}
+
+async function readPreferenceDocument(path: string): Promise<AppearancePreferenceSnapshot> {
   let text: string
   try {
     text = await readFile(path, 'utf8')
   } catch {
-    return undefined
+    return { preference: undefined, readable: false }
   }
   try {
-    return preferenceOf(load(text))
+    return { preference: preferenceOf(load(text)), readable: true }
   } catch {
-    return undefined
+    return { preference: undefined, readable: false }
   }
 }
 
@@ -136,7 +146,10 @@ export class DesktopAppearanceController {
   }
 
   private async refresh(): Promise<void> {
-    const preference = await readAppearancePreference(this.settingsPath)
+    // 读失败（引擎写入期间的竞态/瞬时错误）不等于偏好被清成 system：保留当前外观。
+    const snapshot = await readPreferenceDocument(this.settingsPath)
+    if (!snapshot.readable) return
+    const preference = snapshot.preference
     if (preference === this.preference) return
     this.preference = preference
     this.apply(resolveAppearance(preference))
