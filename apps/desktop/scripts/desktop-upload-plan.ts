@@ -225,15 +225,9 @@ export async function createDesktopUploadPlan(
   const blockMapSize = object(metadata.files[0], `${metadataFilename}.files[0]`).blockMapSize
   numberField(blockMapSize, `${metadataFilename}.files[0].blockMapSize`)
   const debPath = await requireArtifact(artifactsRoot, `${base}.deb`)
-  const blockMapPath = await requireArtifact(artifactsRoot, `${base}.AppImage.blockmap`)
-  const blockMapDetails = await stat(blockMapPath)
-  if (blockMapDetails.size !== blockMapSize) {
-    throw new Error(`desktop upload: ${base}.AppImage.blockmap size ${blockMapDetails.size} does not match update metadata ${blockMapSize}`)
-  }
   artifacts.push(
     uploadArtifact(updaterPath, update.keyPrefix, 'application/vnd.appimage'),
     uploadArtifact(debPath, update.keyPrefix, 'application/vnd.debian.binary-package'),
-    uploadArtifact(blockMapPath, update.keyPrefix, 'application/octet-stream'),
   )
 
   artifacts.push(uploadArtifact(metadataPath, update.keyPrefix, 'application/yaml', true))

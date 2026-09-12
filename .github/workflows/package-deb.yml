@@ -126,10 +126,8 @@ jobs:
           VERSION="${{ steps.version.outputs.version }}"
           DEB="$ART/deepseek-harness-$VERSION-linux-x64.deb"
           APPIMAGE="$ART/deepseek-harness-$VERSION-linux-x64.AppImage"
-          BLOCKMAP="$ART/deepseek-harness-$VERSION-linux-x64.AppImage.blockmap"
           test -f "$DEB" || { echo "::error::缺少 .deb 产物: $DEB"; exit 1; }
           test -f "$APPIMAGE" || { echo "::error::缺少 AppImage 产物: $APPIMAGE"; exit 1; }
-          test -f "$BLOCKMAP" || { echo "::error::缺少 AppImage blockmap（electron-updater 差分更新需要）: $BLOCKMAP"; exit 1; }
           ls -lh "$ART/"
           echo "--- deb control ---"
           dpkg-deb -I "$DEB" | head -30
@@ -156,7 +154,6 @@ jobs:
           path: |
             apps/desktop/.desktop-build/targets/linux-x64/artifacts/*.deb
             apps/desktop/.desktop-build/targets/linux-x64/artifacts/*.AppImage
-            apps/desktop/.desktop-build/targets/linux-x64/artifacts/*.AppImage.blockmap
             apps/desktop/.desktop-build/targets/linux-x64/artifacts/*.yml
           # 制品只是 build → release 的中间传递载体，最终文件已进 GitHub Release。
           retention-days: 1
@@ -249,4 +246,4 @@ jobs:
             --title "DeepSeek Harness Desktop $VERSION (Linux x64)" \
             --notes-file "$RUNNER_TEMP/release-notes.md" \
             "${PRERELEASE[@]}" \
-            release-assets/*.deb release-assets/*.AppImage release-assets/*.AppImage.blockmap release-assets/*.yml
+            release-assets/*.deb release-assets/*.AppImage release-assets/*.yml
