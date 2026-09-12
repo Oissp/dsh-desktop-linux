@@ -1,13 +1,15 @@
 name: Package (Debian deb + AppImage)
 
 # Linux x64 打包发版：构建 .deb 安装包 + AppImage（electron-updater 更新负载）+ 频道元数据，
-# 上传产物并创建 GitHub Release（tag = v<root package.json version>）。
+# 上传产物并把 GitHub Release（tag = v<root package.json version>）发到独立发布仓库
+# Oissp/dsh-desktop-linux-release（需要 RELEASE_TOKEN secret，一个拥有 repo 权限的 PAT）。
+# 源码与发布分离：本仓库（fork）保留上游 tag/历史用于跟随官方，.deb/AppImage 资产进专用仓库。
 #
 # 触发：
 #   - push 到 main 且 package.json 变更（功能更新 / 上游同步 bump 版本）→ 发版
 #   - 手动 workflow_dispatch（可强制重建当前版本）
 #
-# 幂等：v<version> release 已存在则跳过发布，避免重复发版。
+# 幂等：发布仓库中 v<version> release 已存在则跳过发布，避免重复发版。
 # 并发：同一 ref 同时只允许一个打包 run，且不取消进行中的——避免产物被中途杀掉导致残缺。
 
 on:
@@ -127,10 +129,12 @@ jobs:
           retention-days: 1
 
   release:
-    name: Publish GitHub Release
+    name: Publish to dsh-desktop-linux-release
     needs: package
     if: ${{ !cancelled() && needs.package.result == 'success' }}
     runs-on: ubuntu-latest
+    env:
+      RELEASE_REPO: Oissp/dsh-desktop-linux-release
     steps:
       - uses: actions/checkout@v5
         with:
@@ -143,10 +147,19 @@ jobs:
           name: release-assets
           path: release-assets
 
+      - name: Check release token
+        env:
+          RELEASE_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+        run: |
+          if [ -z "$RELEASE_TOKEN" ]; then
+            echo "::error::缺少 RELEASE_TOKEN secret（跨仓库发布需要）。请在 Settings → Secrets and variables → Actions 添加一个拥有 repo 权限的 PAT。"
+            exit 1
+          fi
+
       - name: Decide release
         id: decide
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
         run: |
           VERSION="${{ needs.package.outputs.version }}"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
@@ -154,11 +167,11 @@ jobs:
           if [ "$FORCE" = "true" ]; then
             echo "::notice::强制重建模式，跳过已发布检查"
             SHOULD_RELEASE=true
-          elif gh release view "v$VERSION" --repo "${{ github.repository }}" >/dev/null 2>&1; then
-            echo "v$VERSION release 已存在，跳过发布"
+          elif gh release view "v$VERSION" --repo "$RELEASE_REPO" >/dev/null 2>&1; then
+            echo "v$VERSION 已发布到 $RELEASE_REPO，跳过"
             SHOULD_RELEASE=false
           else
-            echo "v$VERSION release 不存在，继续发布"
+            echo "v$VERSION 未发布到 $RELEASE_REPO，继续"
             SHOULD_RELEASE=true
           fi
           echo "should_release=$SHOULD_RELEASE" >> "$GITHUB_OUTPUT"
@@ -166,37 +179,41 @@ jobs:
             echo "## 发版决策"
             echo "- 触发: \`${{ github.event_name }}\`"
             echo "- 版本: \`$VERSION\`"
+            echo "- 发布仓库: \`$RELEASE_REPO\`"
             echo "- should_release: \`$SHOULD_RELEASE\`"
           } >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Generate changelog
+      - name: Generate release notes
         run: |
+          VERSION="${{ needs.package.outputs.version }}"
           PREV_TAG=$(git describe --tags --abbrev=0 2>/dev/null || true)
           if [ -n "$PREV_TAG" ]; then
             LOG=$(git log --no-merges --pretty=format:"- %s" "$PREV_TAG"..HEAD)
           else
             LOG=$(git log --no-merges --pretty=format:"- %s" -50)
           fi
-          { echo "body<<EOF"; echo "$LOG"; echo "EOF"; } >> "$GITHUB_ENV"
+          {
+            echo "## DeepSeek Harness Desktop $VERSION (Linux x64)"
+            echo ""
+            echo "- **.deb** 安装包（Ubuntu / Debian）"
+            echo "- **AppImage** 免安装可执行文件"
+            echo ""
+            echo "### 变更"
+            echo "$LOG"
+          } > "$RUNNER_TEMP/release-notes.md"
 
       - name: Create GitHub Release
         if: steps.decide.outputs.should_release == 'true'
-        uses: softprops/action-gh-release@v3
-        with:
-          tag_name: v${{ steps.decide.outputs.version }}
-          name: DeepSeek Harness Desktop ${{ steps.decide.outputs.version }} (Linux x64)
-          body: |
-            ## DeepSeek Harness Desktop ${{ steps.decide.outputs.version }} (Linux x64)
-
-            - **.deb** 安装包（Ubuntu / Debian）
-            - **AppImage** 免安装可执行文件
-
-            ### 变更
-            ${{ env.body }}
-          files: |
-            release-assets/*.deb
-            release-assets/*.AppImage
-            release-assets/*.yml
-          draft: false
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+        run: |
+          VERSION="${{ steps.decide.outputs.version }}"
+          PRERELEASE=()
           # 任何含 '-' 的版本号都是 semver 预发布（alpha/beta/rc/dev 等）。
-          prerelease: ${{ contains(steps.decide.outputs.version, '-') }}
+          if [[ "$VERSION" == *-* ]]; then PRERELEASE+=(--prerelease); fi
+          gh release create "v$VERSION" \
+            --repo "$RELEASE_REPO" \
+            --title "DeepSeek Harness Desktop $VERSION (Linux x64)" \
+            --notes-file "$RUNNER_TEMP/release-notes.md" \
+            "${PRERELEASE[@]}" \
+            release-assets/*.deb release-assets/*.AppImage release-assets/*.yml
