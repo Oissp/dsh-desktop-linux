@@ -34,6 +34,7 @@ const harness = await vi.hoisted(async () => {
     readonly show = vi.fn()
     readonly focus = vi.fn()
     readonly restore = vi.fn()
+    readonly setIcon = vi.fn()
     constructor(readonly options: { show: boolean }) { super(); windows.push(this) }
     isDestroyed() { return this.destroyed }
     isMinimized() { return false }
@@ -102,9 +103,11 @@ vi.mock('electron', () => ({
     handle: (channel: string, handler: (event: { senderFrame: { url: string } }) => unknown) => { harness.handlers.set(channel, handler) },
   },
   Menu: { setApplicationMenu: vi.fn(), buildFromTemplate: vi.fn() },
+  nativeTheme: { shouldUseDarkColors: false, on: vi.fn(), removeListener: vi.fn() },
   Tray: class {
     setToolTip = vi.fn()
     setContextMenu = vi.fn()
+    setImage = vi.fn()
     on = vi.fn()
   },
   protocol: { registerSchemesAsPrivileged: vi.fn(), handle: vi.fn() },

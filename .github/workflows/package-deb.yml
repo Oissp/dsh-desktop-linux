@@ -137,9 +137,10 @@ jobs:
             echo "::error::app-update.yml 疑似包含 GitHub token，禁止发布"
             exit 1
           fi
-          echo "--- 图标资源 ---"
-          test -f "$ART/linux-unpacked/resources/icon.png" || { echo "::error::缺少运行时窗口图标 resources/icon.png"; exit 1; }
-          test -f "$ART/linux-unpacked/resources/tray.png" || { echo "::error::缺少托盘图标 resources/tray.png"; exit 1; }
+          echo "--- 图标资源（外观切换四件套） ---"
+          for f in icon-dark.png tray-dark.png icon-white.png tray-white.png; do
+            test -f "$ART/linux-unpacked/resources/$f" || { echo "::error::缺少运行时图标 resources/$f"; exit 1; }
+          done
           dpkg-deb -c "$DEB" | grep -E "icons/hicolor|/\.desktop" | head -12
 
       - name: Upload artifacts

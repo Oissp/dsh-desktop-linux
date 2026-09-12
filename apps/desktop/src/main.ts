@@ -14,6 +14,7 @@ import {
   type IpcMainInvokeEvent,
 } from 'electron'
 import { resolveDesktopPaths } from './paths.ts'
+import { DesktopAppearanceController, desktopSettingsPath, type DesktopAppearance } from './appearance.ts'
 import { DesktopProjectManager, type DesktopProjectHooks } from './project-manager.ts'
 import { DesktopHostProcess } from './host-process.ts'
 import { DesktopBackendController, type DesktopBackendState } from './backend-controller.ts'
@@ -28,6 +29,16 @@ const SCHEME = 'dsh-app'
 let focusPrimaryWindow = (): void => {}
 // 模块级引用防止 Tray 被 GC 后托盘消失；仅打包的 Linux 构建创建。
 let tray: Tray | undefined = undefined
+// 当前跟随 设置-通用设置-外观 解析出的外观，驱动窗口/托盘图标（资源随包携带）。
+let iconAppearance: DesktopAppearance = 'light'
+let disposeAppearance: (() => void) | undefined
+// 资源名以图标自身颜色命名：浅色外观用深色鲸鱼，深色外观用白色鲸鱼。
+function windowIconPath(appearance: DesktopAppearance): string {
+  return join(process.resourcesPath, appearance === 'dark' ? 'icon-white.png' : 'icon-dark.png')
+}
+function trayIconPath(appearance: DesktopAppearance): string {
+  return join(process.resourcesPath, appearance === 'dark' ? 'tray-white.png' : 'tray-dark.png')
+}
 type RecoveryAction = 'restart' | 'plugins' | 'reset'
 let profileRecoveryAvailable = (): boolean => false
 const emergencyPages = new WeakMap<BrowserWindow, { url: string; message: string; busy: boolean }>()
@@ -97,8 +108,9 @@ function createWindow(preload: string, show = false): BrowserWindow {
     minWidth: 880,
     minHeight: 600,
     show,
-    // Linux 窗口/任务栏图标用随包携带的品牌图标（macOS 由 bundle 决定，忽略此项）。
-    ...(app.isPackaged ? { icon: join(process.resourcesPath, 'icon.png') } : {}),
+    // Linux 窗口/任务栏图标跟随 设置-通用设置-外观（浅色→深色鲸鱼，深色→白色鲸鱼）；
+    // macOS 由 bundle 决定，忽略此项。
+    ...(app.isPackaged ? { icon: windowIconPath(iconAppearance) } : {}),
     webPreferences: {
       preload,
       nodeIntegration: false,
@@ -439,20 +451,26 @@ async function main(): Promise<void> {
     void pluginWindow.loadURL(`${SCHEME}://shell/plugin-manager.html`)
   }
 
-  Menu.setApplicationMenu(Menu.buildFromTemplate([{
-    label: process.platform === 'darwin' ? app.name : messages.application,
-    submenu: [
-      {
-        label: development === undefined ? messages.pluginsMenu : messages.pluginsMenuPackagedOnly,
-        accelerator: 'CmdOrCtrl+,',
-        enabled: development === undefined,
-        click: openPluginWindow,
-      },
-      { label: messages.checkUpdatesMenu, click: () => { void checkAndPrompt(true) } },
-      { type: 'separator' },
-      { role: 'quit' },
-    ],
-  }]))
+  if (app.isPackaged && process.platform === 'linux') {
+    // 打包的 Linux 版本隐藏顶部仅含 Application 的菜单栏（托盘菜单已镜像全部
+    // 入口：显示主窗口、插件、检查更新、退出）。
+    Menu.setApplicationMenu(null)
+  } else {
+    Menu.setApplicationMenu(Menu.buildFromTemplate([{
+      label: process.platform === 'darwin' ? app.name : messages.application,
+      submenu: [
+        {
+          label: development === undefined ? messages.pluginsMenu : messages.pluginsMenuPackagedOnly,
+          accelerator: 'CmdOrCtrl+,',
+          enabled: development === undefined,
+          click: openPluginWindow,
+        },
+        { label: messages.checkUpdatesMenu, click: () => { void checkAndPrompt(true) } },
+        { type: 'separator' },
+        { role: 'quit' },
+      ],
+    }]))
+  }
 
   const createMainWindow = (): BrowserWindow => {
     const window = createWindow(appPreload, true)
@@ -491,7 +509,18 @@ async function main(): Promise<void> {
   }
 
   if (app.isPackaged && process.platform === 'linux') {
-    tray = new Tray(join(process.resourcesPath, 'tray.png'))
+    // 外观控制器读取引擎写入的 settings.yaml（ui-theme.preference），并按
+    // 解析结果在浅色/深色鲸鱼图标间切换窗口与托盘图标。
+    const controller = new DesktopAppearanceController(desktopSettingsPath(), (appearance) => {
+      iconAppearance = appearance
+      tray?.setImage(trayIconPath(appearance))
+      for (const window of BrowserWindow.getAllWindows()) {
+        if (!window.isDestroyed()) window.setIcon(windowIconPath(appearance))
+      }
+    })
+    disposeAppearance = controller.dispose
+    await controller.start()
+    tray = new Tray(trayIconPath(iconAppearance))
     tray.setToolTip(app.name)
     // 托盘菜单镜像顶部 Application 菜单：插件、检查更新、退出，另加“显示主窗口”
     // 作为关窗隐藏后的恢复入口。
@@ -520,6 +549,7 @@ async function main(): Promise<void> {
     if (shellInstallerOwnsQuit || quitting) return
     event.preventDefault()
     quitting = true
+    disposeAppearance?.()
     void backend.close().catch((error: unknown) => { console.error(error) }).finally(() => { app.quit() })
   })
 

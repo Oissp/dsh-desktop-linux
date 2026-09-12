@@ -40,9 +40,12 @@ export function createElectronBuilderConfig(
       { from: buildPaths.dsh, to: 'dsh' },
       // electron-builder excludes a source directory's root node_modules.
       { from: join(buildPaths.dsh, 'node_modules'), to: 'dsh/node_modules' },
-      // 运行期窗口/托盘图标（app icon 本身由 electron-builder 从 build/icon.png 自动识别）。
-      { from: 'build/icon.png', to: 'icon.png' },
-      { from: 'build/tray.png', to: 'tray.png' },
+      // 运行期窗口/托盘图标：浅色/深色外观各一对（app icon 本身由 electron-builder
+      // 从 build/icon.png 自动识别，不随外观切换）。
+      { from: 'build/icon-dark.png', to: 'icon-dark.png' },
+      { from: 'build/tray-dark.png', to: 'tray-dark.png' },
+      { from: 'build/icon-white.png', to: 'icon-white.png' },
+      { from: 'build/tray-white.png', to: 'tray-white.png' },
     ],
     afterPack: async context => {
       const { verifyDesktopRuntime } = await import('./lib/types/runtime-tree.js')
