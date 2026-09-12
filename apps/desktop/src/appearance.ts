@@ -15,7 +15,7 @@ import { readFile } from 'node:fs/promises'
 import { basename, dirname, join } from 'node:path'
 import { nativeTheme } from 'electron'
 import { resolveDshHome } from '@deepseek-ai/dsh-home-paths'
-import { parse } from 'yaml'
+import { load } from 'js-yaml'
 
 /** The dsh engine's appearance namespace and field inside settings.yaml. */
 const THEME_SETTINGS_NAMESPACE = 'ui-theme'
@@ -45,7 +45,7 @@ export async function readAppearancePreference(path: string): Promise<string | u
     return undefined
   }
   try {
-    return preferenceOf(parse(text))
+    return preferenceOf(load(text))
   } catch {
     return undefined
   }
