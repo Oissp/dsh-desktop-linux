@@ -135,12 +135,18 @@ interface WebPluginRecord {
   /** Loader resolution input that selected this package instance. */
   sourceKey: string
   meta: PkgMeta
-  /** Exact build artifact included in the startup batches. */
-  bundle: Buffer
+  /** The build artifact prepared once for combo concatenation; see {@link comboSegment}. */
+  segment: ComboSegment
   /** Pre-read filesystem baseline handed to the HMR watcher. */
   baseline: ClientArtifactBaseline
   /** Optional authored source map snapshot; generated-file identity mapping is the fallback. */
   sourceMap?: { body: Buffer; parsed: Record<string, unknown> }
+  /**
+   * This row's own single-entry combo, built on first use. Every input is
+   * replaced together when {@link WebClientModules.rebuilt} accepts new bytes,
+   * so recomposing an unchanged row reuses this artifact.
+   */
+  solo?: ComboArtifact
 }
 
 /** Fields shared by every generated combo response. */
@@ -244,27 +250,49 @@ function partitionComboRecords(records: readonly WebPluginRecord[]): WebPluginRe
   return chunks
 }
 
-/** Executable source plus the generated-file name used when no authored map exists. */
-interface ComboSource {
-  source: string
+/**
+ * One bundle's contribution to a combo, prepared once when its bytes are read:
+ * every combo built from the same bundle version concatenates these same bytes.
+ */
+interface ComboSegment {
+  /** Concatenation-ready executable bytes: the bundle plus its statement terminator. */
+  bytes: Buffer
+  /** Generated lines {@link bytes} occupies, for indexed-map section offsets. */
+  lines: number
+  /** Generated-file name used when the bundle ships no authored map. */
   fallbackSource: string
+  /** The bundle before its terminator, retained only for the identity map's `sourcesContent`. */
+  source?: string
 }
 
-/** Remove bundle-local debug directives and retain their stable generated-file name. */
-function comboSource(record: WebPluginRecord): ComboSource {
-  let source = record.bundle.toString('utf8')
+/**
+ * Prepare one bundle for combo concatenation: strip bundle-local debug
+ * directives, terminate the statement, and encode the result once.
+ * @param id - entry id (package name), naming the fallback generated file.
+ * @param bundle - the exact build artifact bytes.
+ * @param hasSourceMap - whether an authored map makes decoded text unnecessary.
+ * @returns the prepared segment.
+ */
+function comboSegment(id: string, bundle: Buffer, hasSourceMap: boolean): ComboSegment {
+  let source = bundle.toString('utf8')
   const sourceUrl = SOURCE_URL_TRAILER.exec(source)?.[1]
   source = source.replace(SOURCE_URL_TRAILER, '').replace(SOURCE_MAP_TRAILER, '')
   if (!source.endsWith('\n')) source += '\n'
   const fallbackSource = sourceUrl === undefined
-    ? `/plugins/${record.entry.id}/client.js`
+    ? `/plugins/${id}/client.js`
     : /^(?:[A-Za-z][A-Za-z\d+.-]*:|\/)/.test(sourceUrl) ? sourceUrl : `/${sourceUrl}`
-  return { source, fallbackSource }
+  return {
+    // The terminator occupies one further generated line, which no section maps.
+    bytes: Buffer.from(`${source};\n`),
+    lines: newlineCount(source) + 1,
+    fallbackSource,
+    ...(hasSourceMap ? {} : { source }),
+  }
 }
 
-/** Stamp a combo script's absolute indexed-map URL onto its executable bytes. */
-function comboScript(input: string, sourceMapUrl?: string): Buffer {
-  return Buffer.from(sourceMapUrl === undefined ? input : `${input}//# sourceMappingURL=${sourceMapUrl}\n`)
+/** Stamp a combo script's absolute indexed-map URL onto its already-encoded executable bytes. */
+function comboScript(bundles: readonly Buffer[], sourceMapUrl: string): Buffer {
+  return Buffer.concat([...bundles, Buffer.from(`//# sourceMappingURL=${sourceMapUrl}\n`)])
 }
 
 /** Parse an optional source-map artifact; missing maps do not prevent plugin execution. */
@@ -295,7 +323,7 @@ function sourceMapSnapshot(clientPath: string): WebPluginRecord['sourceMap'] {
 /** Count generated lines while assembling indexed-map section offsets. */
 function newlineCount(value: string): number {
   let count = 0
-  for (const char of value) if (char === '\n') count += 1
+  for (let index = value.indexOf('\n'); index !== -1; index = value.indexOf('\n', index + 1)) count += 1
   return count
 }
 
@@ -320,40 +348,41 @@ function comboSectionMap(record: WebPluginRecord): Record<string, unknown> {
 }
 
 /** Map each generated line to the same line in a bundled JavaScript source. */
-function identitySectionMap(source: string, sourceUrl: string): Record<string, unknown> {
-  const mappings = Array.from({ length: newlineCount(source) }, (_, index) => index === 0 ? 'AAAA' : 'AACA')
-    .join(';')
+function identitySectionMap(segment: ComboSegment): Record<string, unknown> {
+  /* v8 ignore next -- source is retained exactly for the records that reach this map. */
+  const source = segment.source ?? ''
+  const lines = segment.lines - 1
   return {
     version: 3,
     names: [],
-    sources: [sourceUrl],
+    sources: [segment.fallbackSource],
     sourcesContent: [source],
-    mappings,
+    mappings: lines === 0 ? '' : `AAAA${';AACA'.repeat(lines - 1)}`,
   }
 }
 
 /** Concatenate one or more factory registrations and compose their maps as indexed sections. */
 function buildCombo(records: readonly WebPluginRecord[], revision?: string): ComboArtifact {
-  let source = ''
+  // Segments were prepared and encoded when their bundles were read; every combo
+  // over the same bundle versions concatenates and hashes those same bytes.
+  const bundles: Buffer[] = []
   const sections: { offset: { line: number; column: 0 }; map: Record<string, unknown> }[] = []
   let line = 0
   for (const record of records) {
-    const prepared = comboSource(record)
+    const segment = record.segment
     const section = record.sourceMap === undefined
-      ? identitySectionMap(prepared.source, prepared.fallbackSource)
+      ? identitySectionMap(segment)
       : comboSectionMap(record)
     sections.push({ offset: { line, column: 0 }, map: section })
-    const bundle = `${prepared.source};\n`
-    source += bundle
-    line += newlineCount(bundle)
+    bundles.push(segment.bytes)
+    line += segment.lines
   }
   const sourceMap = Buffer.from(`${JSON.stringify({ version: 3, file: 'client.js', sections })}\n`)
-  const sourceBytes = Buffer.from(source)
-  const rev = revision ?? framedHash('combo', [sourceBytes, sourceMap])
+  const rev = revision ?? framedHash('combo', [Buffer.concat(bundles), sourceMap])
   const entries = records.map(record => record.entry.id)
   const url = comboUrl(entries, rev)
   const sourceMapUrl = comboUrl(entries, rev, true)
-  return { url, rev, entries, script: comboScript(source, sourceMapUrl), sourceMap, sourceMapUrl }
+  return { url, rev, entries, script: comboScript(bundles, sourceMapUrl), sourceMap, sourceMapUrl }
 }
 
 /** Add initial-load scheduling metadata to a combo artifact. */
@@ -609,7 +638,8 @@ export class ClientModuleRegistry extends Service {
     record.baseline = baseline
     if (rev === record.entry.rev) return rev
     record.entry = graphRow(id, rev, record.meta)
-    record.bundle = bundle
+    record.segment = comboSegment(id, bundle, sourceMap !== undefined)
+    delete record.solo
     if (sourceMap === undefined) delete record.sourceMap
     else record.sourceMap = sourceMap
     this.composed = this.compose()
@@ -678,7 +708,7 @@ export class ClientModuleRegistry extends Service {
     }
     const responses = new Map(batchResponses)
     for (const record of this.table.values()) {
-      const artifact = buildCombo([record], record.entry.rev)
+      const artifact = record.solo ?? (record.solo = buildCombo([record], record.entry.rev))
       responses.set(artifact.url, {
         body: artifact.script,
         contentType: 'text/javascript; charset=utf-8',
@@ -936,7 +966,7 @@ export class ClientModuleRegistry extends Service {
       loaderName: source.loaderName,
       sourceKey: source.sourceKey,
       meta: source.meta,
-      bundle: snapshot.bundle,
+      segment: comboSegment(packageName, snapshot.bundle, snapshot.sourceMap !== undefined),
       baseline: snapshot.baseline,
       ...(snapshot.sourceMap === undefined ? {} : { sourceMap: snapshot.sourceMap }),
     })

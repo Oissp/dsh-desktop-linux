@@ -49,4 +49,13 @@ export default defineConfig([
     clean: true,
     tsconfig: 'tsconfig.client.json',
   },
+  {
+    ...shared,
+    entry: {
+      'client-bundle-composition.worker': 'client-bundle-composition/client-bundle-composition.worker.ts',
+    },
+    outDir: '.dsh-build/client-bundle-composition',
+    clean: true,
+    tsconfig: 'tsconfig.host.json',
+  },
 ])

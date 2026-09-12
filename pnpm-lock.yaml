@@ -513,7 +513,7 @@ importers:
         version: 26.15.3(dmg-builder@26.15.3)(electron-builder-squirrel-windows@26.15.3)
       electron:
         specifier: ^44.3.0
-        version: 44.3.0
+        version: 44.3.0(supports-color@9.4.0)
       electron-builder:
         specifier: ^26.15.3
         version: 26.15.3(electron-builder-squirrel-windows@26.15.3)
@@ -676,6 +676,9 @@ importers:
       '@deepseek-ai/dsh-api-session-controller':
         specifier: workspace:^
         version: link:../packages/api/session-controller
+      '@deepseek-ai/dsh-client-modules':
+        specifier: workspace:^
+        version: link:../packages/client/modules
       '@deepseek-ai/dsh-client-store':
         specifier: workspace:^
         version: link:../packages/client/store
@@ -685,6 +688,9 @@ importers:
       '@deepseek-ai/dsh-deque':
         specifier: workspace:^
         version: link:../packages/util/deque
+      '@deepseek-ai/dsh-host-webserver':
+        specifier: workspace:^
+        version: link:../packages/host/webserver
       '@deepseek-ai/dsh-llm':
         specifier: workspace:^
         version: link:../packages/llm/llm
@@ -18966,7 +18972,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@electron/get@5.1.0':
+  '@electron/get@5.1.0(supports-color@9.4.0)':
     dependencies:
       debug: 4.4.3(supports-color@9.4.0)
       env-paths: 3.0.0
@@ -22023,10 +22029,10 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  electron@44.3.0:
+  electron@44.3.0(supports-color@9.4.0):
     dependencies:
       '@electron-internal/extract-zip': 1.0.5
-      '@electron/get': 5.1.0
+      '@electron/get': 5.1.0(supports-color@9.4.0)
       '@types/node': 24.13.3
     transitivePeerDependencies:
       - supports-color
