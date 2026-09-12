@@ -66,7 +66,15 @@ async function checkPty() {
 
 /** fs-ext implements seek on Windows through SetFilePointerEx and on POSIX through lseek. */
 function checkFsExt() {
-  const fsExt = requireRuntime('fs-ext')
+  // dsh 0.1.5 起以 N-API prebuild node-addon-system 取代 fs-ext（源码与依赖均已移除），
+  // 此处仅在模块仍存在时校验，避免过时检查阻塞打包。
+  let fsExt
+  try {
+    fsExt = requireRuntime('fs-ext')
+  } catch {
+    console.log('runtime-payload: fs-ext 已随 dsh 0.1.5 移除，跳过 seek 校验')
+    return
+  }
   const file = join(scratch, 'seek.txt')
   writeFileSync(file, 'abcdef', { flag: 'wx', mode: 0o600 })
   const fd = openSync(file, 'r')
