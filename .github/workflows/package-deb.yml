@@ -16,8 +16,8 @@ name: Package (Debian deb + AppImage)
 # 幂等：发布仓库中 v<version> release 已存在则跳过发布，避免重复发版。
 # 并发：同一 ref 同时只允许一个打包 run，且不取消进行中的——避免产物被中途杀掉导致残缺。
 # 引擎缓存：build:official + release:pack + prepare:* 的产物只依赖引擎源码（不含壳版本号），
-# 纯 .N 版本 bump 完全不变。把它们缓存起来（key 排除 apps/desktop/package.json），命中时用
-# package-target.ts --builder-only 跳过准备、直接跑 electron-builder。
+# 纯 .N 版本 bump 完全不变。把它们缓存起来（key 用 git 只哈希已跟踪源码、排除
+# apps/desktop/package.json），命中时用 package-target.ts --builder-only 跳过准备、直接跑 electron-builder。
 
 on:
   push:
@@ -115,6 +115,23 @@ jobs:
       - name: Run desktop packaging tests
         run: pnpm exec vitest run apps/desktop/tests
 
+      - name: Compute engine cache key
+        id: engine-key
+        # GitHub 的 hashFiles() 会遍历工作区里 node_modules 与构建产物（packages/** 等 glob 覆盖得到，
+        # pnpm install 与 prepare:* 会往里写东西），同一次 run 的 restore/save 甚至都算出不同 key。
+        # 改用 git 只对已跟踪源码做排序内容哈希：未跟踪产物天然排除，纯版本 bump
+        # （apps/desktop/package.json 不在列）命中缓存；依赖版本变化仍由 pnpm-lock.yaml 捕获。
+        run: |
+          KEY=$(git ls-files -- \
+            package.json pnpm-lock.yaml pnpm-workspace.yaml \
+            'tsconfig*.json' 'scripts/**' 'packages/**' 'vendor/**' 'native/**' \
+            'apps/desktop-host/**' 'apps/desktop/src/**' 'apps/desktop/renderer/**' \
+            'apps/desktop/scripts/**' apps/desktop/electron-builder.config.mjs \
+            apps/desktop/tsdown.config.ts apps/desktop/tsconfig.json \
+            | git hash-object --stdin-paths \
+            | git hash-object --stdin)
+          echo "key=${{ runner.os }}-dsh-engine-$KEY" >> "$GITHUB_OUTPUT"
+
       - name: Restore engine build cache
         id: engine-cache
         uses: actions/cache/restore@v6
@@ -123,10 +140,7 @@ jobs:
             apps/desktop/lib
             apps/desktop/.desktop-build/targets/linux-x64/runtime
             apps/desktop/.desktop-build/targets/linux-x64/dsh
-          # 键覆盖所有会改变这些产物的源码（引擎 + 壳代码 + 打包脚本 + 构建配置）；
-          # 刻意排除 apps/desktop/package.json，让纯版本 bump 命中缓存（依赖版本变化已由
-          # pnpm-lock.yaml 捕获）。
-          key: ${{ runner.os }}-dsh-engine-${{ hashFiles('package.json', 'pnpm-lock.yaml', 'pnpm-workspace.yaml', 'tsconfig*.json', 'scripts/**', 'packages/**', 'vendor/**', 'native/**', 'apps/desktop-host/**', 'apps/desktop/src/**', 'apps/desktop/renderer/**', 'apps/desktop/scripts/**', 'apps/desktop/electron-builder.config.mjs', 'apps/desktop/tsdown.config.ts', 'apps/desktop/tsconfig.json') }}
+          key: ${{ steps.engine-key.outputs.key }}
 
       - name: Prepare engine + runtime (linux x64)
         if: steps.engine-cache.outputs.cache-hit != 'true'
@@ -140,7 +154,7 @@ jobs:
             apps/desktop/lib
             apps/desktop/.desktop-build/targets/linux-x64/runtime
             apps/desktop/.desktop-build/targets/linux-x64/dsh
-          key: ${{ runner.os }}-dsh-engine-${{ hashFiles('package.json', 'pnpm-lock.yaml', 'pnpm-workspace.yaml', 'tsconfig*.json', 'scripts/**', 'packages/**', 'vendor/**', 'native/**', 'apps/desktop-host/**', 'apps/desktop/src/**', 'apps/desktop/renderer/**', 'apps/desktop/scripts/**', 'apps/desktop/electron-builder.config.mjs', 'apps/desktop/tsdown.config.ts', 'apps/desktop/tsconfig.json') }}
+          key: ${{ steps.engine-key.outputs.key }}
 
       - name: Package .deb + AppImage (linux x64)
         run: |
@@ -246,11 +260,20 @@ jobs:
       - name: Generate release notes
         run: |
           VERSION="${{ needs.package.outputs.version }}"
-          PREV_TAG=$(git describe --tags --abbrev=0 2>/dev/null || true)
-          if [ -n "$PREV_TAG" ]; then
-            LOG=$(git log --no-merges --pretty=format:"- %s" "$PREV_TAG"..HEAD)
+          PREV_SHA=""
+          # 本仓库的 tag 是上游引擎 tag（git describe 停在 dsh-v*），不是桌面发布的边界；
+          # 桌面版本只在 apps/desktop/package.json。取最近一个版本号与当前不同的提交当上一版发布的
+          # 边界，变更区间就是「上一版发布以来的提交」，不再每次重复全部历史。
+          for c in $(git log --format=%H HEAD -- apps/desktop/package.json); do
+            v=$(git show "$c:apps/desktop/package.json" 2>/dev/null | grep -m1 '^\s*"version"[[:space:]]*:' | sed -E 's/.*"version"[[:space:]]*:[[:space:]]*"([^"]+)".*/\1/')
+            if [ -n "$v" ] && [ "$v" != "$VERSION" ]; then PREV_SHA=$c; PREV_VERSION=$v; break; fi
+          done
+          if [ -n "$PREV_SHA" ]; then
+            LOG=$(git log --no-merges --pretty=format:"- %s" "$PREV_SHA"..HEAD)
+            SCOPE="自 v$PREV_VERSION 以来"
           else
             LOG=$(git log --no-merges --pretty=format:"- %s" -50)
+            SCOPE="最近 50 条提交"
           fi
           {
             echo "## DeepSeek Harness Desktop $VERSION (Linux x64)"
@@ -258,7 +281,7 @@ jobs:
             echo "- **.deb** 安装包（Ubuntu / Debian）"
             echo "- **AppImage** 免安装可执行文件"
             echo ""
-            echo "### 变更"
+            echo "### 变更（$SCOPE）"
             echo "$LOG"
           } > "$RUNNER_TEMP/release-notes.md"
 
