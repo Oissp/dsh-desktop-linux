@@ -8,6 +8,9 @@ describe('desktop locale dictionaries', () => {
     expect(resolveDesktopLocale('zh-Hans-CN')).toEqual({ id: 'zh-CN', messages: zh })
     expect(resolveDesktopLocale('en-US')).toEqual({ id: 'en', messages: en })
     expect(resolveDesktopLocale('fr-FR')).toEqual({ id: 'en', messages: en })
+    // Stored locale preference values map to the shipped dictionaries too.
+    expect(resolveDesktopLocale('zh')).toEqual({ id: 'zh-CN', messages: zh })
+    expect(resolveDesktopLocale('en')).toEqual({ id: 'en', messages: en })
   })
 
   it('formats named values without consuming unknown placeholders', () => {

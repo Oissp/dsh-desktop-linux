@@ -10,12 +10,12 @@
  * @module
  */
 
-import { watch, type FSWatcher } from 'node:fs'
 import { readFile } from 'node:fs/promises'
-import { basename, dirname, join } from 'node:path'
+import { join } from 'node:path'
 import { nativeTheme } from 'electron'
 import { resolveDshHome } from '@deepseek-ai/dsh-home-paths'
 import { load } from 'js-yaml'
+import { DesktopSettingsWatcher } from './settings-watcher.ts'
 
 /** The dsh engine's appearance namespace and field inside settings.yaml. */
 const THEME_SETTINGS_NAMESPACE = 'ui-theme'
@@ -72,9 +72,7 @@ export function resolveAppearance(preference: string | undefined): DesktopAppear
 
 /** Watch one settings document and re-apply the appearance on external edits. */
 export class DesktopAppearanceController {
-  private watcher: FSWatcher | undefined
-  private timer: ReturnType<typeof setTimeout> | undefined
-  private retry: ReturnType<typeof setTimeout> | undefined
+  private watcher: DesktopSettingsWatcher
   private preference: string | undefined
   private closed = false
   private readonly onThemeUpdated = (): void => { this.apply(resolveAppearance(this.preference)) }
@@ -86,66 +84,27 @@ export class DesktopAppearanceController {
   constructor(
     private readonly settingsPath: string,
     private readonly apply: (appearance: DesktopAppearance) => void,
-  ) {}
+  ) {
+    this.watcher = new DesktopSettingsWatcher(settingsPath, () => { void this.refresh() })
+  }
 
   /** Read the initial preference, apply once, and arm both watchers. */
   async start(): Promise<void> {
     this.preference = await readAppearancePreference(this.settingsPath)
     this.apply(resolveAppearance(this.preference))
     nativeTheme.on('updated', this.onThemeUpdated)
-    this.startWatcher()
+    this.watcher.start()
   }
 
   /** Stop watching the document and the OS theme. */
   dispose(): void {
     this.closed = true
     nativeTheme.removeListener('updated', this.onThemeUpdated)
-    if (this.timer !== undefined) clearTimeout(this.timer)
-    if (this.retry !== undefined) clearTimeout(this.retry)
-    this.watcher?.close()
-    this.watcher = undefined
-  }
-
-  /**
-   * Watch the parent directory (not the file) so creates, replaces, and deletes
-   * all fire. A missing home directory before the engine's first write re-arms
-   * this watcher on a short retry.
-   */
-  private startWatcher(): void {
-    this.watcher?.close()
-    this.watcher = undefined
-    try {
-      const watcher = watch(dirname(this.settingsPath), (_event, filename) => {
-        if (typeof filename === 'string' && filename !== basename(this.settingsPath)) return
-        this.scheduleRefresh()
-      })
-      watcher.unref()
-      watcher.on('error', () => { watcher.close(); this.scheduleRetry() })
-      this.watcher = watcher
-    } catch {
-      this.scheduleRetry()
-    }
-  }
-
-  private scheduleRetry(): void {
-    if (this.closed || this.retry !== undefined) return
-    this.retry = setTimeout(() => {
-      this.retry = undefined
-      this.startWatcher()
-    }, 2_000)
-    this.retry.unref()
-  }
-
-  /** Debounce edits around the engine's write settle window. */
-  private scheduleRefresh(): void {
-    if (this.timer !== undefined) clearTimeout(this.timer)
-    this.timer = setTimeout(() => {
-      this.timer = undefined
-      void this.refresh()
-    }, 150)
+    this.watcher.dispose()
   }
 
   private async refresh(): Promise<void> {
+    if (this.closed) return
     // 读失败（引擎写入期间的竞态/瞬时错误）不等于偏好被清成 system：保留当前外观。
     const snapshot = await readPreferenceDocument(this.settingsPath)
     if (!snapshot.readable) return

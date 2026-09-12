@@ -7,6 +7,9 @@ import electronUpdater, { type AppUpdater } from 'electron-updater'
 import type { DesktopUpdateState } from './ipc.ts'
 const { autoUpdater } = electronUpdater
 
+/** Reverse a prepared restart when the replacement install fails and the app keeps running. */
+type RestartUndo = () => void | Promise<void>
+
 /** Checks, downloads, and installs one complete Desktop release. */
 export class DesktopUpdateCoordinator {
   private availableVersion: string | undefined
@@ -15,13 +18,14 @@ export class DesktopUpdateCoordinator {
 
   /**
    * @param publish - state sink for every desktop window.
-   * @param beforeRestart - stop application-owned processes before replacement.
+   * @param beforeRestart - stop application-owned processes before replacement;
+   *   returns an undo applied when the install fails so the session keeps working.
    * @param updater - Electron artifact updater; replaceable for tests.
    * @param enabled - whether this packaged process carries updater configuration.
    */
   constructor(
     private readonly publish: (state: DesktopUpdateState) => DesktopUpdateState,
-    private readonly beforeRestart: () => Promise<void> = async () => {},
+    private readonly beforeRestart: () => Promise<RestartUndo | undefined> = async () => undefined,
     private readonly updater: AppUpdater = autoUpdater,
     private readonly enabled: () => boolean = () => (
       app.isPackaged && existsSync(join(process.resourcesPath, 'app-update.yml'))
@@ -80,10 +84,8 @@ export class DesktopUpdateCoordinator {
     try {
       await this.updater.downloadUpdate()
       this.availableVersion = undefined
-      const ready = this.publish({ phase: 'ready', version })
-      await this.beforeRestart()
-      this.updater.quitAndInstall(false, true)
-      return ready
+      const undoRestart = await this.beforeRestart()
+      return await this.quitForInstall(version, undoRestart)
     } catch (error) {
       return this.publish({
         phase: 'error',
@@ -91,5 +93,33 @@ export class DesktopUpdateCoordinator {
         message: error instanceof Error ? error.message : String(error),
       })
     }
+  }
+
+  /**
+   * Request the install-then-quit and return the state the app is left in. electron-updater
+   * dispatches 'error' synchronously when the install step fails and quits the process on a
+   * later turn only after success, so 'ready' is truthful only after the call returns without one.
+   */
+  private quitForInstall(
+    version: string,
+    undoRestart: RestartUndo | undefined,
+  ): Promise<DesktopUpdateState> {
+    return new Promise((resolve) => {
+      let failure: Error | undefined
+      const onError = (error: unknown) => {
+        failure = error instanceof Error ? error : new Error(String(error))
+      }
+      this.updater.on('error', onError)
+      this.updater.quitAndInstall(false, true)
+      this.updater.removeListener('error', onError)
+      if (failure === undefined) {
+        resolve(this.publish({ phase: 'ready', version }))
+        return
+      }
+      const message = failure.message
+      void Promise.resolve(undoRestart?.())
+        .catch(() => undefined)
+        .then(() => resolve(this.publish({ phase: 'error', version, message })))
+    })
   }
 }

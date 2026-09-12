@@ -15,6 +15,7 @@ import {
 } from 'electron'
 import { resolveDesktopPaths } from './paths.ts'
 import { DesktopAppearanceController, desktopSettingsPath, type DesktopAppearance } from './appearance.ts'
+import { DesktopLocaleController } from './desktop-locale.ts'
 import { DesktopProjectManager, type DesktopProjectHooks } from './project-manager.ts'
 import { DesktopHostProcess } from './host-process.ts'
 import { DesktopBackendController, type DesktopBackendState } from './backend-controller.ts'
@@ -32,6 +33,7 @@ let tray: Tray | undefined = undefined
 // 当前跟随 设置-通用设置-外观 解析出的外观，驱动窗口/托盘图标（资源随包携带）。
 let iconAppearance: DesktopAppearance = 'light'
 let disposeAppearance: (() => void) | undefined
+let disposeLocale: (() => void) | undefined
 // 资源名以图标自身颜色命名：浅色外观用深色鲸鱼，深色外观用白色鲸鱼。
 function windowIconPath(appearance: DesktopAppearance): string {
   return join(process.resourcesPath, appearance === 'dark' ? 'icon-white.png' : 'icon-dark.png')
@@ -178,8 +180,8 @@ async function main(): Promise<void> {
   let pluginWindow: BrowserWindow | undefined
   let shellInstallerOwnsQuit = false
   let updateState: DesktopUpdateState = { phase: 'idle' }
-  const locale = resolveDesktopLocale(app.getLocale())
-  const messages = locale.messages
+  let locale = resolveDesktopLocale(app.getLocale())
+  let messages = locale.messages
   const appPreload = fileURLToPath(new URL('./preload-app.cjs', import.meta.url))
   const managementPreload = fileURLToPath(new URL('./preload.cjs', import.meta.url))
   const startupUrl = `${SCHEME}://shell/startup.html`
@@ -293,7 +295,20 @@ async function main(): Promise<void> {
     publishUpdate,
     async () => {
       shellInstallerOwnsQuit = true
-      await backend.stop()
+      try {
+        await backend.stop()
+      } catch (error) {
+        // A failed stop cancels the update quit; keep the flag clear so a later
+        // user quit still runs backend.close() teardown.
+        shellInstallerOwnsQuit = false
+        throw error
+      }
+      // The deb install runs under sudo/pkexec and can fail (no polkit agent, dpkg error);
+      // undo the prepared restart so the running session stays usable.
+      return async () => {
+        shellInstallerOwnsQuit = false
+        await reconcileBackend()
+      }
     },
   )
 
@@ -429,6 +444,8 @@ async function main(): Promise<void> {
     })
     if (result.response !== 0) return
     const installed = await updates.install()
+    // The user explicitly chose to install, so an install failure is loud even from the
+    // startup auto-check; a failed install leaves the running session on the old version.
     if (installed.phase === 'error') {
       await dialog.showMessageBox({
         type: 'error',
@@ -467,7 +484,7 @@ async function main(): Promise<void> {
         },
         { label: messages.checkUpdatesMenu, click: () => { void checkAndPrompt(true) } },
         { type: 'separator' },
-        { role: 'quit' },
+        { role: 'quit', label: messages.quitMenu },
       ],
     }]))
   }
@@ -520,22 +537,38 @@ async function main(): Promise<void> {
     })
     disposeAppearance = () => { controller.dispose() }
     await controller.start()
+    // 语言控制器读取引擎写入的 locale.preference（通用设置 → Language），未显式
+    // 选择时退回系统语言，并在设置变更时重建托盘菜单、更新插件窗口标题。
+    const rebuildTrayMenu = (): void => {
+      if (tray === undefined) return
+      tray.setContextMenu(Menu.buildFromTemplate([
+        { label: messages.showWindow, click: focusPrimaryWindow },
+        { type: 'separator' },
+        {
+          label: development === undefined ? messages.pluginsMenu : messages.pluginsMenuPackagedOnly,
+          enabled: development === undefined,
+          click: openPluginWindow,
+        },
+        { label: messages.checkUpdatesMenu, click: () => { void checkAndPrompt(true) } },
+        { type: 'separator' },
+        { role: 'quit', label: messages.quitMenu },
+      ]))
+    }
+    const localeController = new DesktopLocaleController(desktopSettingsPath(), app.getLocale(), (resolved) => {
+      locale = resolved
+      messages = resolved.messages
+      rebuildTrayMenu()
+      if (pluginWindow !== undefined && !pluginWindow.isDestroyed()) {
+        pluginWindow.setTitle(resolved.messages.pluginWindowTitle)
+      }
+    })
+    disposeLocale = () => { localeController.dispose() }
+    await localeController.start()
     tray = new Tray(trayIconPath(iconAppearance))
     tray.setToolTip(app.name)
     // 托盘菜单镜像顶部 Application 菜单：插件、检查更新、退出，另加“显示主窗口”
     // 作为关窗隐藏后的恢复入口。
-    tray.setContextMenu(Menu.buildFromTemplate([
-      { label: messages.showWindow, click: focusPrimaryWindow },
-      { type: 'separator' },
-      {
-        label: development === undefined ? messages.pluginsMenu : messages.pluginsMenuPackagedOnly,
-        enabled: development === undefined,
-        click: openPluginWindow,
-      },
-      { label: messages.checkUpdatesMenu, click: () => { void checkAndPrompt(true) } },
-      { type: 'separator' },
-      { role: 'quit' },
-    ]))
+    rebuildTrayMenu()
     tray.on('click', focusPrimaryWindow)
   }
 
@@ -553,6 +586,7 @@ async function main(): Promise<void> {
     if (!shellInstallerOwnsQuit) {
       event.preventDefault()
       disposeAppearance?.()
+      disposeLocale?.()
       void backend.close().catch((error: unknown) => { console.error(error) }).finally(() => { app.quit() })
     }
   })

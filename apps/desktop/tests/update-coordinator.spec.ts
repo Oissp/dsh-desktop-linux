@@ -46,10 +46,12 @@ describe('desktop update coordinator', () => {
     const states: DesktopUpdateState[] = []
     const downloadUpdate = vi.fn(async () => [])
     const quitAndInstall = vi.fn()
-    const beforeRestart = vi.fn(async () => {})
+    const beforeRestart = vi.fn(async () => undefined)
     const updater = {
       autoDownload: true,
       autoInstallOnAppQuit: true,
+      on: vi.fn(),
+      removeListener: vi.fn(),
       checkForUpdates: vi.fn(async () => ({
         isUpdateAvailable: true,
         updateInfo: { version: '1.1.0' },
@@ -75,6 +77,81 @@ describe('desktop update coordinator', () => {
     expect(states.map(state => state.phase)).toEqual(['checking', 'available', 'installing', 'ready'])
   })
 
+  it('surfaces a failed install and undoes the prepared restart', async () => {
+    const states: DesktopUpdateState[] = []
+    let errorHandler: ((error: Error) => void) | undefined
+    const undoRestart = vi.fn(async () => {})
+    const updater = {
+      autoDownload: true,
+      autoInstallOnAppQuit: true,
+      on: vi.fn((event: string, listener: (error: Error) => void) => {
+        if (event === 'error') errorHandler = listener
+      }),
+      removeListener: vi.fn((event: string) => {
+        if (event === 'error') errorHandler = undefined
+      }),
+      checkForUpdates: vi.fn(async () => ({
+        isUpdateAvailable: true,
+        updateInfo: { version: '1.1.0' },
+      })),
+      downloadUpdate: vi.fn(async () => []),
+      quitAndInstall: vi.fn(() => { errorHandler?.(new Error('pkexec: no authentication agent found')) }),
+    } as unknown as AppUpdater
+    const coordinator = new DesktopUpdateCoordinator(
+      (state) => {
+        states.push(state)
+        return state
+      },
+      async () => undoRestart,
+      updater,
+      () => true,
+    )
+
+    await expect(coordinator.check()).resolves.toEqual({ phase: 'available', version: '1.1.0' })
+    await expect(coordinator.install()).resolves.toEqual({
+      phase: 'error',
+      version: '1.1.0',
+      message: 'pkexec: no authentication agent found',
+    })
+    expect(undoRestart).toHaveBeenCalledOnce()
+    expect(states.map(state => state.phase)).toEqual(['checking', 'available', 'installing', 'error'])
+  })
+
+  it('publishes an error and skips install when the before-restart stop fails', async () => {
+    const states: DesktopUpdateState[] = []
+    const quitAndInstall = vi.fn()
+    const updater = {
+      autoDownload: true,
+      autoInstallOnAppQuit: true,
+      on: vi.fn(),
+      removeListener: vi.fn(),
+      checkForUpdates: vi.fn(async () => ({
+        isUpdateAvailable: true,
+        updateInfo: { version: '1.1.0' },
+      })),
+      downloadUpdate: vi.fn(async () => []),
+      quitAndInstall,
+    } as unknown as AppUpdater
+    const coordinator = new DesktopUpdateCoordinator(
+      (state) => {
+        states.push(state)
+        return state
+      },
+      async () => { throw new Error('backend stop failed') },
+      updater,
+      () => true,
+    )
+
+    await expect(coordinator.check()).resolves.toEqual({ phase: 'available', version: '1.1.0' })
+    await expect(coordinator.install()).resolves.toEqual({
+      phase: 'error',
+      version: '1.1.0',
+      message: 'backend stop failed',
+    })
+    expect(quitAndInstall).not.toHaveBeenCalled()
+    expect(states.map(state => state.phase)).toEqual(['checking', 'available', 'installing', 'error'])
+  })
+
   it('queues install behind an in-flight check instead of returning the check result', async () => {
     const checked = Promise.withResolvers<{
       isUpdateAvailable: true
@@ -84,6 +161,8 @@ describe('desktop update coordinator', () => {
     const updater = {
       autoDownload: true,
       autoInstallOnAppQuit: true,
+      on: vi.fn(),
+      removeListener: vi.fn(),
       checkForUpdates: vi.fn(() => checked.promise),
       downloadUpdate,
       quitAndInstall: vi.fn(),
