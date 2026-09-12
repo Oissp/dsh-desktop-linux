@@ -40,6 +40,9 @@ export function createElectronBuilderConfig(
       { from: buildPaths.dsh, to: 'dsh' },
       // electron-builder excludes a source directory's root node_modules.
       { from: join(buildPaths.dsh, 'node_modules'), to: 'dsh/node_modules' },
+      // 运行期窗口/托盘图标（app icon 本身由 electron-builder 从 build/icon.png 自动识别）。
+      { from: 'build/icon.png', to: 'icon.png' },
+      { from: 'build/tray.png', to: 'tray.png' },
     ],
     afterPack: async context => {
       const { verifyDesktopRuntime } = await import('./lib/types/runtime-tree.js')
@@ -51,6 +54,7 @@ export function createElectronBuilderConfig(
       // scoped 包名 @deepseek-ai/dsh-desktop 会被 electron-builder 算成非法的
       // @deepseek-aidsh-desktop（含 @/ 分隔符），必须显式给安全的可执行名。
       executableName: 'deepseek-harness-desktop',
+      icon: 'build/icon.png',
       target: ['deb', 'AppImage'],
     },
     deb: {

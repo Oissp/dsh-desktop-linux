@@ -10,6 +10,7 @@ import {
   ipcMain,
   Menu,
   protocol,
+  Tray,
   type IpcMainInvokeEvent,
 } from 'electron'
 import { resolveDesktopPaths } from './paths.ts'
@@ -25,6 +26,8 @@ import { startupFailureDocument } from './startup-document.ts'
 
 const SCHEME = 'dsh-app'
 let focusPrimaryWindow = (): void => {}
+// 模块级引用防止 Tray 被 GC 后托盘消失；仅打包的 Linux 构建创建。
+let tray: Tray | undefined = undefined
 type RecoveryAction = 'restart' | 'plugins' | 'reset'
 let profileRecoveryAvailable = (): boolean => false
 const emergencyPages = new WeakMap<BrowserWindow, { url: string; message: string; busy: boolean }>()
@@ -94,6 +97,8 @@ function createWindow(preload: string, show = false): BrowserWindow {
     minWidth: 880,
     minHeight: 600,
     show,
+    // Linux 窗口/任务栏图标用随包携带的品牌图标（macOS 由 bundle 决定，忽略此项）。
+    icon: app.isPackaged ? join(process.resourcesPath, 'icon.png') : undefined,
     webPreferences: {
       preload,
       nodeIntegration: false,
@@ -452,6 +457,14 @@ async function main(): Promise<void> {
   const createMainWindow = (): BrowserWindow => {
     const window = createWindow(appPreload, true)
     mainWindow = window
+    window.on('close', (event) => {
+      // 打包的 Linux 版本关窗只隐藏到托盘（托盘菜单里有 Quit 走正常退出路径）；
+      // 开发模式或 macOS 维持原行为。
+      if (app.isPackaged && process.platform === 'linux' && !quitting) {
+        event.preventDefault()
+        window.hide()
+      }
+    })
     window.on('closed', () => { if (mainWindow === window) mainWindow = undefined })
     window.webContents.on('preload-error', (_event, _path, error) => {
       void showEmergencyError(error).catch((failure: unknown) => { console.error(failure) })
@@ -475,6 +488,26 @@ async function main(): Promise<void> {
     if (window.isMinimized()) window.restore()
     window.show()
     window.focus()
+  }
+
+  if (app.isPackaged && process.platform === 'linux') {
+    tray = new Tray(join(process.resourcesPath, 'tray.png'))
+    tray.setToolTip(app.name)
+    // 托盘菜单镜像顶部 Application 菜单：插件、检查更新、退出，另加“显示主窗口”
+    // 作为关窗隐藏后的恢复入口。
+    tray.setContextMenu(Menu.buildFromTemplate([
+      { label: messages.showWindow, click: focusPrimaryWindow },
+      { type: 'separator' },
+      {
+        label: development === undefined ? messages.pluginsMenu : messages.pluginsMenuPackagedOnly,
+        enabled: development === undefined,
+        click: openPluginWindow,
+      },
+      { label: messages.checkUpdatesMenu, click: () => { void checkAndPrompt(true) } },
+      { type: 'separator' },
+      { role: 'quit' },
+    ]))
+    tray.on('click', focusPrimaryWindow)
   }
 
   app.on('activate', () => {
