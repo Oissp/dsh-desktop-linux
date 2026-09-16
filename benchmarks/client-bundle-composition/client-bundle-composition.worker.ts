@@ -62,7 +62,7 @@ async function compose(root: string, names: readonly string[]): Promise<{
   const composeMs = performance.now() - started
   let batchScriptBytes = 0
   for (const batch of graph.batches) {
-    const response = registry.fetchBundle(new Request(`http://dsh.invalid${batch.url}`))
+    const response = await registry.fetchBundle(new Request(`http://dsh.invalid${batch.url}`))
     if (response.status !== 200) throw new Error(`batch ${batch.url} was not served`)
     batchScriptBytes += (await response.bytes()).byteLength
   }

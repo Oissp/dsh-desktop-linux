@@ -2,6 +2,8 @@
 
 Status: implemented
 
+> 在组合路径上被 [同步上游 0.1.6-alpha.1](../process/2026-09-15-sync-upstream-0.1.6-alpha.1-adopt-asar-runtime-and-lazy-combo.zh.md) 部分取代：上游的延迟组合装配（`perf(web): defer client combo assembly`，`42286726c8`）提供了维护中的等价方案，故本 fork 的 encode-once 优化已退役。本 Note 作为调查记录保留，不再是 `buildCombo` 的现行权威。
+
 [English](2026-09-12-client-bundle-composition-encode-once.md) | 中文
 
 ## 问题

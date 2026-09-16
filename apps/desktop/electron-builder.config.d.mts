@@ -4,16 +4,27 @@ export interface DesktopElectronBuilderConfig {
   readonly directories: {
     readonly output: string
   }
+  readonly files: readonly [
+    string,
+    string,
+    string,
+    string,
+    { readonly from: string, readonly to: 'dsh', readonly filter: readonly ['**/*'] },
+    { readonly from: string, readonly to: 'dsh/node_modules', readonly filter: readonly ['**/*'] },
+  ]
+  readonly asarUnpack: readonly string[]
   readonly extraResources: readonly [
     { readonly from: string, readonly to: 'runtime' },
-    { readonly from: string, readonly to: 'dsh' },
-    { readonly from: string, readonly to: 'dsh/node_modules' },
+    { readonly from: string, readonly to: 'icon-dark.png' },
+    { readonly from: string, readonly to: 'tray-dark.png' },
+    { readonly from: string, readonly to: 'icon-white.png' },
+    { readonly from: string, readonly to: 'tray-white.png' },
   ]
   readonly linux: {
     readonly category: string
     readonly target: readonly string[]
   }
-  readonly publish: readonly [{ readonly provider: 'generic', readonly url: string }]
+  readonly publish: readonly [{ readonly provider: 'github', readonly owner: string, readonly repo: string }]
 }
 
 /**

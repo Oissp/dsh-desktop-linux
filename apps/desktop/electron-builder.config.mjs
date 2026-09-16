@@ -17,9 +17,6 @@ export function createElectronBuilderConfig(
   hostArch = process.arch,
 ) {
   const appId = resolveDesktopAppId(env)
-  const targetPlatform = env.DSH_DESKTOP_TARGET_PLATFORM
-  const resolvedPlatform = targetPlatform ?? hostPlatform
-  const resolvedArch = env.DSH_DESKTOP_TARGET_ARCH ?? hostArch
   const buildPaths = desktopTargetBuildPaths(resolveDesktopBuildTarget(env, hostPlatform, hostArch))
   return {
     appId,
@@ -34,24 +31,26 @@ export function createElectronBuilderConfig(
       'lib/*.cjs',
       'renderer/**/*',
       'package.json',
+      { from: buildPaths.dsh, to: 'dsh', filter: ['**/*'] },
+      // electron-builder excludes a source directory's root node_modules.
+      { from: join(buildPaths.dsh, 'node_modules'), to: 'dsh/node_modules', filter: ['**/*'] },
+    ],
+    asarUnpack: [
+      '**/*.{node,dylib,dll,so,exe}',
+      '**/*.so.*',
+      '**/spawn-helper',
+      '**/@vscode/ripgrep/bin/rg',
     ],
     extraResources: [
       { from: buildPaths.runtime, to: 'runtime' },
-      { from: buildPaths.dsh, to: 'dsh' },
-      // electron-builder excludes a source directory's root node_modules.
-      { from: join(buildPaths.dsh, 'node_modules'), to: 'dsh/node_modules' },
       // 运行期窗口/托盘图标：浅色/深色外观各一对（app icon 本身由 electron-builder
-      // 从 build/icon.png 自动识别，不随外观切换）。
+      // 从 build/icon.png 自动识别，不随外观切换）。dsh 运行时树不再放 extraResources：
+      // 随 asar 打包（files 内的 dsh 映射），宿主以 ELECTRON_RUN_AS_NODE 运行。
       { from: 'build/icon-dark.png', to: 'icon-dark.png' },
       { from: 'build/tray-dark.png', to: 'tray-dark.png' },
       { from: 'build/icon-white.png', to: 'icon-white.png' },
       { from: 'build/tray-white.png', to: 'tray-white.png' },
     ],
-    afterPack: async context => {
-      const { verifyDesktopRuntime } = await import('./lib/types/runtime-tree.js')
-      await verifyDesktopRuntime(join(context.packager.getResourcesDir(context.appOutDir), 'dsh'),
-        context.packager.appInfo.version, { platform: resolvedPlatform, arch: resolvedArch })
-    },
     linux: {
       category: 'Development',
       // scoped 包名 @deepseek-ai/dsh-desktop 会被 electron-builder 算成非法的
