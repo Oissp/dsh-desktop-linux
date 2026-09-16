@@ -1,0 +1,54 @@
+# Linux 裁剪清单：本 fork 有意不运行、不携带的上游文件。
+# sync-upstream.yml 读取本清单（忽略 # 注释行）：
+#   1. 合并冲突落在清单内的路径时，按「保留裁剪」自动解决（fork 侧为准），不再开 issue；
+#   2. 合并完成后删除清单内被上游重新带回或新增的文件——上游恢复/新增这些文件时
+#      合并不冲突，会直接进入 fork 代码树，必须在合并提交前移除。
+# 清单外冲突仍中止合并并开 issue 交人工处理。
+# 注意：fork 自有文件（package-deb.yml、sync-upstream.yml、托盘/外观等）不在清单内，
+# 上游没有同名文件，永远不会被本清单误删。
+
+# 上游 CI/发布 workflow：fork 仅运行自己的 package-deb.yml 与 sync-upstream.yml，
+# 无法承载 macOS/Windows 签名、云端预览、Python SDK 等流程。
+.github/workflows/build-exe-for-python-sdk.yml
+.github/workflows/build-preview-cloudflare.yml
+.github/workflows/ci-master.yml
+.github/workflows/ci.yml
+.github/workflows/docs-pages.yml
+.github/workflows/e2e.yml
+.github/workflows/expected-filenames.yml
+.github/workflows/issue-lifecycle.yml
+.github/workflows/issue-policy.yml
+.github/workflows/node-addon-system-release.yml
+.github/workflows/node-addon-system.yml
+.github/workflows/pi-ai-provider-e2e.yml
+.github/workflows/python-release.yml
+.github/workflows/release-publish.yml
+.github/workflows/release-vendor-publish.yml
+.github/workflows/release-vendor.yml
+.github/workflows/release.yml
+.github/workflows/sandbox.yml
+.github/workflows/weighted-approval-review-event.yml
+.github/workflows/weighted-approval.yml
+
+# 桌面端 macOS/Windows 签名、公证与打包脚本（Linux-only fork 不携带）。
+apps/desktop/scripts/installer.nsh
+apps/desktop/scripts/macos-runtime.ts
+apps/desktop/scripts/notarize-macos-disk-images.d.mts
+apps/desktop/scripts/notarize-macos-disk-images.mjs
+apps/desktop/scripts/package-macos.ts
+apps/desktop/scripts/smoke-windows.ps1
+apps/desktop/scripts/verify-macos-signature.d.mts
+apps/desktop/scripts/verify-macos-signature.mjs
+apps/desktop/scripts/windows-sign.cmd
+apps/desktop/scripts/windows-sign.d.mts
+apps/desktop/scripts/windows-sign.mjs
+
+# 对应的 macOS/Windows 桌面测试与夹具：package-deb 的桌面测试门槛会收集
+# apps/desktop/tests 全部 spec，带入即失败。
+apps/desktop/tests/macos-notarized-application.spec.ts
+apps/desktop/tests/macos-runtime.spec.ts
+apps/desktop/tests/macos-signature.spec.ts
+apps/desktop/tests/macos-signing-walk.spec.ts
+apps/desktop/tests/package-macos.spec.ts
+apps/desktop/tests/windows-sign.spec.ts
+apps/desktop/tests/fixtures/installer-cleanup-smoke.nsi

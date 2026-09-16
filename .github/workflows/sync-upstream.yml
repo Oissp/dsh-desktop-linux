@@ -3,7 +3,10 @@ name: Sync upstream deepseek-harness
 # 跟随官方上游：把 deepseek-ai/deepseek-harness master 合并进本分支。
 # 仅当上游根 package.json 版本语义化严格大于当前版本时合并并推送（保持发版节奏与官方对齐，
 # 避免把上游未发版的中间提交/回退批量带入）；需要手动跟随非版本变更时可用 force 强制合并。
-# 合并冲突时中止合并并开 issue 通知人工处理（linux 裁剪过的文件可能与上游改动冲突）。
+# 合并冲突分两类（清单见 .github/sync-trimmed-paths.txt）：
+#   - 清单内（fork 有意裁剪的上游文件）：自动按「保留裁剪」解决，合并后还会删除上游
+#     重新带回/新增的清单内文件，全程无需人工；
+#   - 清单外：中止合并并开 issue 通知人工处理。
 #
 # 推送 main 会自然触发 package-deb.yml（push + paths: package.json）→ 版本变更即打包发版。
 
@@ -92,29 +95,45 @@ jobs:
           UPSTREAM_HEAD=$(git rev-parse --short upstream/master)
           echo "上游 HEAD: $UPSTREAM_HEAD"
           echo "合并 ${{ steps.compare.outputs.target }} (upstream/master @ $UPSTREAM_HEAD) → 当前分支"
-          if git merge upstream/master --no-edit; then
-            echo "merge_ok=true" >> "$GITHUB_OUTPUT"
-            echo "合并成功，推送 main"
-            git push origin main
-            {
-              echo "## 上游同步完成"
-              echo "- 上游版本: \`${{ steps.compare.outputs.target }}\`"
-              echo "- 上游 HEAD: \`$UPSTREAM_HEAD\`"
-              echo "- 变更文件: \`$(git diff --name-only HEAD~1 HEAD | wc -l | tr -d ' ')\`"
-            } >> "$GITHUB_STEP_SUMMARY"
-          else
-            echo "::error::与上游存在合并冲突"
-            echo "merge_ok=false" >> "$GITHUB_OUTPUT"
-            CONFLICTS=$(git diff --name-only --diff-filter=U)
+
+          MERGE_OK=true
+          git merge upstream/master --no-edit || MERGE_OK=false
+
+          TRIM_LIST=.github/sync-trimmed-paths.txt
+          # 冲突落在裁剪清单内 → 保留 fork 裁剪结果：fork 侧存在该文件则取 ours，
+          # fork 侧已删除则 git rm（上游改动/上游新增对已删文件的 modify/delete 冲突）。
+          resolve_trimmed() {
+            if git cat-file -e "HEAD:$1" 2>/dev/null; then
+              git checkout --ours -- "$1" && git add -- "$1"
+            else
+              git rm -q -- "$1"
+            fi
+          }
+
+          UNRESOLVED=""
+          if [ "$MERGE_OK" = "false" ]; then
+            while IFS= read -r file; do
+              [ -n "$file" ] || continue
+              if grep -v '^#' "$TRIM_LIST" | grep -Fxq -- "$file"; then
+                echo "冲突在裁剪清单内，保留裁剪: $file"
+                resolve_trimmed "$file"
+              else
+                UNRESOLVED="$UNRESOLVED$file"$'\n'
+              fi
+            done < <(git diff --name-only --diff-filter=U)
+          fi
+
+          if [ -n "$UNRESOLVED" ]; then
+            echo "::error::与上游存在裁剪清单外的合并冲突"
             echo "冲突文件:"
-            echo "$CONFLICTS"
+            printf '%s' "$UNRESOLVED"
             BODY_FILE="$RUNNER_TEMP/sync-conflict-body.md"
             {
               echo "上游同步失败：${{ steps.compare.outputs.target }} 与当前分支存在合并冲突。"
               echo ""
-              echo "冲突文件："
+              echo "裁剪清单内的冲突已自动按「保留裁剪」解决，以下为需要人工判断的冲突文件："
               echo '```'
-              echo "$CONFLICTS"
+              printf '%s' "$UNRESOLVED"
               echo '```'
               echo ""
               echo "需要人工解决：保留 linux 裁剪结果，或按需接受上游改动。解决后可在 Actions 手动重跑本 workflow（force=true）。"
@@ -127,6 +146,37 @@ jobs:
               || echo "::warning::开 issue 失败"
             exit 1
           fi
+
+          # 合并后强制裁剪：上游恢复或新增清单内文件时合并不冲突，会直接进入代码树，
+          # 必须在合并提交落盘前移除。干净合并时把删除折入合并提交（amend 保留双亲）。
+          TRIMMED=""
+          for file in $(grep -v '^#' "$TRIM_LIST"); do
+            if [ -e "$file" ]; then
+              git rm -rq -- "$file"
+              TRIMMED="$TRIMMED $file"
+            fi
+          done
+
+          if [ "$MERGE_OK" = "false" ] || [ -n "$TRIMMED" ]; then
+            if [ "$MERGE_OK" = "true" ]; then
+              git commit --amend --no-edit
+            else
+              git commit --no-edit
+            fi
+          fi
+
+          echo "merge_ok=true" >> "$GITHUB_OUTPUT"
+          echo "合并成功，推送 main"
+          git push origin main
+          {
+            echo "## 上游同步完成"
+            echo "- 上游版本: \`${{ steps.compare.outputs.target }}\`"
+            echo "- 上游 HEAD: \`$UPSTREAM_HEAD\`"
+            echo "- 变更文件: \`$(git diff --name-only HEAD~1 HEAD | wc -l | tr -d ' ')\`"
+            if [ -n "$TRIMMED" ]; then
+              echo "- 按裁剪清单移除: \`$TRIMMED\`"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Skipped (no upstream change)
         if: steps.compare.outputs.changed != 'true'
