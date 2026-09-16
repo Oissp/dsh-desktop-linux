@@ -3,6 +3,7 @@
 import { spawn, execFile } from 'node:child_process'
 import { copyFileSync, cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
+import { createRequire } from 'node:module'
 import { delimiter, dirname, join, relative, resolve } from 'node:path'
 import { createRuntimeProjectMetadata } from '../src/project-manager.ts'
 import { DESKTOP_HOST_PROTOCOL_VERSION } from '../src/host-protocol.ts'
@@ -17,6 +18,11 @@ import {
   verifyDesktopCoreLockfile,
 } from '../src/core-package-set.ts'
 import { smokeDesktopRuntime } from './smoke-runtime.ts'
+import {
+  patchNativeElectronFingerprint,
+  readElectronRuntimeFingerprint,
+  verifyNativeElectronFingerprint,
+} from './native-electron-fingerprint.ts'
 import { writeDesktopRuntime, verifyDesktopRuntime } from '../src/runtime-tree.ts'
 import { resolveDesktopBuildTarget, resolveDesktopTargetBuildPaths } from './desktop-build-paths.mjs'
 import { desktopRuntimeFileExclusion } from './runtime-file-policy.ts'
@@ -38,8 +44,19 @@ function manifestVersion(path: string, subject: string): string {
   return manifest.version
 }
 
-function desktopRelease(): DesktopRelease {
-  const desktopVersion = manifestVersion(join(APP_ROOT, 'package.json'), 'desktop package')
+/**
+ * Resolve the shell's Electron executable for runtime fingerprint probing and
+ * native-load verification. Electron downloads its binary on first require.
+ * @returns Path to the Electron executable the packaged shell runs on.
+ */
+function resolveElectronExecutable(): string {
+  const require = createRequire(join(APP_ROOT, 'package.json'))
+  const executable: unknown = require('electron')
+  if (typeof executable !== 'string') throw new Error('desktop runtime: the electron executable is unavailable')
+  return executable
+}
+
+function desktopRelease(): DesktopRelease {  const desktopVersion = manifestVersion(join(APP_ROOT, 'package.json'), 'desktop package')
   const dshVersion = manifestVersion(resolve(APP_ROOT, '..', '..', 'package.json'), 'root dsh package')
   if (!shellVersionExtendsEngine(desktopVersion, dshVersion)) {
     throw new Error(`desktop runtime: Electron ${desktopVersion} must bind @deepseek-ai/dsh ${dshVersion} or a ${dshVersion}.N extension`)
@@ -120,6 +137,16 @@ async function main(): Promise<void> {
       recursive: true, dereference: true,
       filter: source => desktopRuntimeFileExclusion(relative(modules, source), target) === undefined,
     })
+    // 打包的 Electron 构建可能在同一 Electron 大版本内带入 Node.js/V8 补丁更新，而内置的
+    // node-addon-require-builtin 按 (Node 三元组, V8 字符串) 精确匹配 Electron profile 表，
+    // 不改写就会在启动时拒绝加载（host preparation failed）。改写后必须在实际的 Electron
+    // 二进制下实测加载，作为打包验收门槛。
+    const electronExecutable = resolveElectronExecutable()
+    const fingerprint = readElectronRuntimeFingerprint(electronExecutable)
+    for (const binary of patchNativeElectronFingerprint(DSH_OUTPUT_ROOT, fingerprint)) {
+      console.log(`desktop runtime: rewrote the Electron fingerprint profile in ${relative(APP_ROOT, binary)}`)
+    }
+    verifyNativeElectronFingerprint(DSH_OUTPUT_ROOT, electronExecutable)
     writeFileSync(join(DSH_OUTPUT_ROOT, 'package.json'), `${JSON.stringify({
       name: '@deepseek-ai/dsh-desktop-runtime', private: true, version: release.version, type: 'module',
       dependencies: Object.fromEntries(packageSet.packages.map(entry => [entry.name, entry.version])),
