@@ -2,7 +2,7 @@
 
 Status: implemented
 
-> Partially superseded for the composition path by [Sync upstream 0.1.6-alpha.1](../process/2026-09-15-sync-upstream-0.1.6-alpha.1-adopt-asar-runtime-and-lazy-combo.md): upstream's deferred combo assembly (`perf(web): defer client combo assembly`, `42286726c8`) ships a maintained equivalent, so this fork's encode-once optimization is retired. This note stays as the investigation record and is not current authority for `buildCombo`.
+> Partially superseded for the composition path by [Sync upstream 0.1.6-alpha.1](../process/2026-09-15-sync-upstream-0.1.6-alpha.1-adopt-asar-runtime-and-lazy-combo.md): upstream's deferred combo assembly (`perf(web): defer client combo assembly`) ships a maintained equivalent, so this fork's encode-once optimization is retired. This note stays as the investigation record and is not current authority for `buildCombo`.
 
 English | [中文](2026-09-12-client-bundle-composition-encode-once.zh.md)
 

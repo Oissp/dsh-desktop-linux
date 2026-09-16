@@ -26,4 +26,4 @@ Release notes were generated with `git log "$(git describe --tags --abbrev=0)"..
 
 ## Consequences
 
-A pure version bump now restores the engine cache and skips the `prepare:*` engine phase (≈345s), which was the goal of the cache. Release notes contain only commits since the previous desktop release instead of the full history since the engine tag. The release-repo tags still all point at the same commit — inherent to `gh release create` tagging the immutable `main` HEAD of an assets-only repo, and harmless for `electron-updater`; making tags carry source provenance would require a separate marker-commit design.
+A pure version bump now restores the engine cache and skips the `prepare:*` engine phase (≈345s), which was the goal of the cache. Release notes contain only commits since the previous desktop release instead of the full history since the engine tag. The release-repo tags still all point at the same commit — inherent to `gh release create` tagging the immutable `main` HEAD of an assets-only repo, and harmless for `electron-updater`; making tags carry source history would require a separate marker-commit design.

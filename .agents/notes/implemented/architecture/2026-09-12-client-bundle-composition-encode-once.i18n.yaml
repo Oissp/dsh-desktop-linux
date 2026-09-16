@@ -2,5 +2,5 @@
 # side as of the last confirmed-consistent state. Both languages carry equal authority;
 # after editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-09-12-client-bundle-composition-encode-once.md
-2026-09-12-client-bundle-composition-encode-once.md: 180ec75e7e70038cf05f846d01233e7d00bde844
-2026-09-12-client-bundle-composition-encode-once.zh.md: 2abd558c2f6b0e4d9875c51927eecd83519d57c3
+2026-09-12-client-bundle-composition-encode-once.md: b190d88913b91cfd4aa4eb4a8f781c57c33f6106
+2026-09-12-client-bundle-composition-encode-once.zh.md: d0f270f97a175fae195c9b3f229ca59d5ed44373
