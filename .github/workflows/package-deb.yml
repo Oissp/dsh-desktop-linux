@@ -121,11 +121,14 @@ jobs:
         # pnpm install 与 prepare:* 会往里写东西），同一次 run 的 restore/save 甚至都算出不同 key。
         # 改用 git 只对已跟踪源码做排序内容哈希：未跟踪产物天然排除，纯版本 bump
         # （apps/desktop/package.json 不在列）命中缓存；依赖版本变化仍由 pnpm-lock.yaml 捕获。
+        # apps/cli 与 apps/web 不是壳代码，而是随 dsh/ 一起进包的引擎负载：
+        # 前者即 @deepseek-ai/dsh，后者是被 dsh-web-app 依赖的 @deepseek-ai/dsh-web-frontend。
         run: |
           KEY=$(git ls-files -- \
             package.json pnpm-lock.yaml pnpm-workspace.yaml \
             'tsconfig*.json' 'scripts/**' 'packages/**' 'vendor/**' 'native/**' \
-            'apps/desktop-host/**' 'apps/desktop/src/**' 'apps/desktop/renderer/**' \
+            'apps/cli/**' 'apps/web/**' 'apps/desktop-host/**' \
+            'apps/desktop/src/**' 'apps/desktop/renderer/**' \
             'apps/desktop/scripts/**' apps/desktop/electron-builder.config.mjs \
             apps/desktop/tsdown.config.ts apps/desktop/tsconfig.json \
             | git hash-object --stdin-paths \
