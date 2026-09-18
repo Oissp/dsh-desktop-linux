@@ -115,49 +115,8 @@ jobs:
       - name: Run desktop packaging tests
         run: pnpm exec vitest run apps/desktop/tests
 
-      - name: Compute engine cache key
-        id: engine-key
-        # GitHub 的 hashFiles() 会遍历工作区里 node_modules 与构建产物（packages/** 等 glob 覆盖得到，
-        # pnpm install 与 prepare:* 会往里写东西），同一次 run 的 restore/save 甚至都算出不同 key。
-        # 改用 git 只对已跟踪源码做排序内容哈希：未跟踪产物天然排除，纯版本 bump
-        # （apps/desktop/package.json 不在列）命中缓存；依赖版本变化仍由 pnpm-lock.yaml 捕获。
-        # apps/cli 与 apps/web 不是壳代码，而是随 dsh/ 一起进包的引擎负载：
-        # 前者即 @deepseek-ai/dsh，后者是被 dsh-web-app 依赖的 @deepseek-ai/dsh-web-frontend。
-        run: |
-          KEY=$(git ls-files -- \
-            package.json pnpm-lock.yaml pnpm-workspace.yaml \
-            'tsconfig*.json' 'scripts/**' 'packages/**' 'vendor/**' 'native/**' \
-            'apps/cli/**' 'apps/web/**' 'apps/desktop-host/**' \
-            'apps/desktop/src/**' 'apps/desktop/renderer/**' \
-            'apps/desktop/scripts/**' apps/desktop/electron-builder.config.mjs \
-            apps/desktop/tsdown.config.ts apps/desktop/tsconfig.json \
-            | git hash-object --stdin-paths \
-            | git hash-object --stdin)
-          echo "key=${{ runner.os }}-dsh-engine-$KEY" >> "$GITHUB_OUTPUT"
-
-      - name: Restore engine build cache
-        id: engine-cache
-        uses: actions/cache/restore@v6
-        with:
-          path: |
-            apps/desktop/lib
-            apps/desktop/.desktop-build/targets/linux-x64/runtime
-            apps/desktop/.desktop-build/targets/linux-x64/dsh
-          key: ${{ steps.engine-key.outputs.key }}
-
-      - name: Prepare engine + runtime (linux x64)
-        if: steps.engine-cache.outputs.cache-hit != 'true'
-        run: pnpm run prepare:desktop:linux:x64
-
-      - name: Save engine build cache
-        if: steps.engine-cache.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v6
-        with:
-          path: |
-            apps/desktop/lib
-            apps/desktop/.desktop-build/targets/linux-x64/runtime
-            apps/desktop/.desktop-build/targets/linux-x64/dsh
-          key: ${{ steps.engine-key.outputs.key }}
+      - name: Prepare engine + runtime (cached)
+        uses: ./.github/actions/prepare-desktop-engine
 
       - name: Package .deb + AppImage (linux x64)
         run: |

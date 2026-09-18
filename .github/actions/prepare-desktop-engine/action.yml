@@ -1,0 +1,54 @@
+name: Prepare desktop engine
+description: Restore, build, and save the cached dsh engine and Electron runtime for linux-x64.
+
+# 缓存 key 只哈希已跟踪源码：git ls-files 排序输出，且天然排除 pnpm install 与 prepare:*
+# 写入的 node_modules、构建产物，所以同一次 run 的 restore 与 save 才会算出同一个 key。
+# 纯壳版本 bump（apps/desktop/package.json 不在 pathspec 内）命中缓存；依赖变化由
+# pnpm-lock.yaml 捕获。
+#
+# pathspec 必须覆盖每一份随 dsh/ 进包的源码，否则该处的改动不会让缓存失效，
+# --builder-only 会复用旧产物。apps/cli 即 @deepseek-ai/dsh，apps/web 是被
+# dsh-web-app 依赖的 @deepseek-ai/dsh-web-frontend，两者都不是壳代码。
+
+runs:
+  using: composite
+  steps:
+    - name: Compute engine cache key
+      id: engine-key
+      shell: bash
+      run: |
+        KEY=$(git ls-files -- \
+          package.json pnpm-lock.yaml pnpm-workspace.yaml \
+          'tsconfig*.json' 'scripts/**' 'packages/**' 'vendor/**' 'native/**' \
+          'apps/cli/**' 'apps/web/**' 'apps/desktop-host/**' \
+          'apps/desktop/src/**' 'apps/desktop/renderer/**' \
+          'apps/desktop/scripts/**' apps/desktop/electron-builder.config.mjs \
+          apps/desktop/tsdown.config.ts apps/desktop/tsconfig.json \
+          | git hash-object --stdin-paths \
+          | git hash-object --stdin)
+        echo "key=${{ runner.os }}-dsh-engine-$KEY" >> "$GITHUB_OUTPUT"
+
+    - name: Restore engine build cache
+      id: engine-cache
+      uses: actions/cache/restore@v6
+      with:
+        path: |
+          apps/desktop/lib
+          apps/desktop/.desktop-build/targets/linux-x64/runtime
+          apps/desktop/.desktop-build/targets/linux-x64/dsh
+        key: ${{ steps.engine-key.outputs.key }}
+
+    - name: Prepare engine + runtime (linux x64)
+      if: steps.engine-cache.outputs.cache-hit != 'true'
+      shell: bash
+      run: pnpm run prepare:desktop:linux:x64
+
+    - name: Save engine build cache
+      if: steps.engine-cache.outputs.cache-hit != 'true'
+      uses: actions/cache/save@v6
+      with:
+        path: |
+          apps/desktop/lib
+          apps/desktop/.desktop-build/targets/linux-x64/runtime
+          apps/desktop/.desktop-build/targets/linux-x64/dsh
+        key: ${{ steps.engine-key.outputs.key }}
