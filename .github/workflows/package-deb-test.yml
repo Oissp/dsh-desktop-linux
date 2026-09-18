@@ -1,0 +1,122 @@
+name: Package test (deb only)
+
+# 提交级打包冒烟：推送到 main 的提交、指向 main 的 PR、以及手动触发都会跑一遍
+# 桌面打包测试，并只构建 .deb —— 不构建 AppImage、不生成更新频道元数据、不发布 Release。
+# 发版仍由 package-deb.yml 负责。
+#
+# 两个 workflow 共用 ./.github/actions/prepare-desktop-engine，因此共享同一份引擎缓存：
+# 同一提交在冒烟里构建过一次，发版时直接命中。
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# 冒烟可以随时取消：新提交进来时旧的构建没有保留价值。
+concurrency:
+  group: package-deb-test-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DSH_DESKTOP_APP_ID: ${{ secrets.DSH_DESKTOP_APP_ID || 'com.deepseek.harness.desktop' }}
+  # package-target.ts 的 writeReleaseRecord 在 test 环境要求 DOWNLOAD_TEST_ORIGIN；这里只写入
+  # 本地 ${target}-release.json 记录，不发布任何东西。
+  DOWNLOAD_TEST_ORIGIN: ${{ secrets.DOWNLOAD_TEST_ORIGIN || 'https://desktop-updates.example.com' }}
+  # 只构建 .deb。AppImage 是发版用的 electron-updater 负载，冒烟不需要。
+  DSH_DESKTOP_LINUX_FORMATS: deb
+  PNPM_NODE_LINKER: hoisted
+
+jobs:
+  deb:
+    name: Build .deb only (linux x64)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          package-manager-cache: false
+
+      - name: Enable Corepack & pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@11.7.0 --activate
+          pnpm --version
+
+      - name: Resolve pnpm store path
+        id: pnpm-store
+        run: echo "dir=$(pnpm store path)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache pnpm store
+        uses: actions/cache@v6
+        with:
+          path: ${{ steps.pnpm-store.outputs.dir }}
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-
+
+      - name: Cache electron & electron-builder binaries
+        uses: actions/cache@v6
+        with:
+          path: |
+            ~/.cache/electron
+            ~/.cache/electron-builder
+          key: ${{ runner.os }}-eb-${{ hashFiles('apps/desktop/electron-builder.config.mjs') }}
+
+      - name: Install build prerequisites
+        run: |
+          sudo apt-get update -qq
+          # Ubuntu 24.04 将 libasound2 改名为 libasound2t64；按镜像可用性取其一。
+          (sudo apt-get install -y --no-install-recommends libasound2t64 || \
+           sudo apt-get install -y --no-install-recommends libasound2) >/dev/null 2>&1 || { echo "::error::libasound 安装失败"; exit 1; }
+          sudo apt-get install -y --no-install-recommends \
+            python3 make g++ fakeroot xz-utils file \
+            libnss3 libnspr4 libatk1.0-0 libatk-bridge2.0-0 libcups2 libdrm2 \
+            libxkbcommon0 libxcomposite1 libxdamage1 libxfixes3 libxrandr2 \
+            libgbm1 libpango-1.0-0 libcairo2 libgtk-3-0 \
+            xvfb xauth
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run desktop packaging tests
+        run: pnpm exec vitest run apps/desktop/tests
+
+      - name: Prepare engine + runtime (cached)
+        uses: ./.github/actions/prepare-desktop-engine
+
+      - name: Package .deb (linux x64)
+        run: |
+          # electron-builder 打包时会读到环境里的 GITHUB_TOKEN；本 workflow 不发布，
+          # 先摘掉它，避免任何凭据进入产物。
+          unset GITHUB_TOKEN
+          pnpm run package:desktop:linux:x64:builder
+
+      - name: Verify .deb
+        run: |
+          ART=apps/desktop/.desktop-build/targets/linux-x64/artifacts
+          VERSION=$(node -e "console.log(require('./apps/desktop/package.json').version)")
+          DEB="$ART/deepseek-harness-$VERSION-linux-x64.deb"
+          test -f "$DEB" || { echo "::error::缺少 .deb 产物: $DEB"; exit 1; }
+          if compgen -G "$ART/*.AppImage" > /dev/null; then
+            echo "::error::DSH_DESKTOP_LINUX_FORMATS=deb 却产出了 AppImage"
+            exit 1
+          fi
+          ls -lh "$ART/"
+          echo "--- deb control ---"
+          dpkg-deb -I "$DEB"
+          echo "--- deb 内容抽样 ---"
+          dpkg-deb -c "$DEB" | grep -E "icons/hicolor|/\.desktop" | head -12
+
+      - name: Upload .deb
+        uses: actions/upload-artifact@v7
+        with:
+          name: deb-only-smoke
+          path: apps/desktop/.desktop-build/targets/linux-x64/artifacts/*.deb
+          retention-days: 7
