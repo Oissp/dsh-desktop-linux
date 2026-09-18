@@ -4,7 +4,8 @@ import { spawn, execFile } from 'node:child_process'
 import { copyFileSync, cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { createRequire } from 'node:module'
-import { delimiter, dirname, join, relative, resolve } from 'node:path'
+import { dirname, join, relative, resolve } from 'node:path'
+import { desktopNodeEnvironment } from '../src/node-environment.ts'
 import { createRuntimeProjectMetadata } from '../src/project-manager.ts'
 import { DESKTOP_HOST_PROTOCOL_VERSION } from '../src/host-protocol.ts'
 import { shellVersionExtendsEngine } from '../src/release-version.ts'
@@ -26,6 +27,7 @@ import {
 import { writeDesktopRuntime, verifyDesktopRuntime } from '../src/runtime-tree.ts'
 import { resolveDesktopBuildTarget, resolveDesktopTargetBuildPaths } from './desktop-build-paths.mjs'
 import { desktopRuntimeFileExclusion } from './runtime-file-policy.ts'
+import { selectOfficeEngine } from '../../../scripts/libreoffice-engine.ts'
 
 const APP_ROOT = resolve(import.meta.dirname, '..')
 const BUILD_PATHS = resolveDesktopTargetBuildPaths()
@@ -35,7 +37,9 @@ const STORE_ROOT = join(BUILD_ROOT, 'store')
 const RUNTIME_ROOT = BUILD_PATHS.runtime
 const PNPM_BUILD_STATE = BUILD_PATHS.dshPnpm
 const PACKAGE_SET_ROOT = BUILD_PATHS.packageSet
-const NODE = join(RUNTIME_ROOT, 'node', process.platform === 'win32' ? 'node.exe' : 'node')
+// pnpm 与运行时负载冒烟一律跑在目标 Electron 的 Node 模式（ELECTRON_RUN_AS_NODE）下，
+// 与打包后宿主进程的启动方式一致；--expose-internals 是内置加载器的运行前提。
+const NODE = join(BUILD_PATHS.electron, process.platform === 'win32' ? 'electron.exe' : 'electron')
 const PNPM = join(RUNTIME_ROOT, 'pnpm', 'bin', 'pnpm.mjs')
 
 function manifestVersion(path: string, subject: string): string {
@@ -82,6 +86,7 @@ function runPnpm(args: readonly string[]): Promise<void> {
     mkdirSync(config, { recursive: true })
     writeFileSync(userConfig, '')
     const child = spawn(NODE, [
+      '--expose-internals',
       PNPM,
       '--config.registry=https://registry.npmjs.org/',
       `--config.store-dir=${STORE_ROOT}`,
@@ -91,18 +96,17 @@ function runPnpm(args: readonly string[]): Promise<void> {
       ...commandArgs,
     ], {
       cwd: BUILD_ROOT,
-      env: {
+      env: desktopNodeEnvironment(NODE, join(RUNTIME_ROOT, 'bin'), {
         ...Object.fromEntries(Object.entries(process.env).filter(([name]) => (
           name !== 'NODE_OPTIONS' && name !== 'NODE_PATH' && !/^DSH_DESKTOP_/u.test(name) && !/^(?:npm|pnpm|corepack)_/iu.test(name)
         ))),
         NPM_CONFIG_REGISTRY: 'https://registry.npmjs.org/',
         NPM_CONFIG_STORE_DIR: STORE_ROOT,
         NPM_CONFIG_USERCONFIG: userConfig,
-        PATH: `${dirname(NODE)}${delimiter}${process.env.PATH ?? ''}`,
         XDG_CACHE_HOME: join(PNPM_BUILD_STATE, 'cache'),
         XDG_CONFIG_HOME: config,
         XDG_STATE_HOME: join(PNPM_BUILD_STATE, 'state'),
-      },
+      }),
       stdio: 'inherit',
     })
     child.once('error', reject)
@@ -132,11 +136,24 @@ async function main(): Promise<void> {
     const targetName = resolveDesktopBuildTarget()
     const target = { platform: process.platform, arch: targetName.endsWith('arm64') ? 'arm64' : 'x64' }
     const modules = join(BUILD_ROOT, 'node_modules')
+    const officeManifest = JSON.parse(readFileSync(join(modules, '@deepseek-ai', 'libreoffice-kit', 'package.json'), 'utf8')) as {
+      optionalDependencies?: Record<string, string>
+    }
+    const officeEngine = selectOfficeEngine(officeManifest, target)
     mkdirSync(DSH_OUTPUT_ROOT, { recursive: true })
     cpSync(modules, join(DSH_OUTPUT_ROOT, 'node_modules'), {
       recursive: true, dereference: true,
-      filter: source => desktopRuntimeFileExclusion(relative(modules, source), target) === undefined,
+      filter: source => desktopRuntimeFileExclusion(relative(modules, source), target, officeEngine) === undefined,
     })
+    // Office 技能资产必须作为 runtime 资源随包携带：desktop-host 的 office 插件在启动时
+    // 读取 runtime/office-skills，缺失会让 Host 启动失败（packages/skill/skill-office 的
+    // 资产校验）。与上游 primary-runtime 准备流程中的 prepareOfficeSkillAssets 一致。
+    const hostRequire = createRequire(resolve(APP_ROOT, '..', 'desktop-host', 'package.json'))
+    cpSync(join(dirname(hostRequire.resolve('@deepseek-ai/dsh-skill-office/package.json')), 'assets'),
+      join(RUNTIME_ROOT, 'office-skills'), { recursive: true, dereference: true })
+    if (!existsSync(join(DSH_OUTPUT_ROOT, 'node_modules', '@deepseek-ai', `libreoffice-kit-${officeEngine}`, 'prebuilds.json'))) {
+      throw new Error(`desktop runtime: missing required LibreOffice engine ${officeEngine}`)
+    }
     // 打包的 Electron 构建可能在同一 Electron 大版本内带入 Node.js/V8 补丁更新，而内置的
     // node-addon-require-builtin 按 (Node 三元组, V8 字符串) 精确匹配 Electron profile 表，
     // 不改写就会在启动时拒绝加载（host preparation failed）。改写后必须在实际的 Electron
@@ -159,8 +176,9 @@ async function main(): Promise<void> {
     writeDesktopRuntime(DSH_OUTPUT_ROOT, release, packageSet.packages.map(entry => entry.name), target)
     const descriptor = await verifyDesktopRuntime(DSH_OUTPUT_ROOT, release.version, target)
     await new Promise<void>((accept, reject) => {
-      execFile(NODE, [join(APP_ROOT, 'tests/fixtures/runtime-payload-smoke.mjs'), DSH_OUTPUT_ROOT],
-        { timeout: 120_000, env: { ...process.env, NODE_OPTIONS: '' } }, (error, stdout, stderr) => {
+      execFile(NODE, ['--expose-internals', join(APP_ROOT, 'tests/fixtures/runtime-payload-smoke.mjs'), DSH_OUTPUT_ROOT],
+        { timeout: 120_000, env: desktopNodeEnvironment(NODE, join(RUNTIME_ROOT, 'bin'), { ...process.env, NODE_OPTIONS: '' }) },
+        (error, stdout, stderr) => {
           if (error !== null) reject(new Error(`desktop native payload smoke failed: ${stderr}`, { cause: error }))
           else { process.stdout.write(stdout); accept() }
         })

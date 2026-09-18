@@ -43,6 +43,8 @@ export function createElectronBuilderConfig(
     ],
     extraResources: [
       { from: buildPaths.runtime, to: 'runtime' },
+      // About 面板图标（main.ts setAboutPanelOptions 读取 resources/icon.png）。
+      { from: 'build/icon.png', to: 'icon.png' },
       // 运行期窗口/托盘图标：浅色/深色外观各一对（app icon 本身由 electron-builder
       // 从 build/icon.png 自动识别，不随外观切换）。dsh 运行时树不再放 extraResources：
       // 随 asar 打包（files 内的 dsh 映射），宿主以 ELECTRON_RUN_AS_NODE 运行。

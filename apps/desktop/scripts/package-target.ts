@@ -258,7 +258,7 @@ async function main(): Promise<void> {
 function assertBuilderInputsPresent(buildPaths: DesktopTargetBuildPaths): void {
   const required: ReadonlyArray<readonly [string, string]> = [
     ['desktop main bundle', join(APP_ROOT, 'lib', 'main.js')],
-    ['Node.js runtime', join(buildPaths.runtime, 'node', 'node')],
+    ['Electron runtime', join(buildPaths.electron, 'electron')],
     ['dsh runtime manifest', join(buildPaths.dsh, 'package.json')],
   ]
   const missing = required.filter(([, path]) => !existsSync(path))
