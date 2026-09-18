@@ -10,6 +10,7 @@ overrides:
   '@deepseek-ai/schemastery': link:vendor/schemastery
 
 patchedDependencies:
+  '@deepseek-ai/libreoffice-kit@0.0.1': 8c944f668ddd30e9d9c7e4666d77d167f927742e7b44381624ac112e4373d51d
   '@electron/osx-sign@1.3.3': 280e7b2816caf01423097d24e79107a66afeb563a348630ce9928ae8499a5861
   '@yao-pkg/pkg@6.21.0': 07f08c630d0d3886d81fd4600116d07e4871ddcd57f92cb22746b6d246cdc337
   node-pty@1.2.0-beta.15: b40ae545608897914bd25fb009c97eeac478c34e8a910298ddcb01b746534bb0
@@ -2343,7 +2344,7 @@ importers:
         version: link:../../typert/registry
       '@deepseek-ai/libreoffice-kit':
         specifier: 0.0.1
-        version: 0.0.1
+        version: 0.0.1(patch_hash=8c944f668ddd30e9d9c7e4666d77d167f927742e7b44381624ac112e4373d51d)
 
   packages/client/connection:
     dependencies:
@@ -6112,7 +6113,7 @@ importers:
         version: link:../../typert/protocol
       '@deepseek-ai/libreoffice-kit':
         specifier: 0.0.1
-        version: 0.0.1
+        version: 0.0.1(patch_hash=8c944f668ddd30e9d9c7e4666d77d167f927742e7b44381624ac112e4373d51d)
       '@deepseek-ai/schemastery':
         specifier: link:../../../vendor/schemastery
         version: link:../../../vendor/schemastery
@@ -20681,7 +20682,7 @@ snapshots:
   '@deepseek-ai/libreoffice-kit-win32-x64@0.0.1':
     optional: true
 
-  '@deepseek-ai/libreoffice-kit@0.0.1':
+  '@deepseek-ai/libreoffice-kit@0.0.1(patch_hash=8c944f668ddd30e9d9c7e4666d77d167f927742e7b44381624ac112e4373d51d)':
     dependencies:
       fflate: 0.8.2
       fontkit: 2.0.4
