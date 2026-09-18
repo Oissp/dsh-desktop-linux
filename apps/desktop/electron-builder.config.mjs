@@ -2,6 +2,7 @@ import { join } from 'node:path'
 import {
   resolveDesktopAppId,
 } from './scripts/desktop-release-environment.mjs'
+import { resolveDesktopLinuxFormats } from './scripts/desktop-linux-formats.mjs'
 import { desktopTargetBuildPaths, resolveDesktopBuildTarget } from './scripts/desktop-build-paths.mjs'
 
 /**
@@ -18,6 +19,7 @@ export function createElectronBuilderConfig(
 ) {
   const appId = resolveDesktopAppId(env)
   const buildPaths = desktopTargetBuildPaths(resolveDesktopBuildTarget(env, hostPlatform, hostArch))
+  const linuxFormats = resolveDesktopLinuxFormats(env)
   return {
     appId,
     productName: 'DeepSeek Harness',
@@ -59,7 +61,7 @@ export function createElectronBuilderConfig(
       // @deepseek-aidsh-desktop（含 @/ 分隔符），必须显式给安全的可执行名。
       executableName: 'deepseek-harness-desktop',
       icon: 'build/icon.png',
-      target: ['deb', 'AppImage'],
+      target: linuxFormats,
     },
     deb: {
       packageName: 'deepseek-harness-desktop',
