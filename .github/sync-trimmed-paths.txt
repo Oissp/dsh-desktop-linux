@@ -144,6 +144,23 @@ apps/desktop/tests/windows-signing-preflight.spec.ts
 apps/desktop/tests/windows-signing-state.spec.ts
 apps/desktop/tests/windows-update-publisher.spec.ts
 apps/desktop/tests/installed-update/
+# installed-update 的操作手册与验收记录：描述的脚本/流程已随 mac/win 管线裁剪，
+# README 与对应 Agent Note 整组不入 fork（双语链接互相指向，需整组同裁）。
+apps/desktop/tests/README.md
+apps/desktop/tests/README.zh.md
+apps/desktop/tests/README.i18n.yaml
+.agents/notes/implemented/testing/2026-09-14-desktop-installed-update-materials.md
+.agents/notes/implemented/testing/2026-09-14-desktop-installed-update-materials.zh.md
+.agents/notes/implemented/testing/2026-09-14-desktop-installed-update-materials.i18n.yaml
+.agents/notes/implemented/testing/2026-09-14-desktop-installed-update-journal.md
+.agents/notes/implemented/testing/2026-09-14-desktop-installed-update-journal.zh.md
+.agents/notes/implemented/testing/2026-09-14-desktop-installed-update-journal.i18n.yaml
+.agents/notes/implemented/testing/2026-09-10-desktop-local-updater-qualification.md
+.agents/notes/implemented/testing/2026-09-10-desktop-local-updater-qualification.zh.md
+.agents/notes/implemented/testing/2026-09-10-desktop-local-updater-qualification.i18n.yaml
+.agents/notes/implemented/bug-fix/2026-09-14-windows-lock-release-probe.md
+.agents/notes/implemented/bug-fix/2026-09-14-windows-lock-release-probe.zh.md
+.agents/notes/implemented/bug-fix/2026-09-14-windows-lock-release-probe.i18n.yaml
 apps/desktop/tests/fixtures/artifact-update-server.mjs
 apps/desktop/tests/fixtures/host-update-control.mjs
 apps/desktop/tests/fixtures/host-update-qualification.mjs
