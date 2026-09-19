@@ -1,7 +1,7 @@
 /** Main-owned update confirmations; closing or replacing a dialog never grants installation permission. */
 import { ipcMain, type BrowserWindow, type IpcMainInvokeEvent, type MessageBoxOptions, type MessageBoxReturnValue } from 'electron'
 import type { DesktopLocale } from './locale.ts'
-import { createUpdateOverlay } from './update-overlay.ts'
+import { createUpdatePromptWindow, desktopDialogSurface, type DesktopDialogSurface } from './update-overlay.ts'
 
 /** Channels available only to the isolated update-dialog document. */
 export const UPDATE_DIALOG_IPC = { status: 'dsh-update-dialog:status', respond: 'dsh-update-dialog:respond' } as const
@@ -9,6 +9,8 @@ export const UPDATE_DIALOG_IPC = { status: 'dsh-update-dialog:status', respond: 
 /** Text and choices supplied by the main process, never by product documents. */
 export interface UpdateDialogView {
   readonly locale: string
+  /** Which surface hosts this document, so the document drops the sheet scrim on an opaque card. */
+  readonly surface: DesktopDialogSurface
   readonly title: string
   readonly message: string
   readonly detail: string
@@ -43,8 +45,10 @@ export class DesktopUpdateDialog {
   /**
    * @param preload - Bundled isolated preload.
    * @param locale - Shell-owned copy.
+   * @param platform - Platform that hosts the modal, selecting its surface.
    */
-  constructor(private readonly preload: string, private readonly locale: DesktopLocale) {
+  constructor(private readonly preload: string, private readonly locale: DesktopLocale,
+    private readonly platform: NodeJS.Platform = process.platform) {
     ipcMain.handle(UPDATE_DIALOG_IPC.status, event => this.owned(event).view)
     ipcMain.handle(UPDATE_DIALOG_IPC.respond, (event, index: unknown) => {
       const active = this.owned(event)
@@ -68,8 +72,9 @@ export class DesktopUpdateDialog {
     if (this.disposed || options.signal?.aborted === true || parent.isDestroyed()) {
       return Promise.resolve({ response: cancelId, checkboxChecked: false })
     }
-    const window = createUpdateOverlay(parent, this.preload, options.title ?? this.locale.messages.updateTitle)
-    const view: UpdateDialogView = { locale: this.locale.id, title: options.title ?? '', message: options.message,
+    const window = createUpdatePromptWindow(parent, this.preload, options.title ?? this.locale.messages.updateTitle, this.platform)
+    const view: UpdateDialogView = { locale: this.locale.id, surface: desktopDialogSurface(this.platform),
+      title: options.title ?? '', message: options.message,
       detail: options.detail ?? '', buttons, cancelId, closeLabel: this.locale.messages.updateClose,
       technicalDetails: options.technicalDetails ?? '', technicalDetailsLabel: this.locale.messages.updateTechnicalDetails }
     return new Promise((resolve) => {

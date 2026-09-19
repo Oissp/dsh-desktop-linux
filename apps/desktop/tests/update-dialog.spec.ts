@@ -40,9 +40,9 @@ afterEach(() => {
   fixture.handlers.clear()
 })
 
-function setup() {
+function setup(platform: NodeJS.Platform = 'darwin') {
   const parent = new fixture.FakeWindow({})
-  dialogs = new DesktopUpdateDialog('preload-update-dialog.cjs', resolveDesktopLocale('zh-CN'))
+  dialogs = new DesktopUpdateDialog('preload-update-dialog.cjs', resolveDesktopLocale('zh-CN'), platform)
   const show = (signal?: AbortSignal) => dialogs!.show(parent as unknown as BrowserWindow, {
     message: '下载完成', buttons: ['安装并重启'], cancelId: 1, ...(signal === undefined ? {} : { signal }),
   })
@@ -107,6 +107,21 @@ it('cancels on abort, renderer failure, disposal, or an already-closed parent', 
   expect(fixture.windows).toHaveLength(count)
   f.parent.destroy()
   expect((await f.show()).response).toBe(1)
+})
+
+it('shows an opaque centered card on Linux so the scrim never covers the product window', async () => {
+  const f = setup('linux')
+  const pending = f.show()
+  const window = fixture.windows.at(-1)!
+  expect(window.options).toMatchObject({
+    frame: false, backgroundColor: '#ffffff', width: 420, height: 320, x: 10 + (900 - 420) / 2, y: 20 + (650 - 320) / 2,
+  })
+  expect(window.options).not.toHaveProperty('transparent')
+  expect(f.parent.webContents.insertCSS).not.toHaveBeenCalled()
+  // 文档据此去掉遮罩：卡片窗口自己已经不透明，再铺一层遮罩只会把窗口涂成灰色。
+  expect(f.invoke(UPDATE_DIALOG_IPC.status)).toMatchObject({ surface: 'window' })
+  f.invoke(UPDATE_DIALOG_IPC.respond, 1)
+  await pending
 })
 
 it('denies navigation away from the owned document', async () => {

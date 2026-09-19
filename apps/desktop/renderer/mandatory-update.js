@@ -9,6 +9,7 @@ const format = (message, values) => message.replaceAll(/\{([^{}]+)\}/gu, (match,
 function render(view) {
   const wasConfirming = current?.confirmation !== undefined
   current = view
+  document.body.dataset.surface = view.surface
   const { locale: { id, messages }, policy, update, confirmation, navigation } = view
   const confirming = confirmation !== undefined
   const failed = update.phase === 'error'

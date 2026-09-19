@@ -1,15 +1,37 @@
 import { EventEmitter } from 'node:events'
-import { expect, it, vi } from 'vitest'
+import { beforeEach, expect, it, vi } from 'vitest'
 import type { BrowserWindow, BrowserWindowConstructorOptions } from 'electron'
-import { createMandatoryUpdateWindow } from '../src/update-overlay.ts'
+import {
+  createMandatoryUpdateWindow,
+  createUpdatePromptWindow,
+  desktopDialogSurface,
+  mandatoryUpdateSurface,
+} from '../src/update-overlay.ts'
 
 const native = vi.hoisted(() => ({ create: vi.fn<(options: BrowserWindowConstructorOptions) => object>() }))
 vi.mock('electron', () => ({ BrowserWindow: function (options: object) { return native.create(options) } }))
 
-it('gives the Windows mandatory modal native move, resize, and maximize controls', () => {
-  const window = Object.assign(new EventEmitter(), {
-    webContents: { setWindowOpenHandler: vi.fn() }, show: vi.fn(), isDestroyed: () => false,
+beforeEach(() => { native.create.mockReset() })
+
+function fakeWindow() {
+  return Object.assign(new EventEmitter(), {
+    webContents: Object.assign(new EventEmitter(), { setWindowOpenHandler: vi.fn() }),
+    show: vi.fn(), setBounds: vi.fn(), setMenu: vi.fn(), isDestroyed: () => false,
   })
+}
+
+/** Parent that answers the content bounds and CSS insertion the sheet surface needs. */
+function fakeParent() {
+  const insertCSS = vi.fn(async () => 'blur')
+  const parent = Object.assign(new EventEmitter(), {
+    webContents: Object.assign(new EventEmitter(), { insertCSS, removeInsertedCSS: vi.fn(async () => {}) }),
+    getContentBounds: () => ({ x: 100, y: 200, width: 900, height: 650 }),
+  }) as unknown as BrowserWindow
+  return { parent, insertCSS }
+}
+
+it('gives the Windows mandatory modal native move, resize, and maximize controls', () => {
+  const window = fakeWindow()
   native.create.mockReturnValue(window)
   const parent = {} as BrowserWindow
   expect(createMandatoryUpdateWindow(parent, 'owned', 'Update required', 'win32')).toBe(window)
@@ -24,4 +46,48 @@ it('gives the Windows mandatory modal native move, resize, and maximize controls
   window.emit('ready-to-show')
   expect(window.show).toHaveBeenCalledOnce()
   expect(window.webContents.setWindowOpenHandler).toHaveBeenCalledOnce()
+})
+
+it('gives the Linux mandatory modal the same framed controls', () => {
+  const window = fakeWindow()
+  native.create.mockReturnValue(window)
+  expect(createMandatoryUpdateWindow(fakeParent().parent, 'owned', 'Update required', 'linux')).toBe(window)
+  const options = native.create.mock.calls[0]![0]
+  expect(options).toMatchObject({ modal: true, movable: true, resizable: true, minWidth: 480, minHeight: 360 })
+  expect(options).not.toHaveProperty('transparent')
+})
+
+it('selects the surface each platform can actually composite', () => {
+  expect(desktopDialogSurface('linux')).toBe('window')
+  expect(desktopDialogSurface('darwin')).toBe('overlay')
+  expect(desktopDialogSurface('win32')).toBe('overlay')
+  // The mandatory modal needs native window controls, which the frameless sheet cannot offer.
+  expect(mandatoryUpdateSurface('darwin')).toBe('overlay')
+  expect(mandatoryUpdateSurface('win32')).toBe('window')
+  expect(mandatoryUpdateSurface('linux')).toBe('window')
+})
+
+it('centers an opaque card on Linux instead of a transparent sheet', () => {
+  const window = fakeWindow()
+  native.create.mockReturnValue(window)
+  const { parent, insertCSS } = fakeParent()
+  expect(createUpdatePromptWindow(parent, 'owned', 'Check for updates', 'linux')).toBe(window)
+  const options = native.create.mock.calls[0]![0]
+  expect(options).toMatchObject({
+    parent, modal: true, frame: false, backgroundColor: '#ffffff', resizable: false,
+    x: 100 + (900 - 420) / 2, y: 200 + (650 - 320) / 2, width: 420, height: 320,
+  })
+  // A transparent window without a compositor paints its alpha as an opaque backing.
+  expect(options).not.toHaveProperty('transparent')
+  expect(insertCSS).not.toHaveBeenCalled()
+})
+
+it('covers the parent with a transparent sheet where compositing is available', () => {
+  const window = fakeWindow()
+  native.create.mockReturnValue(window)
+  const { parent, insertCSS } = fakeParent()
+  createUpdatePromptWindow(parent, 'owned', 'Check for updates', 'darwin')
+  const options = native.create.mock.calls[0]![0]
+  expect(options).toMatchObject({ parent, modal: true, frame: false, transparent: true, x: 100, y: 200, width: 900, height: 650 })
+  expect(insertCSS).toHaveBeenCalledOnce()
 })

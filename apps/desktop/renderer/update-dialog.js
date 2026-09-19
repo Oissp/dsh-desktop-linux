@@ -21,6 +21,7 @@ document.addEventListener('keydown', event => {
 void api.status().then(state => {
   view = state
   document.documentElement.lang = state.locale
+  document.body.dataset.surface = state.surface
   document.title = state.title
   document.getElementById('title').textContent = state.message
   document.getElementById('detail').textContent = state.detail
