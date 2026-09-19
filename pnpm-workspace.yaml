@@ -96,7 +96,7 @@ minimumReleaseAgeExclude:
   - '@trycua/cua-driver@0.28.0'
   # Explicit user-requested patch bump; the exclude can be dropped once the
   # release clears the age window.
-  - electron@44.4.1
+  - electron@44.4.3
 patchedDependencies:
   '@deepseek-ai/libreoffice-kit@0.0.1': patches/@deepseek-ai__libreoffice-kit@0.0.1.patch
   '@electron/osx-sign@1.3.3': patches/@electron__osx-sign@1.3.3.patch
