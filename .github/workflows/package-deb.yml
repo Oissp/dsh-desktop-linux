@@ -41,10 +41,6 @@ concurrency:
 env:
   # 打包必需的反向 DNS 应用 ID。可在仓库 Secret 覆盖（DSH_DESKTOP_APP_ID）。
   DSH_DESKTOP_APP_ID: ${{ secrets.DSH_DESKTOP_APP_ID || 'com.deepseek.harness.desktop' }}
-  # package-target.ts 的 writeReleaseRecord 在 test 环境要求 DOWNLOAD_TEST_ORIGIN（任意无路径
-  # HTTPS origin）。自动更新已指向 GitHub Releases（app-update.yml 里 provider=github），该
-  # 占位 origin 只写入本地 ${target}-release.json 记录，不影响运行时更新源。
-  DOWNLOAD_TEST_ORIGIN: ${{ secrets.DOWNLOAD_TEST_ORIGIN || 'https://desktop-updates.example.com' }}
   PNPM_NODE_LINKER: hoisted
 
 jobs:
@@ -134,6 +130,9 @@ jobs:
           APPIMAGE="$ART/deepseek-harness-$VERSION-linux-x64.AppImage"
           test -f "$DEB" || { echo "::error::缺少 .deb 产物: $DEB"; exit 1; }
           test -f "$APPIMAGE" || { echo "::error::缺少 AppImage 产物: $APPIMAGE"; exit 1; }
+          # electron-updater 按 electron-builder 的默认频道名拉取元数据；缺失或改名会让
+          # 已安装的客户端永远查不到更新，所以这里按文件名硬断言。
+          test -f "$ART/latest-linux.yml" || { echo "::error::缺少自动更新频道元数据: $ART/latest-linux.yml"; exit 1; }
           ls -lh "$ART/"
           echo "--- deb control ---"
           dpkg-deb -I "$DEB" | head -30
@@ -157,10 +156,12 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: release-assets
+          # 频道元数据只取 electron-updater 真正拉取的 latest-linux.yml；同目录还有
+          # electron-builder 的调试文件 builder-debug.yml，它不是发布资产。
           path: |
             apps/desktop/.desktop-build/targets/linux-x64/artifacts/*.deb
             apps/desktop/.desktop-build/targets/linux-x64/artifacts/*.AppImage
-            apps/desktop/.desktop-build/targets/linux-x64/artifacts/*.yml
+            apps/desktop/.desktop-build/targets/linux-x64/artifacts/latest-linux.yml
           # 制品只是 build → release 的中间传递载体，最终文件已进 GitHub Release。
           retention-days: 1
 
@@ -261,4 +262,4 @@ jobs:
             --title "DeepSeek Harness Desktop $VERSION (Linux x64)" \
             --notes-file "$RUNNER_TEMP/release-notes.md" \
             "${PRERELEASE[@]}" \
-            release-assets/*.deb release-assets/*.AppImage release-assets/*.yml
+            release-assets/*.deb release-assets/*.AppImage release-assets/latest-linux.yml

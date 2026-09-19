@@ -89,30 +89,11 @@ pnpm run package:desktop:linux:x64
 
 打包应用运行编译后的 JavaScript 和预生成的 Typert 元数据，不编译 TypeScript 插件。源码级调试导航和编辑器声明仍可从开发包中获取。[复制规则测试](tests/runtime-file-policy.spec.ts)覆盖排除项和保留资源；`prepare:dsh` 先用内置 Node 执行[产物 smoke](tests/fixtures/runtime-payload-smoke.mjs)，再在打包的 Electron 下加载内置的 node-addon-require-builtin（[指纹 smoke](tests/fixtures/native-electron-fingerprint-smoke.mjs)），然后才进行 Host smoke 和最终清单验证。
 
-### 上传更新
+### 更新分发
 
-`DSH_DESKTOP_AUTO_UPDATE_ENV` 同时选择打包时写入的更新 URL 与后续 COS 上传目标，可取 `test` 或 `production`；未设置时使用 `test`。测试打包必须通过 `DOWNLOAD_TEST_ORIGIN` 提供 HTTPS origin，生产 origin 仍为 `https://download.deepseek.com`。上传还必须通过 `DOWNLOAD_TEST_COS_BUCKET` 或 `DOWNLOAD_PROD_COS_BUCKET` 提供所选环境的 COS bucket。目标路径为 `_/harness/desktop/stable/<target>/`，其中 `target` 为 `linux-x64`。
+打包写入的 `app-update.yml` 以 `provider: github` 指向独立发布仓库 `Oissp/dsh-desktop-linux-release`，并以 `--publish never` 让 electron-builder 自己不上传任何东西。[发版工作流](../../.github/workflows/package-deb.yml)用该仓库的产物创建 `v<version>` GitHub Release：`.deb`、AppImage 与 `latest-linux.yml` 频道元数据。
 
-更新目标与上传凭据都与所选环境对应：
-
-| 环境 | 公开 origin | COS bucket | COS 凭据 |
-|---|---|---|---|
-| `test` 或未设置 | `DOWNLOAD_TEST_ORIGIN` | `DOWNLOAD_TEST_COS_BUCKET` | `DOWNLOAD_TEST_COS_SECRET_ID`、`DOWNLOAD_TEST_COS_SECRET_KEY` |
-| `production` | `https://download.deepseek.com` | `DOWNLOAD_PROD_COS_BUCKET` | `DOWNLOAD_PROD_COS_SECRET_ID`、`DOWNLOAD_PROD_COS_SECRET_KEY` |
-
-同一目标必须在同一环境下完成打包与上传。例如，默认测试环境使用：
-
-```sh
-export DOWNLOAD_TEST_ORIGIN='https://desktop-updates.example.com'
-pnpm run package:desktop:linux:x64
-
-export DOWNLOAD_TEST_COS_BUCKET='<test COS bucket>'
-export DOWNLOAD_TEST_COS_SECRET_ID='<test COS SecretId>'
-export DOWNLOAD_TEST_COS_SECRET_KEY='<test COS SecretKey>'
-pnpm run upload:linux:x64
-```
-
-生产发布需在打包前设置 `DSH_DESKTOP_AUTO_UPDATE_ENV=production`，再在执行 `upload:linux:x64` 前提供 `DOWNLOAD_PROD_COS_BUCKET` 与生产凭据对。打包不要求 COS bucket 或凭据。它会明确禁止 electron-builder 发布，从其子进程中删除全部四个 COS 凭据字段，并且只有在 electron-builder 成功后才写入目标完成记录。上传会先要求该记录与所选环境、目标、公开 URL 和当前 dsh 版本一致，再要求根 dsh 版本、Desktop 版本、频道元数据版本、产物名称、大小与 SHA-512 全部一致，之后才读取所选 COS 凭据对。它只上传该目标不可变且带版本的产物，最后以 `no-cache` 上传根据版本得出的频道元数据，并且不会删除历史对象。稳定版本使用 `latest-linux.yml`；`alpha` 等预发布版本则使用 `alpha-linux.yml`，与 electron-builder 生成的文件名一致。
+AppImage 是 electron-updater 的更新负载，因为 Debian 包无法携带差分更新。electron-updater 从已安装版本的预发布段推导要跟随的 release，因此 `0.1.6-alpha.2.1` 安装跟随 `alpha` 版本。更新从公开的发布仓库匿名读取，打包与发版都不需要上传凭据或部署环境。
 
 使用对应的 `:dir` 命令可以生成可直接运行的应用目录，而不是安装包，例如：
 
@@ -129,7 +110,7 @@ pnpm run prepare:desktop
 
 这条诊断命令是另一种停止位置，并非两条命令构建流程的前半段。之后执行 `package:desktop*` 时仍会重新完成正式构建与准备，避免使用陈旧的 dsh 包、运行时文件或 dsh 内容。
 
-每条打包命令都会构建仓库，打包以 dsh 和私有 Desktop Host 为根的第一方生产依赖闭包，并准备目标专用的 Node 与 pnpm 可执行文件。`prepare:dsh` 在构建时安装一次生产依赖图，把物化包复制到将由 electron-builder 打进 `app.asar` 的 `dsh` 树，移除包管理器元数据，并生成包含共享包版本和最终文件哈希的 `desktop-runtime.json`。在完整性封存之前，[Electron 指纹调和器](scripts/native-electron-fingerprint.ts)会把内置 node-addon-require-builtin 记录的 Electron profile（加载器按 Node.js 版本三元组加 V8 版本字符串精确匹配）改写为打包 Electron 的标识——Electron 补丁版本会在同一大版本内移动这两者；随后在实际的 Electron 二进制下加载该加载器，作为打包验收门槛。资源映射明确包含默认根目录过滤器会忽略的 `dsh/node_modules`；复制后的清单在打包前验证，并在打包后再次验证。已安装应用升级和各目标原生模块的验收需要发布环境。
+每条打包命令都会构建仓库，打包以 dsh 和私有 Desktop Host 为根的第一方生产依赖闭包，并准备目标专用的 Node 与 pnpm 可执行文件。`prepare:dsh` 在构建时安装一次生产依赖图，把物化包复制到将由 electron-builder 打进 `app.asar` 的 `dsh` 树，移除包管理器元数据，并生成包含共享包版本和最终文件哈希的 `desktop-runtime.json`。在完整性封存之前，[Electron 指纹调和器](scripts/native-electron-fingerprint.ts)会把内置 node-addon-require-builtin 记录的 Electron profile（加载器按 Node.js 版本三元组加 V8 版本字符串精确匹配）改写为打包 Electron 的标识——Electron 补丁版本会在同一大版本内移动这两者；随后在实际的 Electron 二进制下加载该加载器，作为打包验收门槛。资源映射明确包含默认根目录过滤器会忽略的 `dsh/node_modules`；复制后的清单在复制完成时验证一次，并在运行时 smoke 之后再验证一次，两次都在 electron-builder 运行之前。已安装应用升级和各目标原生模块的验收需要发布环境。
 
 未压缩产物包含 Electron 壳（物化后的 dsh 生产依赖树打包在其 `app.asar` 内）、上游 Node.js 与 pnpm。安装包大小与文件系统占用不同；发布验收需要测量两者，以及 profile 插件存储和首次启动耗时。此布局用更多应用内文件换取消除用户机器上的核心包安装过程。
 

@@ -49,13 +49,19 @@ apps/desktop/scripts/windows-sign.mjs
 # 其 spec 直接读取它，且它只是纯数据）、electron-builder-config 工厂（导入已裁剪的
 # 签名脚本）。fork 的 Linux 打包走 package-target.ts + electron-builder.config.mjs，
 # 自动更新走 GitHub Releases provider。
+# 同组还包含上游更早的一套 COS 上传管线（upload-target.ts、desktop-upload-plan.ts、
+# desktop-auto-update-environment.*）：fork 的发版由 package-deb.yml 用 gh release 直接
+# 创建 Release，没有任何步骤调用 upload:linux:x64，该管线连同其 spec 与孤儿夹具一并裁剪。
 apps/desktop/scripts/build-installed-update-worker.mjs
 apps/desktop/scripts/cos-operation.ts
+apps/desktop/scripts/desktop-auto-update-environment.d.mts
+apps/desktop/scripts/desktop-auto-update-environment.mjs
 apps/desktop/scripts/desktop-cos.ts
 apps/desktop/scripts/desktop-package-environment.d.mts
 apps/desktop/scripts/desktop-package-environment.mjs
 apps/desktop/scripts/desktop-policy-environment.d.mts
 apps/desktop/scripts/desktop-policy-environment.mjs
+apps/desktop/scripts/desktop-upload-plan.ts
 apps/desktop/scripts/desktop-upload-run.ts
 apps/desktop/scripts/electron-builder-config.d.mts
 apps/desktop/scripts/electron-builder-config.mjs
@@ -98,6 +104,7 @@ apps/desktop/scripts/test-signed-updates.mjs
 apps/desktop/scripts/test-windows-installer.mjs
 apps/desktop/scripts/test-windows-update-signature.mjs
 apps/desktop/scripts/test-workspace-updates.ts
+apps/desktop/scripts/upload-target.ts
 apps/desktop/scripts/upload-with-credentials.ps1
 apps/desktop/scripts/verify-installed-update-package.ts
 apps/desktop/scripts/windows-directory-installer.d.mts
@@ -112,8 +119,10 @@ apps/desktop/scripts/windows-signing-state.mjs
 # apps/desktop/tests 全部 spec，带入即失败。
 apps/desktop/tests/cos-loopback.ts
 apps/desktop/tests/cos-operation.spec.ts
+apps/desktop/tests/desktop-auto-update-environment.spec.ts
 apps/desktop/tests/desktop-package-environment.spec.ts
 apps/desktop/tests/desktop-policy-environment.spec.ts
+apps/desktop/tests/desktop-upload-plan.spec.ts
 apps/desktop/tests/desktop-upload-run.spec.ts
 apps/desktop/tests/installer-packaging.spec.ts
 apps/desktop/tests/installed-update-bootstrap.spec.ts
@@ -161,6 +170,8 @@ apps/desktop/tests/README.i18n.yaml
 .agents/notes/implemented/bug-fix/2026-09-14-windows-lock-release-probe.md
 .agents/notes/implemented/bug-fix/2026-09-14-windows-lock-release-probe.zh.md
 .agents/notes/implemented/bug-fix/2026-09-14-windows-lock-release-probe.i18n.yaml
+apps/desktop/tests/expected/desktop-upload-audit.txt
+apps/desktop/tests/expected/upload-credentials-check.txt
 apps/desktop/tests/fixtures/artifact-update-server.mjs
 apps/desktop/tests/fixtures/host-update-control.mjs
 apps/desktop/tests/fixtures/host-update-qualification.mjs

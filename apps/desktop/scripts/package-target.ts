@@ -1,24 +1,14 @@
 /** Build one release target with matching Electron, Node.js, and dsh architecture. */
 
 import { spawn } from 'node:child_process'
-import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, rmSync } from 'node:fs'
 import { parseArgs } from 'node:util'
 import { join, resolve } from 'node:path'
-import {
-  desktopBuildRecordFilename,
-  resolveDesktopAutoUpdateConfig,
-} from './desktop-auto-update-environment.mjs'
 import { desktopTargetBuildPaths, type DesktopTargetBuildPaths } from './desktop-build-paths.mjs'
 import { shellVersionExtendsEngine } from '../src/release-version.ts'
 
 const APP_ROOT = resolve(import.meta.dirname, '..')
 const REPOSITORY_ROOT = resolve(APP_ROOT, '..', '..')
-const DESKTOP_UPLOAD_CREDENTIAL_ENV_NAMES = new Set([
-  'DOWNLOAD_TEST_COS_SECRET_ID',
-  'DOWNLOAD_TEST_COS_SECRET_KEY',
-  'DOWNLOAD_PROD_COS_SECRET_ID',
-  'DOWNLOAD_PROD_COS_SECRET_KEY',
-])
 
 /** Fixed platform and architecture identifier exposed by package scripts. */
 export type DesktopPackageTargetName = 'linux-x64'
@@ -42,16 +32,6 @@ const TARGETS: Record<DesktopPackageTargetName, DesktopPackageTarget> = {
   },
 }
 
-/**
- * Remove upload-only COS credentials from every packaging subprocess.
- * @param environment - Packaging command environment.
- * @returns A copy without Desktop upload credentials.
- */
-export function withoutDesktopUploadCredentials(environment: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
-  return Object.fromEntries(Object.entries(environment)
-    .filter(([name]) => !DESKTOP_UPLOAD_CREDENTIAL_ENV_NAMES.has(name)))
-}
-
 function isTargetName(value: string): value is DesktopPackageTargetName {
   return Object.hasOwn(TARGETS, value)
 }
@@ -64,27 +44,17 @@ function packageVersion(path: string, label: string): string {
   return manifest.version
 }
 
-function writeReleaseRecord(
-  target: DesktopPackageTarget,
-  environment: NodeJS.ProcessEnv,
-  artifactsRoot: string,
-): void {
-  const desktopVersion = packageVersion(join(APP_ROOT, 'package.json'), 'desktop package')
-  const dshVersion = packageVersion(join(REPOSITORY_ROOT, 'package.json'), 'dsh package')
+/**
+ * Reject a Desktop version that does not extend the bundled engine version.
+ * The version becomes both the release tag and the artifact name, so a mismatch
+ * would publish artifacts no update check can resolve.
+ * @param desktopVersion - Version in `apps/desktop/package.json`.
+ * @param dshVersion - Version in the repository root `package.json`.
+ */
+function assertDesktopVersionExtendsEngine(desktopVersion: string, dshVersion: string): void {
   if (!shellVersionExtendsEngine(desktopVersion, dshVersion)) {
     throw new Error(`desktop package: desktop version ${desktopVersion} does not extend dsh version ${dshVersion}`)
   }
-  const update = resolveDesktopAutoUpdateConfig(environment, target.platform, target.arch)
-  const recordPath = join(artifactsRoot, desktopBuildRecordFilename(target.name))
-  const temporaryPath = `${recordPath}.tmp`
-  writeFileSync(temporaryPath, `${JSON.stringify({
-    schemaVersion: 1,
-    target: target.name,
-    version: dshVersion,
-    environment: update.environment,
-    publicUrl: update.publicUrl,
-  }, null, 2)}\n`)
-  renameSync(temporaryPath, recordPath)
 }
 
 /**
@@ -208,12 +178,11 @@ async function main(): Promise<void> {
   const invocation = parseDesktopPackageInvocation(process.argv.slice(2))
   const { target } = invocation
   const buildPaths = desktopTargetBuildPaths(target.name)
-  const releaseRecordPath = join(buildPaths.artifacts, desktopBuildRecordFilename(target.name))
-  if (!invocation.prepareOnly && !invocation.builderOnly) {
-    rmSync(releaseRecordPath, { force: true })
-    rmSync(`${releaseRecordPath}.tmp`, { force: true })
-  }
-  const buildEnv = withoutDesktopUploadCredentials(process.env)
+  assertDesktopVersionExtendsEngine(
+    packageVersion(join(APP_ROOT, 'package.json'), 'desktop package'),
+    packageVersion(join(REPOSITORY_ROOT, 'package.json'), 'dsh package'),
+  )
+  const buildEnv = process.env
   const targetEnv: NodeJS.ProcessEnv = {
     ...buildEnv,
     DSH_DESKTOP_TARGET_PLATFORM: target.platform,
@@ -248,7 +217,6 @@ async function main(): Promise<void> {
   }
   if (invocation.prepareOnly) return
   await runPnpm(desktopElectronBuilderArguments(target, invocation.directory), targetEnv)
-  if (!invocation.directory) writeReleaseRecord(target, targetEnv, buildPaths.artifacts)
 }
 
 /**

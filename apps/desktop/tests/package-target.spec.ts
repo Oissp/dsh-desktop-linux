@@ -4,7 +4,6 @@ import {
   desktopElectronBuilderArguments,
   parseDesktopPackageInvocation,
   resolveDesktopPackageTarget,
-  withoutDesktopUploadCredentials,
 } from '../scripts/package-target.ts'
 import { desktopTargetBuildPaths } from '../scripts/desktop-build-paths.mjs'
 
@@ -46,7 +45,7 @@ describe('desktop package target', () => {
       .toThrow(/at most one target/u)
   })
 
-  it('keeps electron-builder publishing disabled for the separate validated upload', () => {
+  it('keeps electron-builder publishing to the release workflow', () => {
     const target = resolveDesktopPackageTarget('linux-x64', 'linux', 'x64')
     expect(desktopElectronBuilderArguments(target, false)).toEqual([
       'exec',
@@ -59,23 +58,5 @@ describe('desktop package target', () => {
       'never',
     ])
     expect(desktopElectronBuilderArguments(target, true)).toContain('--dir')
-  })
-
-  it('keeps COS credentials out of every packaging subprocess', () => {
-    expect(withoutDesktopUploadCredentials({
-      DOWNLOAD_TEST_ORIGIN: 'https://desktop-updates.example.com',
-      DOWNLOAD_TEST_COS_BUCKET: 'test-download-bucket',
-      DOWNLOAD_TEST_COS_SECRET_ID: 'test-id',
-      DOWNLOAD_TEST_COS_SECRET_KEY: 'test-key',
-      DOWNLOAD_PROD_COS_BUCKET: 'production-download-bucket',
-      DOWNLOAD_PROD_COS_SECRET_ID: 'production-id',
-      DOWNLOAD_PROD_COS_SECRET_KEY: 'production-key',
-      DSH_DESKTOP_AUTO_UPDATE_ENV: 'production',
-    })).toEqual({
-      DOWNLOAD_TEST_ORIGIN: 'https://desktop-updates.example.com',
-      DOWNLOAD_TEST_COS_BUCKET: 'test-download-bucket',
-      DOWNLOAD_PROD_COS_BUCKET: 'production-download-bucket',
-      DSH_DESKTOP_AUTO_UPDATE_ENV: 'production',
-    })
   })
 })

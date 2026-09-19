@@ -88,30 +88,11 @@ Production packages first pass through npm's publication rules and dependency in
 
 The packaged application runs compiled JavaScript and pre-generated Typert metadata; it does not compile TypeScript plugins. Source-level debugger navigation and editor declarations remain available in development packages. [Copy-policy tests](tests/runtime-file-policy.spec.ts) cover exclusions and retained assets; `prepare:dsh` runs the [payload smoke](tests/fixtures/runtime-payload-smoke.mjs) under the bundled Node, then loads the bundled native require-builtin loader under the packaged Electron ([fingerprint smoke](tests/fixtures/native-electron-fingerprint-smoke.mjs)), before the Host smoke and final inventory verification.
 
-### Upload updates
+### Update distribution
 
-`DSH_DESKTOP_AUTO_UPDATE_ENV` selects `test` or `production` for both the URL embedded during packaging and the later COS upload; an absent value selects `test`. Test packaging requires its HTTPS origin in `DOWNLOAD_TEST_ORIGIN`, while the production origin remains `https://download.deepseek.com`. Upload additionally requires the selected deployment's COS bucket in `DOWNLOAD_TEST_COS_BUCKET` or `DOWNLOAD_PROD_COS_BUCKET`. The target path is `_/harness/desktop/stable/<target>/`, where `target` is `linux-x64`.
+Packaging writes an `app-update.yml` whose `provider: github` entry points at the separate release repository `Oissp/dsh-desktop-linux-release`, and passes `--publish never` so electron-builder uploads nothing itself. [The release workflow](../../.github/workflows/package-deb.yml) creates the `v<version>` GitHub Release from that repository's artifacts: the `.deb`, the AppImage, and the `latest-linux.yml` channel metadata.
 
-The update destination and upload credentials follow the selected deployment:
-
-| Environment | Public origin | COS bucket | COS credentials |
-|---|---|---|---|
-| `test` or unset | `DOWNLOAD_TEST_ORIGIN` | `DOWNLOAD_TEST_COS_BUCKET` | `DOWNLOAD_TEST_COS_SECRET_ID`, `DOWNLOAD_TEST_COS_SECRET_KEY` |
-| `production` | `https://download.deepseek.com` | `DOWNLOAD_PROD_COS_BUCKET` | `DOWNLOAD_PROD_COS_SECRET_ID`, `DOWNLOAD_PROD_COS_SECRET_KEY` |
-
-Package and upload one target under the same environment. For example, the default test deployment uses:
-
-```sh
-export DOWNLOAD_TEST_ORIGIN='https://desktop-updates.example.com'
-pnpm run package:desktop:linux:x64
-
-export DOWNLOAD_TEST_COS_BUCKET='<test COS bucket>'
-export DOWNLOAD_TEST_COS_SECRET_ID='<test COS SecretId>'
-export DOWNLOAD_TEST_COS_SECRET_KEY='<test COS SecretKey>'
-pnpm run upload:linux:x64
-```
-
-Set `DSH_DESKTOP_AUTO_UPDATE_ENV=production` before packaging, then provide `DOWNLOAD_PROD_COS_BUCKET` and the production credential pair before running `upload:linux:x64`. Packaging does not require a COS bucket or credentials. It explicitly disables electron-builder publishing, strips all four COS credential fields from its subprocesses, and writes a target completion record only after electron-builder succeeds. Upload requires that record to match the selected environment, target, public URL, and current dsh version; it also requires the root dsh version, Desktop version, channel metadata version, artifact names, sizes, and SHA-512 values to agree before it reads the selected COS credential pair. It uploads only that target's immutable versioned artifacts, uploads the version-derived channel metadata last with `no-cache`, and never deletes historical objects. Stable releases use `latest-linux.yml`; a prerelease such as `alpha` uses `alpha-linux.yml`, matching electron-builder's emitted filename.
+The AppImage is the electron-updater payload because Debian packages cannot carry differential updates. electron-updater derives the release to follow from the prerelease segment of the installed version, so a `0.1.6-alpha.2.1` installation tracks `alpha` releases. Updates are read anonymously from the public release repository, so packaging and release need neither upload credentials nor a deployment environment.
 
 Create a runnable application directory instead of an installer by using the matching `:dir` command, such as:
 
@@ -128,7 +109,7 @@ pnpm run prepare:desktop
 
 This diagnostic command is an alternative stopping point, not the first half of a two-command build. A later `package:desktop*` command repeats the official build and preparation so it cannot consume stale dsh packages, runtime files, or dsh content.
 
-Every package command builds the repository, packs the first-party production closures rooted at dsh and the private Desktop Host, and prepares target-specific Node and pnpm executables. `prepare:dsh` installs the production graph once at build time, copies materialized packages into the `dsh` tree that electron-builder packs into `app.asar`, removes package-manager metadata, and writes `desktop-runtime.json` with shared package versions and final file hashes. Before integrity sealing, the [Electron fingerprint reconciler](scripts/native-electron-fingerprint.ts) rewrites the bundled native require-builtin loader's recorded Electron profile — Node.js version triple plus V8 version string, matched exactly by the loader — to the packaged Electron's identity, because Electron patch builds move those within one major; it then loads the loader under the packaged Electron as a packaging acceptance gate. Resource mappings explicitly include `dsh/node_modules`, which the default root-directory filter omits; the copied inventory is checked before packaging and verified again afterward. Installed upgrade and target-specific native-module qualification require the release environment.
+Every package command builds the repository, packs the first-party production closures rooted at dsh and the private Desktop Host, and prepares target-specific Node and pnpm executables. `prepare:dsh` installs the production graph once at build time, copies materialized packages into the `dsh` tree that electron-builder packs into `app.asar`, removes package-manager metadata, and writes `desktop-runtime.json` with shared package versions and final file hashes. Before integrity sealing, the [Electron fingerprint reconciler](scripts/native-electron-fingerprint.ts) rewrites the bundled native require-builtin loader's recorded Electron profile — Node.js version triple plus V8 version string, matched exactly by the loader — to the packaged Electron's identity, because Electron patch builds move those within one major; it then loads the loader under the packaged Electron as a packaging acceptance gate. Resource mappings explicitly include `dsh/node_modules`, which the default root-directory filter omits; the copied inventory is verified once immediately after the copy and again after the runtime smokes, both before electron-builder runs. Installed upgrade and target-specific native-module qualification require the release environment.
 
 An unpacked artifact contains the Electron shell with the materialized dsh production tree packed inside `app.asar`, plus upstream Node.js and pnpm. Installer size and filesystem size differ; release qualification measures both, plus the profile’s plugin storage and first-launch latency. The runtime trades more application files for eliminating core package installation on the user’s machine.
 

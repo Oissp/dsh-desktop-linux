@@ -24,9 +24,6 @@ concurrency:
 
 env:
   DSH_DESKTOP_APP_ID: ${{ secrets.DSH_DESKTOP_APP_ID || 'com.deepseek.harness.desktop' }}
-  # package-target.ts 的 writeReleaseRecord 在 test 环境要求 DOWNLOAD_TEST_ORIGIN；这里只写入
-  # 本地 ${target}-release.json 记录，不发布任何东西。
-  DOWNLOAD_TEST_ORIGIN: ${{ secrets.DOWNLOAD_TEST_ORIGIN || 'https://desktop-updates.example.com' }}
   # 只构建 .deb。AppImage 是发版用的 electron-updater 负载，冒烟不需要。
   DSH_DESKTOP_LINUX_FORMATS: deb
   PNPM_NODE_LINKER: hoisted

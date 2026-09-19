@@ -1,4 +1,5 @@
-import type { DesktopAutoUpdateTarget } from './desktop-auto-update-environment.mjs'
+/** Fixed platform and architecture identifier this build supports. */
+export type DesktopBuildTargetName = 'linux-x64'
 
 /** Mutable target directories plus the shared immutable download cache. */
 export interface DesktopTargetBuildPaths {
@@ -26,14 +27,14 @@ export function resolveDesktopBuildTarget(
   env?: NodeJS.ProcessEnv,
   hostPlatform?: NodeJS.Platform,
   hostArch?: string,
-): DesktopAutoUpdateTarget
+): DesktopBuildTargetName
 
 /**
  * Return the mutable preparation and artifact directories owned by one release target.
  * @param target - Supported Desktop target name.
  * @returns Target paths plus the shared immutable download cache.
  */
-export function desktopTargetBuildPaths(target: DesktopAutoUpdateTarget): DesktopTargetBuildPaths
+export function desktopTargetBuildPaths(target: DesktopBuildTargetName): DesktopTargetBuildPaths
 
 /**
  * Resolve the paths owned by the target selected in a packaging environment.

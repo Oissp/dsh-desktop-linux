@@ -71,7 +71,7 @@ Electron 更新只使用一个 `electron-updater` 发布流和签名 `electron-b
 
 [立即显示窗口决策](2026-09-09-desktop-immediate-window-and-direct-start.zh.md)负责本地加载页、直接启动 Host 和主窗口恢复。profile 协调遵循[内置运行时决策](2026-09-08-desktop-bundled-runtime-and-external-plugins.zh.md)。
 
-`DSH_DESKTOP_AUTO_UPDATE_ENV` 默认为测试部署，也可以选择生产部署，并同时决定目标专用的 generic-provider URL 与 COS 目标。发布自动化通过 `DOWNLOAD_TEST_ORIGIN` 提供测试 HTTPS origin，并通过 `DOWNLOAD_TEST_COS_BUCKET` 或 `DOWNLOAD_PROD_COS_BUCKET` 提供各部署的 bucket；可变的测试路由与 COS 存储身份不写入源码，部署基础设施变更时无需发布新代码，而公开的生产 origin 仍固定。打包只解析公开更新 URL、禁止 electron-builder 发布、从子进程环境中删除每个 COS 凭据字段，并且只有在 electron-builder 以及每个签名或公证 hook 成功后才写入完成记录。目标上传还必须提供所选 bucket，随后会先要求完成记录、根 dsh 版本、Desktop 版本、根据版本得出的频道元数据、产物名称、大小与 SHA-512 全部一致，再读取所选凭据或发送数据。它先上传不可变且带版本的更新载荷与所有独立 blockmap，最后替换 electron-builder 生成的频道元数据，并且不会删除历史对象。稳定版本使用 `latest` 元数据名称，预发布版本则使用语义化版本的第一个预发布标识符。NSIS 把 blockmap 嵌入已签名的可执行文件，macOS ZIP 则使用独立 blockmap；两者都让 electron-updater 在平台支持时只下载变化的数据块，而应用替换与本地 pnpm 包操作仍是两个独立操作。
+打包写入 `app-update.yml`，其 `provider: github` 指向独立发布仓库，并传 `--publish never`，electron-builder 自身不上传任何东西；[发版工作流](../../../../.github/workflows/package-deb.yml) 在校验每个产物与频道元数据之后创建 `app-update.yml` 所指的 `v<version>` GitHub Release，且从不删除历史发布。更新频道只由已安装版本决定：协调器不设置 `updater.channel`，electron-updater 于是从版本号的预发布段推导频道，先请求同名频道文件，失败时回落到 electron-builder 的默认 `latest-linux.yml`。NSIS 把 blockmap 嵌入已签名的可执行文件，macOS ZIP 则使用独立 blockmap；两者都让 electron-updater 在平台支持时只下载变化的数据块，而应用替换与本地 pnpm 包操作仍是两个独立操作。
 
 ## 安全与发布策略
 
@@ -124,7 +124,7 @@ Windows 应用替换遵循[目录安装决策](2026-09-11-windows-directory-inst
 
 **把凭据写进已跟踪脚本或系统环境。** 本地平台文件把配置限制在单个 checkout，并使打包输入明确。代价是凭据以明文落盘：构建账号需要限制文件访问权限，CI 必须清理临时配置，Git 与发布文件映射都必须排除真实配置。已提交的模板不含凭据；Windows CMD 只包含变量引用，签名串行执行并在首次失败后停止，文件格式不会免除 Token 的错误 PIN 计数。
 
-**让 electron-builder 或通用目录同步直接发布。** 直接发布可能在所有引用产物就绪前暴露频道元数据，可能把陈旧或其他目标的文件混入发布，也无法证明已完成签名的构建仍与当前 dsh 版本一致。目标专用且经过校验的上传可以明确控制发布顺序与发布身份。
+**让 electron-builder 或通用目录同步直接发布。** 直接发布可能在所有引用产物就绪前暴露频道元数据，可能把陈旧或其他目标的文件混入发布，也无法证明已完成签名的构建仍与当前 dsh 版本一致。目标专用且经过校验的上传可以明确控制发布顺序与发布身份。 本 fork 另作选择：[合并决策](2026-09-18-merge-0.1.6-alpha.2-linux-desktop.zh.md)裁剪了经过校验的上传传输层，改由发版工作流在产物与频道元数据全部校验通过后创建 GitHub Release。
 
 ## 结果
 
