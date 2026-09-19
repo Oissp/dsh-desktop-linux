@@ -1,3 +1,4 @@
+import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import {
   desktopElectronBuilderArguments,
@@ -5,8 +6,20 @@ import {
   resolveDesktopPackageTarget,
   withoutDesktopUploadCredentials,
 } from '../scripts/package-target.ts'
+import { desktopTargetBuildPaths } from '../scripts/desktop-build-paths.mjs'
 
 describe('desktop package target', () => {
+  it('packs the Electron distribution that prepare:runtime extracted', async () => {
+    // 配置文件在导入时就会按宿主平台求值默认导出，需要先把目标固定到 linux-x64。
+    process.env.DSH_DESKTOP_APP_ID = 'com.example.desktop-test'
+    process.env.DSH_DESKTOP_TARGET_PLATFORM = 'linux'
+    process.env.DSH_DESKTOP_TARGET_ARCH = 'x64'
+    const { createElectronBuilderConfig } = await import('../electron-builder.config.mjs')
+    const config = createElectronBuilderConfig({ DSH_DESKTOP_APP_ID: 'com.example.desktop-test' }, 'linux', 'x64')
+    expect(config.electronDist).toBe(desktopTargetBuildPaths('linux-x64').electron)
+    expect(join(config.electronDist, 'electron')).toContain(join('targets', 'linux-x64', 'electron'))
+  })
+
   it('selects the Linux x64 target selectors', () => {
     expect(resolveDesktopPackageTarget('linux-x64', 'linux', 'x64')).toMatchObject({
       platform: 'linux', arch: 'x64', builderPlatform: '--linux', builderArch: '--x64',

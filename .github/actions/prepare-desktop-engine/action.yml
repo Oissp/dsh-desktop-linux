@@ -9,6 +9,9 @@ description: Restore, build, and save the cached dsh engine and Electron runtime
 # pathspec 必须覆盖每一份随 dsh/ 进包的源码，否则该处的改动不会让缓存失效，
 # --builder-only 会复用旧产物。apps/cli 即 @deepseek-ai/dsh，apps/web 是被
 # dsh-web-app 依赖的 @deepseek-ai/dsh-web-frontend，两者都不是壳代码。
+#
+# 缓存路径必须覆盖 package-target.ts --builder-only 断言的每一份产物（壳 bundle、
+# Electron 运行时、dsh 运行时清单），缺一份命中缓存时就会直接失败。
 
 runs:
   using: composite
@@ -34,6 +37,7 @@ runs:
       with:
         path: |
           apps/desktop/lib
+          apps/desktop/.desktop-build/targets/linux-x64/electron
           apps/desktop/.desktop-build/targets/linux-x64/runtime
           apps/desktop/.desktop-build/targets/linux-x64/dsh
         key: ${{ steps.engine-key.outputs.key }}
@@ -49,6 +53,7 @@ runs:
       with:
         path: |
           apps/desktop/lib
+          apps/desktop/.desktop-build/targets/linux-x64/electron
           apps/desktop/.desktop-build/targets/linux-x64/runtime
           apps/desktop/.desktop-build/targets/linux-x64/dsh
         key: ${{ steps.engine-key.outputs.key }}

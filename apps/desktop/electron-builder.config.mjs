@@ -28,6 +28,9 @@ export function createElectronBuilderConfig(
     artifactName: 'deepseek-harness-${version}-linux-x64.${ext}',
     directories: { output: buildPaths.artifacts },
     asar: true,
+    // 复用 prepare:runtime 解压好的 Electron 发行版：electron-builder 默认会另下一份，
+    // 与随壳缓存的运行时重复；同时让 --builder-only 的 Electron 断言与打包输入同源。
+    electronDist: buildPaths.electron,
     files: [
       'lib/*.js',
       'lib/*.cjs',
