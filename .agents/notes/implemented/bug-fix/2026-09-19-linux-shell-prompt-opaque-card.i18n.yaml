@@ -1,0 +1,6 @@
+# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
+# side as of the last confirmed-consistent state. Both languages carry equal authority;
+# after editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write .agents/notes/implemented/bug-fix/2026-09-19-linux-shell-prompt-opaque-card.md
+2026-09-19-linux-shell-prompt-opaque-card.md: c33fa3bd13c40ba0281d8e0d1931ad61b81259f4
+2026-09-19-linux-shell-prompt-opaque-card.zh.md: f08a1a81292ad889cd057fd80d75b82130247c9f
