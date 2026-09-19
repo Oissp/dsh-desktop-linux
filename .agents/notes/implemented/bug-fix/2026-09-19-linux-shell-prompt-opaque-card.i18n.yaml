@@ -2,5 +2,5 @@
 # side as of the last confirmed-consistent state. Both languages carry equal authority;
 # after editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/bug-fix/2026-09-19-linux-shell-prompt-opaque-card.md
-2026-09-19-linux-shell-prompt-opaque-card.md: 2e835980be99980b8d81ede71caa79b8c9eeb168
-2026-09-19-linux-shell-prompt-opaque-card.zh.md: af1bb057e435d27248ce6352af9955c88945caf8
+2026-09-19-linux-shell-prompt-opaque-card.md: 59336fef4ed9c5a46861e13ad02956dc9e2cce34
+2026-09-19-linux-shell-prompt-opaque-card.zh.md: d900b8b1e3c3debd38fd9825564a13fa2718a747

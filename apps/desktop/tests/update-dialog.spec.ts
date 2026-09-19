@@ -20,6 +20,7 @@ const fixture = await vi.hoisted(async () => {
     readonly loadURL = vi.fn(async () => {})
     constructor(readonly options: unknown) { super(); windows.push(this) }
     getContentBounds() { return { x: 10, y: 20, width: 900, height: 650 } }
+    getParentWindow() { return (this.options as { parent?: FakeWindow }).parent ?? null }
     isDestroyed() { return this.destroyed }
     destroy() { this.destroyed = true; this.emit('closed') }
     setMenu() {}
@@ -40,9 +41,9 @@ afterEach(() => {
   fixture.handlers.clear()
 })
 
-function setup(platform: NodeJS.Platform = 'darwin') {
+function setup(platform: NodeJS.Platform = 'darwin', language: () => string = () => 'zh-CN') {
   const parent = new fixture.FakeWindow({})
-  dialogs = new DesktopUpdateDialog('preload-update-dialog.cjs', resolveDesktopLocale('zh-CN'), platform)
+  dialogs = new DesktopUpdateDialog('preload-update-dialog.cjs', () => resolveDesktopLocale(language()), platform)
   const show = (signal?: AbortSignal) => dialogs!.show(parent as unknown as BrowserWindow, {
     message: '下载完成', buttons: ['安装并重启'], cancelId: 1, ...(signal === undefined ? {} : { signal }),
   })
@@ -120,6 +121,35 @@ it('shows an opaque centered card on Linux so the scrim never covers the product
   expect(f.parent.webContents.insertCSS).not.toHaveBeenCalled()
   // 文档据此去掉遮罩：卡片窗口自己已经不透明，再铺一层遮罩只会把窗口涂成灰色。
   expect(f.invoke(UPDATE_DIALOG_IPC.status)).toMatchObject({ surface: 'window' })
+  f.invoke(UPDATE_DIALOG_IPC.respond, 1)
+  await pending
+})
+
+it('reads the dictionary when each prompt opens so a Language change reaches the next one', async () => {
+  let language = 'en'
+  const f = setup('darwin', () => language)
+  const first = dialogs!.show(f.parent as unknown as BrowserWindow, { message: 'Update available' })
+  expect(f.invoke(UPDATE_DIALOG_IPC.status)).toMatchObject({ locale: 'en', closeLabel: 'Close', buttons: ['OK'] })
+  dialogs!.cancel()
+  await first
+  // 语言控制器读完 settings.yaml 才知道引擎的 Language 选择；启动时捕获一次会把
+  // 提示永久钉在系统语言上，即使菜单已经切到中文。
+  language = 'zh-CN'
+  const next = dialogs!.show(f.parent as unknown as BrowserWindow, { message: '发现可用更新' })
+  expect(f.invoke(UPDATE_DIALOG_IPC.status)).toMatchObject({ locale: 'zh-CN', closeLabel: '关闭', buttons: ['确定'] })
+  dialogs!.cancel()
+  await next
+})
+
+it('fits the card to the height its document reports and rejects an unusable one', async () => {
+  const f = setup('linux')
+  const pending = f.show()
+  const window = fixture.windows.at(-1)!
+  f.invoke(UPDATE_DIALOG_IPC.resize, 214)
+  expect(window.setBounds).toHaveBeenCalledWith(expect.objectContaining({ height: 214, width: 420 }))
+  for (const height of [0, -5, 'tall', Number.NaN, Number.POSITIVE_INFINITY]) {
+    expect(() => f.invoke(UPDATE_DIALOG_IPC.resize, height)).toThrow(/invalid dialog height/)
+  }
   f.invoke(UPDATE_DIALOG_IPC.respond, 1)
   await pending
 })

@@ -12,17 +12,23 @@ Two symptoms followed, both reported against Linux `0.1.6-alpha.2.1` and later. 
 
 An uncomposited transparent window still cannot present a scrim, so the surface split below remains necessary; it was not what blanked the content.
 
+Serving the documents exposed two further defects that the blank window had hidden. The card's fixed 320 height left bare white backing under a short prompt, and every prompt rendered English on a system reporting an English locale even with 中文 selected in the application, because the update machinery captured its dictionary from `app.getLocale()` before the engine's Language preference was read.
+
 ## Decision
 
 The protocol handler serves the `shell` host from `join(app.getAppPath(), 'renderer')` through the existing `serveWebDocument`, which already performs the path-containment check and MIME mapping the deleted `serveShellAsset` duplicated. Its `<head>` boot injection applies only to `/` and `/index.html`, so shell documents are served byte-for-byte.
 
 `update-overlay.ts` owns the surface decision, and the surface is chosen per platform rather than globally, so the upstream sheet survives wherever it works.
 
-`desktopDialogSurface(platform)` returns `window` on Linux and `overlay` elsewhere. `createUpdatePromptWindow` builds an opaque frameless card for `window`: 420x320, centered on the parent's content bounds, `backgroundColor: '#ffffff'`, no `transparent`, and no CSS inserted into the parent. It builds the unchanged transparent sheet for `overlay`.
+`desktopDialogSurface(platform)` returns `window` on Linux and `overlay` elsewhere. `createUpdatePromptWindow` builds an opaque frameless card for `window`: 420 wide, centered on the parent's content bounds, `backgroundColor: '#ffffff'`, no `transparent`, and no CSS inserted into the parent. It builds the unchanged transparent sheet for `overlay`.
+
+The card carries no content height of its own, so a fixed height leaves bare white backing under a short prompt. The document measures `#dialog` once laid out and reports it over `UPDATE_DIALOG_IPC.resize`; `fitDialogCard` clamps that to `CARD_MIN_HEIGHT` below and the parent's content height above, then re-centers. A `ResizeObserver` and the disclosure's `toggle` event re-report, so expanding technical details grows the window instead of scrolling inside it. The sheet already spans its parent, so `fitDialogCard` ignores measurements there and the renderer does not send them.
 
 `mandatoryUpdateSurface(platform)` returns `overlay` only on macOS, because the mandatory modal offers native move, resize, and maximize that the frameless sheet cannot provide on Windows; Linux and Windows both get the framed 640x560 window that the Windows branch already used.
 
-The main process publishes the chosen surface as `UpdateDialogView.surface` and `MandatoryUpdateView.surface`. Each renderer copies it to `document.body.dataset.surface`, and `update-dialog.css` uses that attribute to drop the scrim and let `main` fill the window without its card radius or shadow.
+The main process publishes the chosen surface as `UpdateDialogView.surface` and `MandatoryUpdateView.surface`. Each renderer copies it to `document.body.dataset.surface`, and `update-dialog.css` uses that attribute to drop the scrim and the card radius and shadow. It does not force `main` to fill the window, because that would defeat the height measurement.
+
+Every shell locale consumer takes `() => DesktopLocale` rather than a `DesktopLocale`. `DesktopLocaleController` resolves the engine's `locale.preference` from `settings.yaml` at line 787 of `main.ts`, long after the update machinery is constructed at line 227, and it only assigns `windowsLanguage`. A dictionary captured at construction therefore pinned every prompt to `app.getLocale()` for the process lifetime while the menus, which call `currentDesktopLocale()` per build, followed the setting. Reading at display time is why a Language change reaches the next prompt. `MandatoryUpdateView.locale` stays a value: it crosses IPC to the renderer, which cannot call a function.
 
 The self-drawn window is kept rather than reverting to native dialogs because the post-merge flow closes prompts programmatically. `controller.abort()` dismisses the transient checking prompt the moment the check returns, and `updateDialog.cancel()` dismisses ordinary prompts when policy turns blocking or on shutdown. `dialog.showMessageBox` exposes no close operation, so a native prompt would stay on screen until the user answered it.
 
@@ -38,19 +44,23 @@ The self-drawn window is kept rather than reverting to native dialogs because th
 
 **Pass `--enable-transparent-visuals`.** Rejected: the switch does not make alpha composite without a compositing manager, and it adds a GPU-affecting startup flag to every Linux launch.
 
+**Shrink `CARD_HEIGHT` to fit a typical prompt.** Rejected: it trades bare backing under short prompts for scrolling under long ones, and the technical-details disclosure changes the needed height while the prompt is open, so no fixed value is right.
+
+**Await the stored locale preference before constructing the update machinery.** Rejected: it fixes the language at launch but not a Language change made while the application runs, and it puts a settings read on the startup path ahead of the first window.
+
 ## Consequences
 
-Linux prompts no longer cover the product window, and the mandatory modal keeps native window controls there. The trade-offs are in the card's fixed geometry: content taller than 420x320 scrolls inside `main` instead of growing the window, and the card is centered once at creation rather than following the parent's move and resize, which the sheet still does.
+Linux prompts no longer cover the product window, and the mandatory modal keeps native window controls there. The remaining trade-off is that the card is centered at creation and at each measurement rather than following the parent's move and resize, which the sheet still does.
 
-The fork's diff against upstream grows in two files: the `shell` branch in `main.ts` and the Linux branch plus two surface functions in `update-overlay.ts`. Upstream `master` has no `shell` branch in its handler and no other code serving that host, so a merge that takes upstream's handler wholesale deletes the branch again and blanks every prompt. `.github/sync-trimmed-paths.txt` records deleted files, not modified behavior, so neither divergence is tracked there.
+The fork's diff against upstream grows in the `shell` branch in `main.ts`, the Linux branch with the surface and fitting functions in `update-overlay.ts`, the `resize` channel, and the locale getters. Upstream `master` has no `shell` branch in its handler and no other code serving that host, so a merge that takes upstream's handler wholesale deletes the branch again and blanks every prompt. `.github/sync-trimmed-paths.txt` records deleted files, not modified behavior, so none of these divergences are tracked there.
 
 That the documents 404'd silently for two releases is the lesson worth carrying: `loadURL` resolves a 404 without rejecting, so `void window.loadURL(page).catch(abort)` never fired and the prompt reported success while showing nothing.
 
 ## Testing
 
-`apps/desktop/tests/main-startup.spec.ts` asserts the handler routes `dsh-app://shell/update-dialog.html` to the packaged `renderer` directory and still 404s an unowned host; removing the branch fails it. `update-overlay.spec.ts` pins each platform's surface, the card's opaque centered geometry, and that the card surface inserts no CSS into the parent. `update-dialog.spec.ts` pins the Linux prompt and the published `surface`. `update-error-renderer.spec.ts` asserts both documents copy the field onto `document.body.dataset`, so dropping that assignment fails rather than silently restoring the scrim. `package-deb.yml` runs this suite before packaging.
+`apps/desktop/tests/main-startup.spec.ts` asserts the handler routes `dsh-app://shell/update-dialog.html` to the packaged `renderer` directory and still 404s an unowned host; removing the branch fails it. `update-overlay.spec.ts` pins each platform's surface, the card's opaque centered geometry, that the card surface inserts no CSS into the parent, and `fitDialogCard`'s clamping at both bounds and its no-op on the sheet. `update-dialog.spec.ts` pins the Linux prompt, the published `surface`, rejection of an unusable reported height, and that a Language change between two prompts reaches the second. `update-error-renderer.spec.ts` asserts both documents copy the surface onto `document.body.dataset` and that the card document reports a height while the sheet document does not. `package-deb.yml` runs this suite before packaging.
 
-No automated check proves a prompt renders visible content, which is why the 404 survived the suite. Verifying a prompt on an installed Linux build remains a manual acceptance step.
+No automated check proves a prompt renders visible content, which is why the 404 survived the suite; nothing proves the copy is the language the user selected either, since the tests supply their own dictionary. Verifying a prompt on an installed Linux build remains a manual acceptance step.
 
 ## Related
 

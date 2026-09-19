@@ -5,6 +5,7 @@ import {
   createMandatoryUpdateWindow,
   createUpdatePromptWindow,
   desktopDialogSurface,
+  fitDialogCard,
   mandatoryUpdateSurface,
 } from '../src/update-overlay.ts'
 
@@ -26,6 +27,7 @@ function fakeParent() {
   const parent = Object.assign(new EventEmitter(), {
     webContents: Object.assign(new EventEmitter(), { insertCSS, removeInsertedCSS: vi.fn(async () => {}) }),
     getContentBounds: () => ({ x: 100, y: 200, width: 900, height: 650 }),
+    isDestroyed: () => false,
   }) as unknown as BrowserWindow
   return { parent, insertCSS }
 }
@@ -80,6 +82,28 @@ it('centers an opaque card on Linux instead of a transparent sheet', () => {
   // A transparent window without a compositor paints its alpha as an opaque backing.
   expect(options).not.toHaveProperty('transparent')
   expect(insertCSS).not.toHaveBeenCalled()
+})
+
+it('fits the card to its measured content and keeps it centered', () => {
+  const { parent } = fakeParent()
+  const window = Object.assign(fakeWindow(), { getParentWindow: () => parent })
+  fitDialogCard(window as unknown as BrowserWindow, 214, 'linux')
+  // 固定 320 高会在短文案下留出一片裸白底，因此按文档量出的高度重新定尺寸。
+  expect(window.setBounds).toHaveBeenCalledWith({
+    x: 100 + (900 - 420) / 2, y: 200 + (650 - 214) / 2, width: 420, height: 214,
+  })
+  // A report below the controls' own height would collapse the card past its buttons.
+  window.setBounds.mockClear()
+  fitDialogCard(window as unknown as BrowserWindow, 12, 'linux')
+  expect(window.setBounds).toHaveBeenCalledWith(expect.objectContaining({ height: 120 }))
+  // Content taller than the parent cannot grow past it.
+  window.setBounds.mockClear()
+  fitDialogCard(window as unknown as BrowserWindow, 5_000, 'linux')
+  expect(window.setBounds).toHaveBeenCalledWith(expect.objectContaining({ height: 650, y: 200 }))
+  // The sheet already spans its parent, so a measurement there must not resize it.
+  window.setBounds.mockClear()
+  fitDialogCard(window as unknown as BrowserWindow, 214, 'darwin')
+  expect(window.setBounds).not.toHaveBeenCalled()
 })
 
 it('covers the parent with a transparent sheet where compositing is available', () => {

@@ -27,7 +27,7 @@ import { DesktopHostProcess, DesktopHostUncleanExitError } from './host-process.
 import { installDesktopDirectoryPicker } from './directory-picker.ts'
 import { DesktopBackendController } from './backend-controller.ts'
 import { DESKTOP_IPC, SCHEME, assertDesktopSender, type DesktopUpdateState } from './ipc.ts'
-import { formatDesktopMessage, resolveDesktopLocale } from './locale.ts'
+import { formatDesktopMessage, resolveDesktopLocale, type DesktopMessages } from './locale.ts'
 import { claimDesktopSingleInstance } from './single-instance.ts'
 import { DesktopUpdateCoordinator } from './update-coordinator.ts'
 import { serveWebDocument, authenticateWebHost, forwardWebRequest } from './web-document.ts'
@@ -224,8 +224,10 @@ async function main(): Promise<void> {
   const isQuitting = (): boolean => quitting
   const currentMainWindow = (): BrowserWindow | undefined => mainWindow
   const ordinaryDialogs = new Set<AbortController>()
-  const locale = resolveDesktopLocale(app.getLocale())
-  const messages = locale.messages
+  // 提示文案在显示时才取词典：语言控制器要等 settings.yaml 读完才知道引擎的
+  // Language 选择，启动时捕获一次会把提示永久钉在系统语言上。
+  const locale = currentDesktopLocale
+  const messages = (): DesktopMessages => locale().messages
   const updateDialog = new DesktopUpdateDialog(fileURLToPath(new URL('./preload-update-dialog.cjs', import.meta.url)), locale)
   const isMandatory = (): boolean => mandatoryPolicy?.state.blocking === true
   const ordinaryMessageBox = async (options: UpdateDialogOptions): Promise<Electron.MessageBoxReturnValue> => {
@@ -299,8 +301,8 @@ async function main(): Promise<void> {
     if (isMandatory()) { mandatoryUI?.sync(); return Promise.resolve() }
     let shown = updateErrors.get(state)
     if (shown === undefined) {
-      shown = ordinaryMessageBox({ type: 'error', title: messages.updateFailedTitle,
-        message: desktopUpdateErrorSummary(state, messages),
+      shown = ordinaryMessageBox({ type: 'error', title: messages().updateFailedTitle,
+        message: desktopUpdateErrorSummary(state, messages()),
         technicalDetails: state.technicalDetails ?? state.message ?? '' }).then(() => {})
       updateErrors.set(state, shown)
     }
@@ -363,14 +365,14 @@ async function main(): Promise<void> {
       await workspaceRecovery
       await startup?.catch(() => undefined)
       const host = backend.host
-      if (host === undefined) throw new DesktopUpdatePreparationError('tasks-unavailable', messages.updateTasksUnavailable)
+      if (host === undefined) throw new DesktopUpdatePreparationError('tasks-unavailable', messages().updateTasksUnavailable)
       const active = await host.updateTasks('inspect')
       const confirmation: Electron.MessageBoxOptions = {
-        type: active ? 'warning' : 'info', title: messages.updateTitle,
-        message: active ? messages.updateActiveTasks : formatDesktopMessage(messages.updateDownloadedTitle, { version: updates.state.version ?? '' }),
-        detail: active ? messages.updateActiveTasksDetail
-          : messages.updateDownloadedDetail,
-        buttons: active ? [messages.updateStopTasks, messages.updateLater] : [messages.installAndRestart],
+        type: active ? 'warning' : 'info', title: messages().updateTitle,
+        message: active ? messages().updateActiveTasks : formatDesktopMessage(messages().updateDownloadedTitle, { version: updates.state.version ?? '' }),
+        detail: active ? messages().updateActiveTasksDetail
+          : messages().updateDownloadedDetail,
+        buttons: active ? [messages().updateStopTasks, messages().updateLater] : [messages().installAndRestart],
         defaultId: 1, cancelId: 1,
       }
       if (isMandatory()) {
@@ -380,10 +382,10 @@ async function main(): Promise<void> {
         const result = await updateDialog.show(mainWindow, confirmation)
         if (result.response !== 0 || isMandatory()) return false
       }
-      if (backend.host !== host) throw new DesktopUpdatePreparationError('tasks-unavailable', messages.updateTasksUnavailable)
+      if (backend.host !== host) throw new DesktopUpdatePreparationError('tasks-unavailable', messages().updateTasksUnavailable)
       try {
         const stillActive = await host.updateTasks('lock')
-        if (stillActive && !active) throw new DesktopUpdatePreparationError('tasks-changed', messages.updateTasksChanged)
+        if (stillActive && !active) throw new DesktopUpdatePreparationError('tasks-changed', messages().updateTasksChanged)
         mandatoryUI?.preparingRestart(stillActive)
         requireCleanStop = true
         updateStopFailure = undefined
@@ -391,7 +393,7 @@ async function main(): Promise<void> {
         updateStoppedHost = true
         // The backend's async cleanup callback can assign this after the reset above.
         const stopFailure = updateStopFailure as DesktopHostUncleanExitError | undefined
-        if (stopFailure !== undefined) throw new DesktopUpdatePreparationError('stop-failed', messages.updateStopFailed, stopFailure.message)
+        if (stopFailure !== undefined) throw new DesktopUpdatePreparationError('stop-failed', messages().updateStopFailed, stopFailure.message)
         updateJournal?.action('install-confirmed')
         shellInstallerOwnsQuit = true
       } catch (error) {
@@ -499,8 +501,8 @@ async function main(): Promise<void> {
       if (manual || state.phase === 'idle' || (state.phase === 'error' && state.failedOperation === 'check')) {
         const controller = new AbortController()
         ordinaryDialogs.add(controller)
-        const progress = mainWindow === undefined ? Promise.resolve() : updateDialog.show(mainWindow, { type: 'info', title: messages.updateCheckTitle,
-          message: messages.updateChecking, buttons: [messages.later], cancelId: 0, signal: controller.signal })
+        const progress = mainWindow === undefined ? Promise.resolve() : updateDialog.show(mainWindow, { type: 'info', title: messages().updateCheckTitle,
+          message: messages().updateChecking, buttons: [messages().later], cancelId: 0, signal: controller.signal })
         try {
           if (!joinedPolicyAuthentication) {
             void checkPolicyManually('deferred').catch((error: unknown) => { console.error(error) })
@@ -511,8 +513,8 @@ async function main(): Promise<void> {
       if (isMandatory()) { mandatoryUI?.focus(); return }
       if (state.phase === 'error' && state.failedOperation === 'check') { await showUpdateFailure(state); return }
       if (state.phase === 'idle') {
-        await ordinaryMessageBox({ type: 'info', title: messages.updateCheckTitle,
-          message: formatDesktopMessage(messages.updateCurrent, { version: app.getVersion() }) })
+        await ordinaryMessageBox({ type: 'info', title: messages().updateCheckTitle,
+          message: formatDesktopMessage(messages().updateCurrent, { version: app.getVersion() }) })
         return
       }
       if (state.phase === 'ready' || (state.phase === 'error' && state.failedOperation === 'install')) {
@@ -524,9 +526,9 @@ async function main(): Promise<void> {
       }
       if (state.phase !== 'available' && !(state.phase === 'error' && state.failedOperation === 'download')) return
       if (manual) {
-        const result = await ordinaryMessageBox({ title: messages.updateCheckTitle, message: messages.updateAvailable,
-          detail: formatDesktopMessage(messages.updateDetail, { version: state.version ?? '' }),
-          buttons: [messages.updateDownload], cancelId: 1 })
+        const result = await ordinaryMessageBox({ title: messages().updateCheckTitle, message: messages().updateAvailable,
+          detail: formatDesktopMessage(messages().updateDetail, { version: state.version ?? '' }),
+          buttons: [messages().updateDownload], cancelId: 1 })
         if (result.response !== 0) return
       }
       if (!isMandatory() && state.version !== undefined) {
@@ -563,14 +565,14 @@ async function main(): Promise<void> {
     if (policyAuth === undefined || mandatoryPolicy === undefined || quitting) return undefined
     const parent = mandatoryUI?.confirmationWindow ?? mainWindow
     if (parent === undefined) return undefined
-    const consent = await updateDialog.show(parent, { type: 'info', title: messages.policyLoginTitle,
-      message: messages.policyLoginRequired, buttons: [messages.policyLogin, messages.later], cancelId: 1 })
+    const consent = await updateDialog.show(parent, { type: 'info', title: messages().policyLoginTitle,
+      message: messages().policyLoginRequired, buttons: [messages().policyLogin, messages().later], cancelId: 1 })
     if (consent.response !== 0 || isQuitting()) return undefined
     const outcome = await policyAuth.login()
     if (isQuitting() || outcome === 'cancelled') return undefined
     if (outcome === 'failed') {
-      await updateDialog.show(parent, { type: 'error', title: messages.policyLoginTitle,
-        message: messages.policyLoginFailed, buttons: [messages.updateAcknowledge], cancelId: 0 })
+      await updateDialog.show(parent, { type: 'error', title: messages().policyLoginTitle,
+        message: messages().policyLoginFailed, buttons: [messages().updateAcknowledge], cancelId: 0 })
       return undefined
     }
     // Drain a pre-login request before asking the server to evaluate the new cookies.
@@ -812,7 +814,7 @@ async function main(): Promise<void> {
     mandatoryPolicy = new DesktopMandatoryUpdatePolicy(policyConfig, {
       platform: process.platform === 'win32' ? 'desktop-win' : 'desktop-mac', arch: process.arch as 'x64' | 'arm64',
       version: app.getVersion(), bundledDshVersion: app.isPackaged ? readDesktopRuntime(resources.dsh).release.version : app.getVersion(),
-      bundleId, locale: locale.id,
+      bundleId, locale: locale().id,
     }, (state) => {
       if (state.error !== 'authentication-required') policyAuthenticationQueued = false
       if (state.blocking) {

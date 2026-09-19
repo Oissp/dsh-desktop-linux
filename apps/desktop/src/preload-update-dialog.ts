@@ -5,5 +5,6 @@ import { UPDATE_DIALOG_IPC, type UpdateDialogApi, type UpdateDialogView } from '
 const api: UpdateDialogApi = {
   status: () => ipcRenderer.invoke(UPDATE_DIALOG_IPC.status) as Promise<UpdateDialogView>,
   respond: index => ipcRenderer.invoke(UPDATE_DIALOG_IPC.respond, index) as Promise<void>,
+  resize: height => ipcRenderer.invoke(UPDATE_DIALOG_IPC.resize, height) as Promise<void>,
 }
 if (location.href === 'dsh-app://shell/update-dialog.html') contextBridge.exposeInMainWorld('dshUpdateDialog', api)

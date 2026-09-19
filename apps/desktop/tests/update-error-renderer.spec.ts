@@ -30,7 +30,8 @@ it.each(['en', 'zh-CN'])('keeps ordinary diagnostics folded, text-only, and keyb
     closeLabel: locale.messages.updateClose, technicalDetailsLabel: locale.messages.updateTechnicalDetails,
     technicalDetails: '<img src=x onerror="window.compromised=true">\nexit 0; shutdown acknowledged false' }
   const respond = vi.fn(async () => {})
-  const api: UpdateDialogApi = { status: async () => state, respond }
+  const resize = vi.fn(async () => {})
+  const api: UpdateDialogApi = { status: async () => state, respond, resize }
   Object.defineProperty(p.dom.window, 'dshUpdateDialog', { value: api })
   p.run()
   await expect.poll(() => p.element('dialog').hidden).toBe(false)
@@ -57,6 +58,24 @@ it.each(['en', 'zh-CN'])('keeps ordinary diagnostics folded, text-only, and keyb
   expect(respond).not.toHaveBeenCalled()
   p.document.dispatchEvent(new p.dom.window.KeyboardEvent('keydown', { key: 'Escape', cancelable: true }))
   expect(respond).toHaveBeenCalledWith(0)
+  // 覆盖层铺满父窗口，量高度没有意义；只有卡片才需要主进程重新定尺寸。
+  expect(resize).not.toHaveBeenCalled()
+})
+
+it('reports its content height on the card surface so the window fits the prompt', async () => {
+  const p = page('update-dialog')
+  const locale = resolveDesktopLocale('zh-CN')
+  const state: UpdateDialogView = { locale: locale.id, surface: 'window', title: locale.messages.updateTitle,
+    message: locale.messages.updateAvailable, detail: '', buttons: [locale.messages.updateDownload], cancelId: 1,
+    closeLabel: locale.messages.updateClose, technicalDetailsLabel: '', technicalDetails: '' }
+  const resize = vi.fn(async (_height: number) => {})
+  const api: UpdateDialogApi = { status: async () => state, respond: vi.fn(async () => {}), resize }
+  Object.defineProperty(p.dom.window, 'dshUpdateDialog', { value: api })
+  p.run()
+  await expect.poll(() => p.element('dialog').hidden).toBe(false)
+  // 固定 320 高的卡片会在短文案下方留出一片裸白底，因此文档量出自己的高度回报主进程。
+  await expect.poll(() => resize.mock.calls.length).toBeGreaterThan(0)
+  expect(resize.mock.calls[0]![0]).toBeTypeOf('number')
 })
 
 it('keeps mandatory diagnostics expandable without clearing the block or authorizing installation', async () => {

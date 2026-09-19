@@ -4,9 +4,16 @@ import { BrowserWindow } from 'electron'
 /** How a shell modal presents itself over its parent. */
 export type DesktopDialogSurface = 'overlay' | 'window'
 
-/** Opaque card size used where the transparent sheet cannot composite. */
+/**
+ * Opaque card size used where the transparent sheet cannot composite. The height is
+ * the pre-measurement size only: the document reports its content height once laid
+ * out and `fitDialogCard` shrinks or grows the card to it, because a fixed height
+ * leaves bare backing under a short prompt and scrolls a long one.
+ */
 const CARD_WIDTH = 420
 const CARD_HEIGHT = 320
+/** Keeps a card that reports an implausibly small height from collapsing past its controls. */
+const CARD_MIN_HEIGHT = 120
 
 /**
  * A transparent sheet needs a compositing server to blend the scrim's alpha.
@@ -51,6 +58,28 @@ function createDialogCard(parent: BrowserWindow, preload: string, title: string)
   window.setMenu(null)
   window.webContents.setWindowOpenHandler(() => ({ action: 'deny' }))
   return window
+}
+
+/**
+ * Resize an opaque card to the height its document measured, keeping it centered on
+ * the parent. The sheet surface already spans its parent, so this is a no-op there.
+ * @param window - The prompt window to fit.
+ * @param height - Content height the document reported, in CSS pixels.
+ * @param platform - Platform hosting the prompt, selecting whether a card is in use.
+ */
+export function fitDialogCard(window: BrowserWindow, height: number,
+  platform: NodeJS.Platform = process.platform): void {
+  if (desktopDialogSurface(platform) !== 'window' || window.isDestroyed()) return
+  const parent = window.getParentWindow()
+  if (parent === null || parent.isDestroyed()) return
+  const bounds = parent.getContentBounds()
+  const fitted = Math.min(Math.max(Math.round(height), CARD_MIN_HEIGHT), bounds.height)
+  const width = Math.min(CARD_WIDTH, bounds.width)
+  window.setBounds({
+    x: Math.round(bounds.x + (bounds.width - width) / 2),
+    y: Math.round(bounds.y + (bounds.height - fitted) / 2),
+    width, height: fitted,
+  })
 }
 
 /**

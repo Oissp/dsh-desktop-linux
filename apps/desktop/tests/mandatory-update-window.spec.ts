@@ -33,7 +33,7 @@ function setup() {
   let policy: DesktopPolicyState = { blocking: true, checking: false, page: 'https://downloads.example.com/desktop' }
   let update: DesktopUpdateState = { phase: 'ready', version: '1.0.1-nightly.1' }
   const install = vi.fn(async () => update)
-  ui = new DesktopMandatoryUpdateWindow({ preload: 'owned', locale: resolveDesktopLocale('zh'),
+  ui = new DesktopMandatoryUpdateWindow({ preload: 'owned', locale: () => resolveDesktopLocale('zh'),
     allowedPageOrigins: ['https://downloads.example.com'], parent: () => window as unknown as BrowserWindow,
     policy: () => policy, update: () => update, refresh: async () => {}, download: async () => update, install })
   ui.sync()
