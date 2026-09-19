@@ -416,6 +416,11 @@ async function main(): Promise<void> {
 
   protocol.handle(SCHEME, (request) => {
     const url = new URL(request.url)
+    // Shell-owned documents (update prompts) ship in the packaged `renderer` directory and
+    // are read from disk; only the product host forwards to the Host process.
+    if (url.hostname === 'shell') {
+      return serveWebDocument(request, join(app.getAppPath(), 'renderer'))
+    }
     if (url.hostname === 'app') {
       if (url.pathname === '/' || url.pathname === '/index.html' || url.pathname.startsWith('/assets/')
         || ['/favicon.svg', '/manifest.webmanifest'].includes(url.pathname)) {

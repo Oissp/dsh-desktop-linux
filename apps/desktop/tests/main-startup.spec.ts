@@ -5,7 +5,7 @@ import { join } from 'node:path'
 import { mkdtempSync, readFileSync, readdirSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import type { MenuItemConstructorOptions, MessageBoxOptions } from 'electron'
-import { DESKTOP_IPC, type DesktopUpdateState } from '../src/ipc.ts'
+import { DESKTOP_IPC, SCHEME, type DesktopUpdateState } from '../src/ipc.ts'
 import { MANDATORY_IPC } from '../src/mandatory-update-ipc.ts'
 import { DesktopHostUncleanExitError } from '../src/host-process.ts'
 import { en } from '../src/locale.ts'
@@ -45,6 +45,7 @@ const harness = await vi.hoisted(async () => {
   const updateCheck = vi.fn(async (_manual?: boolean): Promise<DesktopUpdateState> => updateState)
   const updateDownload = vi.fn(async (_version: string): Promise<DesktopUpdateState> => updateState)
   const updateInstall = vi.fn(async (_version: string): Promise<DesktopUpdateState> => updateState)
+  const protocolHandle = vi.fn<(scheme: string, handler: (request: Request) => Promise<Response>) => void>()
   const popup = vi.fn<(options: { window: FakeWindow; x?: number; y?: number; callback?: () => void }) => void>()
   const menuBuilder = vi.fn<(template: MenuItemConstructorOptions[]) => { popup: typeof popup }>(() => ({ popup }))
   const menu = Object.assign(menuBuilder, { buildFromTemplate: menuBuilder, setApplicationMenu: vi.fn() })
@@ -136,7 +137,7 @@ const harness = await vi.hoisted(async () => {
   return {
     failWindow(error: Error) { windowFailure = error },
     windows, hosts, handlers, app, FakeWindow, FakeHost, powerMonitor,
-    menu, popup, socketHeaders: vi.fn(), updateCheck, updateDownload, updateInstall,
+    menu, popup, socketHeaders: vi.fn(), updateCheck, updateDownload, updateInstall, protocolHandle,
     ipcOn: vi.fn<(channel: string, listener: (event: { sender: unknown; senderFrame: unknown }, ...args: unknown[]) => void) => void>(),
     get updateState() { return updateState },
     set updateState(value: DesktopUpdateState) { updateState = value },
@@ -164,6 +165,7 @@ const harness = await vi.hoisted(async () => {
     set closeWindowsOnQuit(value: boolean) { closeWindowsOnQuit = value },
     reset() {
       windows.length = 0; hosts.length = 0; handlers.clear(); app.removeAllListeners()
+      protocolHandle.mockReset()
       powerMonitor.removeAllListeners()
       app.isPackaged = true
       windowFailure = undefined
@@ -214,7 +216,7 @@ vi.mock('electron', () => ({
     on = vi.fn()
   },
   session: { defaultSession: { webRequest: { onBeforeSendHeaders: harness.socketHeaders } } },
-  protocol: { registerSchemesAsPrivileged: vi.fn(), handle: vi.fn() },
+  protocol: { registerSchemesAsPrivileged: vi.fn(), handle: harness.protocolHandle },
   powerMonitor: harness.powerMonitor,
 }))
 vi.mock('node:fs/promises', async (importOriginal) => {
@@ -490,6 +492,19 @@ describe('desktop main startup', () => {
     sender.mainFrame.url = 'http://127.0.0.1:40000/'
     expect(() => handler({ sender, senderFrame: sender.mainFrame })).toThrow('unowned renderer')
     sender.mainFrame.url = original
+  })
+
+  it('serves shell-owned documents from the packaged renderer directory', async () => {
+    const { serveWebDocument } = await import('../src/web-document.ts')
+    await import('../src/main.ts')
+    await harness.preparing.promise
+    const handler = harness.protocolHandle.mock.calls.find(([scheme]) => scheme === SCHEME)![1]
+    // 更新提示加载 dsh-app://shell/*；漏掉这个分支会让 loadURL 拿到 404 空文档，
+    // 窗口只剩一片空白，卡片和覆盖层都一样看不到内容。
+    await handler(new Request('dsh-app://shell/update-dialog.html'))
+    expect(serveWebDocument).toHaveBeenCalledWith(expect.any(Request), join('desktop-test-app', 'renderer'))
+    const unowned = await handler(new Request('dsh-app://other/update-dialog.html'))
+    expect(unowned.status).toBe(404)
   })
 
   it.each(['darwin', 'win32', 'linux'] as const)('limits native titlebar styling to macOS on %s', async (platform) => {

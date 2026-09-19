@@ -1,4 +1,4 @@
-# Agent Note: Linux shell prompts use an opaque card instead of the transparent sheet
+# Agent Note: Shell prompt documents are served, and Linux uses an opaque card
 
 Status: implemented
 
@@ -6,11 +6,15 @@ Status: implemented
 
 ## Problem
 
-[0.1.6-alpha.2 合并](../architecture/2026-09-18-merge-0.1.6-alpha.2-linux-desktop.zh.md)把本 fork 的原生 `dialog.showMessageBox` 更新提示换成了 Shell 自绘的覆盖层窗口。`createUpdateOverlay` 构造一个无边框的 `transparent: true` 子窗口，尺寸取 `parent.getContentBounds()`；`update-dialog.css` 用 `body { background: rgb(0 0 0 / 24%) }` 铺遮罩，父窗口的 `body` 则被插入 2px `filter: blur()`。`update-dialog.html` 与 `mandatory-update.html` 都引用该样式表，因此两者都带上了这层遮罩。
+[0.1.6-alpha.2 合并](../architecture/2026-09-18-merge-0.1.6-alpha.2-linux-desktop.zh.md)把本 fork 的原生 `dialog.showMessageBox` 更新提示换成了 Shell 自绘窗口，其文档来自 `dsh-app://shell/update-dialog.html` 与 `dsh-app://shell/mandatory-update.html`。同一次合并还从 `dsh-app` 的 protocol handler 里删掉了 `shell` 分支——fork 合并前的 `main.ts` 带着 `if (url.hostname === 'shell') return serveShellAsset(request)`。此后没有任何代码服务该 host，handler 一路落到 `404`，于是每个提示加载到的都是空文档。这些文档本身正确打进了 `app.asar` 的 `renderer/`，只是没有代码去读。
 
-透明窗口的 alpha 需要合成器才能与背后内容混合。在没有合成器的 X11 上，alpha 无处可混，会被画成不透明底色，于是遮罩变成一块盖住整个产品窗口的深色板，只剩居中的白色卡片可见。用户报告的场景是瞬时的 **正在检查更新…** 提示。合并前的版本显示的是原生对话框，因此 `0.1.6-alpha.2.1` 及之后的每个 Linux 构建都带有该缺陷，而在覆盖层能正常合成的 darwin 与 win32 上从未出现。
+由此产生两个症状，都报告在 Linux `0.1.6-alpha.2.1` 及之后。因为 `update-dialog.css` 从未加载，提示窗口既没有遮罩、也没有居中和卡片。瞬时的 **正在检查更新…** 提示于是表现为一个与父窗口内容区等大、内部空无一物的 `transparent: true` 窗口；在没有合成器的 X11 上，这份 alpha 没有背景可混，被画成盖住产品窗口的不透明深色板。把提示限制为不透明的 420x320 卡片后，同一个空文档就变成了一个小的纯白空窗口。
+
+未被合成的透明窗口依然无法呈现遮罩，因此下面的表面拆分仍然必要；它并不是内容空白的原因。
 
 ## Decision
+
+protocol handler 用现成的 `serveWebDocument` 从 `join(app.getAppPath(), 'renderer')` 服务 `shell` host；被删掉的 `serveShellAsset` 重复实现的路径包含检查与 MIME 映射，该函数本来就有。它对 `<head>` 的 boot 注入只作用于 `/` 与 `/index.html`，因此 Shell 文档按原字节服务。
 
 表面形式由 `update-overlay.ts` 决定，并且按平台而非全局选择，因此上游的覆盖层在所有能用的地方都保留下来。
 
@@ -26,6 +30,8 @@ Status: implemented
 
 **在 Linux 上回退到原生 `dialog.showMessageBox`。** 否决：合并后的流程依赖程序化关闭，瞬时的检查提示会滞留到被点击为止。合并前的代码能用原生对话框，是因为它既没有瞬时提示，也没有会取消普通提示的强制策略机制。
 
+**把 `serveShellAsset` 作为独立读取器恢复回来。** 否决：它重复了 `serveWebDocument` 的目录穿越防护、MIME 表与方法检查。复用已有测试的函数，只留一处需要审计路径包含的读取器。
+
 **检测合成器，在能用的地方保留覆盖层。** 否决：Electron 没有暴露合成查询接口，而按环境做启发式判断在能合成的 X11 桌面（也就是常见情况）上会判错，同时又帮不了不能合成的那些。
 
 **把覆盖层按父窗口全尺寸做成不透明。** 否决：与父窗口内容区等大的不透明窗口会完全遮住产品窗口，而不是用遮罩盖住它。
@@ -36,11 +42,15 @@ Status: implemented
 
 Linux 上的提示不再盖住产品窗口，强制更新模态在该平台也保留了原生窗口控件。代价在卡片的固定几何上：超过 420x320 的内容在 `main` 内部滚动而不是把窗口撑大；卡片只在创建时居中一次，不再像覆盖层那样跟随父窗口的移动与缩放。
 
-fork 相对上游在 `update-overlay.ts` 上的差异增加了 Linux 分支与两个表面函数。需要重新套用它的是上游对提示窗口的重构：`.github/sync-trimmed-paths.txt` 记录的是被删除的文件而非被修改的行为，因此一次把 `createUpdateOverlay` 恢复成唯一提示构造函数的合并，会在 Linux 上悄悄把那块深色板带回来。
+fork 相对上游的差异落在两个文件：`main.ts` 里的 `shell` 分支，以及 `update-overlay.ts` 里的 Linux 分支与两个表面函数。上游 `master` 的 handler 没有 `shell` 分支，也没有其他代码服务该 host，因此一次整体采用上游 handler 的合并会再次删掉该分支，让所有提示重新变成空白。`.github/sync-trimmed-paths.txt` 记录的是被删除的文件而非被修改的行为，两处分叉都不在它的覆盖范围内。
+
+这些文档静默 404 了两个版本，这一点最值得记住：`loadURL` 解析 404 时并不 reject，因此 `void window.loadURL(page).catch(abort)` 从未触发，提示在什么都没显示的情况下报告成功。
 
 ## Testing
 
-`apps/desktop/tests/update-overlay.spec.ts` 钉住各平台的表面形式、卡片不透明且居中的几何，以及卡片表面不向父窗口插入 CSS。`update-dialog.spec.ts` 钉住 Linux 提示与发布的 `surface`。`update-error-renderer.spec.ts` 断言两个文档都把该字段写到 `document.body.dataset`，因此丢掉这行赋值会失败，而不是悄悄把遮罩恢复回来。`package-deb.yml` 在打包前运行这套测试。
+`apps/desktop/tests/main-startup.spec.ts` 断言 handler 把 `dsh-app://shell/update-dialog.html` 路由到打包的 `renderer` 目录，并且对非自有 host 仍然返回 404；删掉该分支会让它失败。`update-overlay.spec.ts` 钉住各平台的表面形式、卡片不透明且居中的几何，以及卡片表面不向父窗口插入 CSS。`update-dialog.spec.ts` 钉住 Linux 提示与发布的 `surface`。`update-error-renderer.spec.ts` 断言两个文档都把该字段写到 `document.body.dataset`，因此丢掉这行赋值会失败，而不是悄悄把遮罩恢复回来。`package-deb.yml` 在打包前运行这套测试。
+
+没有任何自动检查能证明提示真的渲染出了可见内容，这正是 404 能通过整套测试的原因。在已安装的 Linux 构建上实际查看提示，仍然是一个手工验收步骤。
 
 ## Related
 
