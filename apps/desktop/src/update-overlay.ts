@@ -1,5 +1,5 @@
 /** Shell-owned modal windows cover the parent's content without replacing its native window controls. */
-import { BrowserWindow } from 'electron'
+import { BrowserWindow, nativeTheme } from 'electron'
 
 /** How a shell modal presents itself over its parent. */
 export type DesktopDialogSurface = 'overlay' | 'window'
@@ -14,6 +14,15 @@ const CARD_WIDTH = 420
 const CARD_HEIGHT = 320
 /** Keeps a card that reports an implausibly small height from collapsing past its controls. */
 const CARD_MIN_HEIGHT = 120
+
+/**
+ * Pre-paint background for an opaque shell window. The document paints the same
+ * color from its `--shell-surface` token once it loads, so a mismatch would flash.
+ * @returns The CSS color matching the document's surface token in the current theme.
+ */
+function surfaceBackground(): string {
+  return nativeTheme.shouldUseDarkColors ? '#232324' : '#ffffff'
+}
 
 /**
  * A transparent sheet needs a compositing server to blend the scrim's alpha.
@@ -51,7 +60,7 @@ function createDialogCard(parent: BrowserWindow, preload: string, title: string)
     x: Math.round(bounds.x + (bounds.width - width) / 2),
     y: Math.round(bounds.y + (bounds.height - height) / 2),
     width, height, resizable: false, minimizable: false, maximizable: false,
-    skipTaskbar: true, backgroundColor: '#ffffff', title,
+    skipTaskbar: true, backgroundColor: surfaceBackground(), title,
     webPreferences: { preload, contextIsolation: true, sandbox: true, nodeIntegration: false, webSecurity: true },
   })
   window.once('ready-to-show', () => { if (!window.isDestroyed()) window.show() })
@@ -139,7 +148,7 @@ export function createMandatoryUpdateWindow(parent: BrowserWindow, preload: stri
     parent, modal: true, show: false, title,
     width: 640, height: 560, minWidth: 480, minHeight: 360,
     movable: true, resizable: true, maximizable: true,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: surfaceBackground(),
     webPreferences: { preload, contextIsolation: true, sandbox: true, nodeIntegration: false, webSecurity: true },
   })
   window.once('ready-to-show', () => { if (!window.isDestroyed()) window.show() })

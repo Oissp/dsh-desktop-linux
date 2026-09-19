@@ -27,7 +27,7 @@ const fixture = await vi.hoisted(async () => {
   }
   return { handlers, windows, FakeWindow }
 })
-vi.mock('electron', () => ({ BrowserWindow: fixture.FakeWindow, ipcMain: {
+vi.mock('electron', () => ({ BrowserWindow: fixture.FakeWindow, nativeTheme: { shouldUseDarkColors: false }, ipcMain: {
   handle: (name: string, fn: (...args: unknown[]) => unknown) => fixture.handlers.set(name, fn),
   removeHandler: (name: string) => fixture.handlers.delete(name),
 } }))

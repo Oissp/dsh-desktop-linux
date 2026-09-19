@@ -3,13 +3,14 @@ import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
-const theme = vi.hoisted(() => ({ shouldUseDarkColors: false, on: vi.fn(), removeListener: vi.fn() }))
+const theme = vi.hoisted(() => ({ shouldUseDarkColors: false, themeSource: 'system', on: vi.fn(), removeListener: vi.fn() }))
 vi.mock('electron', () => ({ nativeTheme: theme }))
 
-const { readAppearancePreference, resolveAppearance, DesktopAppearanceController } = await import('../src/appearance.ts')
+const { readAppearancePreference, resolveAppearance, themeSourceOf, DesktopAppearanceController } = await import('../src/appearance.ts')
 
 let dir: string | undefined
 afterEach(() => {
+  theme.themeSource = 'system'
   if (dir !== undefined) { rmSync(dir, { recursive: true, force: true }); dir = undefined }
 })
 
@@ -60,6 +61,32 @@ describe('desktop appearance', () => {
     expect(resolveAppearance('system')).toBe('dark')
     expect(resolveAppearance(undefined)).toBe('dark')
     theme.shouldUseDarkColors = false
+  })
+
+  it('maps only the built-in pair onto an overriding theme source', () => {
+    expect(themeSourceOf('dark')).toBe('dark')
+    expect(themeSourceOf('light')).toBe('light')
+    // `system` and any custom theme id must leave the OS in charge.
+    expect(themeSourceOf('system')).toBe('system')
+    expect(themeSourceOf('midnight')).toBe('system')
+    expect(themeSourceOf(undefined)).toBe('system')
+  })
+
+  it('drives the native theme source so shell documents follow the setting', async () => {
+    dir = mkdtempSync(join(tmpdir(), 'dsh-appearance-'))
+    const path = join(dir, 'settings.yaml')
+    writeFileSync(path, 'ui-theme:\n  preference: dark\n')
+    const controller = new DesktopAppearanceController(path, () => {})
+    await controller.start()
+    // 写入它才会让 Shell 文档的 prefers-color-scheme 跟随设置而不是操作系统。
+    expect(theme.themeSource).toBe('dark')
+    controller.dispose()
+    // A custom theme id names no built-in pair, so the OS stays in charge.
+    writeFileSync(path, 'ui-theme:\n  preference: midnight\n')
+    const custom = new DesktopAppearanceController(path, () => {})
+    await custom.start()
+    expect(theme.themeSource).toBe('system')
+    custom.dispose()
   })
 
   it('keeps the explicit appearance when a refresh cannot read the document', async () => {

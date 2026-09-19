@@ -756,19 +756,22 @@ async function main(): Promise<void> {
       .catch((error: unknown) => { console.error(error) }).finally(() => { app.quit() })
   })
 
+  // 外观控制器读取引擎写入的 settings.yaml（ui-theme.preference）。它决定
+  // nativeTheme.themeSource，因此 Shell 自有文档的 prefers-color-scheme 跟随
+  // 设置而不是操作系统；Linux 另外据此在浅色/深色鲸鱼图标间切换窗口与托盘图标。
+  const appearanceController = new DesktopAppearanceController(desktopSettingsPath(), (appearance) => {
+    iconAppearance = appearance
+    if (!app.isPackaged || process.platform !== 'linux') return
+    tray?.setImage(trayIconPath(appearance))
+    for (const window of BrowserWindow.getAllWindows()) {
+      if (!window.isDestroyed()) window.setIcon(windowIconPath(appearance))
+    }
+  })
+  disposeAppearance = () => { appearanceController.dispose() }
+  await appearanceController.start()
+
   mainWindow = createMainWindow()
   if (app.isPackaged && process.platform === 'linux') {
-    // 外观控制器读取引擎写入的 settings.yaml（ui-theme.preference），并按
-    // 解析结果在浅色/深色鲸鱼图标间切换窗口与托盘图标。
-    const controller = new DesktopAppearanceController(desktopSettingsPath(), (appearance) => {
-      iconAppearance = appearance
-      tray?.setImage(trayIconPath(appearance))
-      for (const window of BrowserWindow.getAllWindows()) {
-        if (!window.isDestroyed()) window.setIcon(windowIconPath(appearance))
-      }
-    })
-    disposeAppearance = () => { controller.dispose() }
-    await controller.start()
     // 语言控制器读取引擎写入的 locale.preference（通用设置 → Language），未显式
     // 选择时退回系统语言，并在设置变更时重建托盘菜单。
     const rebuildTrayMenu = (): void => {

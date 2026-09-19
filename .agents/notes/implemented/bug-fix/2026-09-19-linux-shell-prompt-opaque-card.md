@@ -64,4 +64,4 @@ No automated check proves a prompt renders visible content, which is why the 404
 
 ## Related
 
-[The channel-derivation note](2026-09-19-desktop-update-channel-derivation.md) covers the other defect the same merge introduced in the update path.
+[The channel-derivation note](2026-09-19-desktop-update-channel-derivation.md) covers the other defect the same merge introduced in the update path. [The shell appearance note](../architecture/2026-09-20-shell-appearance-follows-engine-theme.md) covers how these documents follow the application appearance.

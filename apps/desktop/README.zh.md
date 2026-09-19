@@ -120,6 +120,8 @@ pnpm run prepare:desktop
 
 Shell 提示是产品窗口的模态子窗口，其文档从 `dsh-app://shell/` 加载，由 protocol handler 从打包的 `renderer` 目录读取。在能合成透明窗口的平台上，无边框覆盖层连同变暗遮罩盖住父窗口内容。Linux 改用居中于父窗口的不透明卡片：未被合成的透明窗口会把 alpha 画成不透明底色。卡片自身没有内容高度，因此其文档在布局完成后量出自己的高度，由主进程据此给窗口定尺寸，下限为控件自身高度，上限为父窗口。强制更新模态提供原生移动、缩放与最大化，因此除 macOS 外都使用带边框窗口。
 
+Shell 文档跟随应用外观。`settings.yaml` 中的偏好会成为 `nativeTheme.themeSource`，因此每个 Shell 文档的 `prefers-color-scheme` 跟随 设置 → 通用设置 → 外观 而不是操作系统，各文档再用自己那份产品别名令牌取值重绘。偏好写成自定义主题时不覆盖任何东西：只有内置的 `light` 与 `dark` 这一对在 Shell 里有对应取值。不透明提示窗口按解析出的表面色预涂底色，避免文档首次绘制时闪一下。
+
 提示文案在每次提示打开时从语言词典读取，而不是启动时捕获：语言控制器要在更新机制构造完成之后才从 `settings.yaml` 解析出引擎的 Language 选择，捕获一次会把所有提示钉在系统语言上。
 
 打包为 `DSH_DESKTOP_AUTO_UPDATE_ENV` 选择的部署生成 generic-provider 频道元数据。AppImage 目标内嵌 blockmap，让 electron-updater 可以复用未变化的数据块；`.deb` 安装包不是 updater 的载荷。运行时与桌面壳仍属于同一个 Desktop 发布。

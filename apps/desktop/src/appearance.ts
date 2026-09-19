@@ -1,5 +1,5 @@
 /**
- * Appearance-driven window/tray icon selection for the packaged Linux build.
+ * Appearance resolution for the packaged shell.
  *
  * The dsh web engine persists its 通用设置 → 外观 choice (`ui-theme.preference`,
  * one of `light` | `dark` | `system`) in `<harness home>/settings.yaml`. This
@@ -7,6 +7,10 @@
  * the resolved appearance to a caller-supplied callback so the shell can swap
  * its window/tray icons. The document is watched for external edits and the
  * native theme listener covers OS-level changes.
+ *
+ * The preference also drives `nativeTheme.themeSource`, which is what makes
+ * `prefers-color-scheme` in every shell document follow the setting instead of
+ * the OS — the shell's own prompts are documents like any other renderer.
  * @module
  */
 
@@ -70,12 +74,24 @@ export function resolveAppearance(preference: string | undefined): DesktopAppear
   return nativeTheme.shouldUseDarkColors ? 'dark' : 'light'
 }
 
+/**
+ * Map the stored preference onto Electron's three-way theme source. The stored
+ * value may name a custom theme rather than a built-in preference, and only the
+ * built-in pair overrides the OS.
+ * @param preference - the stored `ui-theme.preference` value.
+ * @returns The theme source that makes `prefers-color-scheme` follow the setting.
+ */
+export function themeSourceOf(preference: string | undefined): 'system' | 'light' | 'dark' {
+  return preference === 'light' || preference === 'dark' ? preference : 'system'
+}
+
 /** Watch one settings document and re-apply the appearance on external edits. */
 export class DesktopAppearanceController {
   private watcher: DesktopSettingsWatcher
   private preference: string | undefined
   private closed = false
-  private readonly onThemeUpdated = (): void => { this.apply(resolveAppearance(this.preference)) }
+  private appearance: DesktopAppearance = resolveAppearance(undefined)
+  private readonly onThemeUpdated = (): void => { this.applyResolved() }
 
   /**
    * @param settingsPath - the `<harness home>/settings.yaml` document.
@@ -91,7 +107,11 @@ export class DesktopAppearanceController {
   /** Read the initial preference, apply once, and arm both watchers. */
   async start(): Promise<void> {
     this.preference = await readAppearancePreference(this.settingsPath)
-    this.apply(resolveAppearance(this.preference))
+    // 先写主题源：它同步决定 shouldUseDarkColors，resolveAppearance 的 system 分支
+    // 据此解析，Shell 文档的 prefers-color-scheme 也跟随它而不是操作系统。
+    nativeTheme.themeSource = themeSourceOf(this.preference)
+    this.appearance = resolveAppearance(this.preference)
+    this.apply(this.appearance)
     nativeTheme.on('updated', this.onThemeUpdated)
     this.watcher.start()
   }
@@ -103,6 +123,13 @@ export class DesktopAppearanceController {
     this.watcher.dispose()
   }
 
+  private applyResolved(): void {
+    const resolved = resolveAppearance(this.preference)
+    if (resolved === this.appearance) return
+    this.appearance = resolved
+    this.apply(resolved)
+  }
+
   private async refresh(): Promise<void> {
     if (this.closed) return
     // 读失败（引擎写入期间的竞态/瞬时错误）不等于偏好被清成 system：保留当前外观。
@@ -111,6 +138,8 @@ export class DesktopAppearanceController {
     const preference = snapshot.preference
     if (preference === this.preference) return
     this.preference = preference
-    this.apply(resolveAppearance(preference))
+    // 写入主题源本身会触发 updated，applyResolved 的去重让这次变更只应用一次。
+    nativeTheme.themeSource = themeSourceOf(preference)
+    this.applyResolved()
   }
 }

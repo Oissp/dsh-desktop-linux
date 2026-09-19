@@ -62,6 +62,16 @@ it.each(['en', 'zh-CN'])('keeps ordinary diagnostics folded, text-only, and keyb
   expect(resize).not.toHaveBeenCalled()
 })
 
+it('paints the close glyph from the text color so a dark card keeps it visible', () => {
+  const p = page('update-dialog')
+  const glyph = p.element('close').querySelector('svg')
+  expect(glyph).not.toBeNull()
+  const paths = [...glyph!.querySelectorAll('path')]
+  expect(paths.length).toBeGreaterThan(0)
+  // 作为 <img> 引入的图标带固定深色填充，深色卡片上会变成一枚看不见的叉。
+  for (const path of paths) expect(path.getAttribute('fill')).toBe('currentColor')
+})
+
 it('reports its content height on the card surface so the window fits the prompt', async () => {
   const p = page('update-dialog')
   const locale = resolveDesktopLocale('zh-CN')

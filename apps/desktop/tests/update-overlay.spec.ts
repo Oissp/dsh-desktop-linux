@@ -9,10 +9,19 @@ import {
   mandatoryUpdateSurface,
 } from '../src/update-overlay.ts'
 
-const native = vi.hoisted(() => ({ create: vi.fn<(options: BrowserWindowConstructorOptions) => object>() }))
-vi.mock('electron', () => ({ BrowserWindow: function (options: object) { return native.create(options) } }))
+const native = vi.hoisted(() => ({
+  create: vi.fn<(options: BrowserWindowConstructorOptions) => object>(),
+  theme: { shouldUseDarkColors: false },
+}))
+vi.mock('electron', () => ({
+  BrowserWindow: function (options: object) { return native.create(options) },
+  nativeTheme: native.theme,
+}))
 
-beforeEach(() => { native.create.mockReset() })
+beforeEach(() => {
+  native.create.mockReset()
+  native.theme.shouldUseDarkColors = false
+})
 
 function fakeWindow() {
   return Object.assign(new EventEmitter(), {
@@ -82,6 +91,23 @@ it('centers an opaque card on Linux instead of a transparent sheet', () => {
   // A transparent window without a compositor paints its alpha as an opaque backing.
   expect(options).not.toHaveProperty('transparent')
   expect(insertCSS).not.toHaveBeenCalled()
+})
+
+it('prepaints the opaque surfaces in the theme the document will paint itself', () => {
+  const { parent } = fakeParent()
+  const card = fakeWindow()
+  native.create.mockReturnValue(card)
+  createUpdatePromptWindow(parent, 'owned', 'Check for updates', 'linux')
+  const mandatory = fakeWindow()
+  native.create.mockReturnValue(mandatory)
+  createMandatoryUpdateWindow(parent, 'owned', 'Update required', 'win32')
+  // 文档加载后会用 --shell-surface 覆盖这个底色，取值不一致就会闪一下白。
+  expect(native.create.mock.calls[0]![0]).toMatchObject({ backgroundColor: '#ffffff' })
+  expect(native.create.mock.calls[1]![0]).toMatchObject({ backgroundColor: '#ffffff' })
+  native.create.mockClear()
+  native.theme.shouldUseDarkColors = true
+  createUpdatePromptWindow(parent, 'owned', 'Check for updates', 'linux')
+  expect(native.create.mock.calls[0]![0]).toMatchObject({ backgroundColor: '#232324' })
 })
 
 it('fits the card to its measured content and keeps it centered', () => {

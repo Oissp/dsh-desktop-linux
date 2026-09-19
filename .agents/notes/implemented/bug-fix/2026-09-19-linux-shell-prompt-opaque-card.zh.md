@@ -64,4 +64,4 @@ fork 相对上游的差异落在 `main.ts` 里的 `shell` 分支、`update-overl
 
 ## Related
 
-[频道推导笔记](2026-09-19-desktop-update-channel-derivation.zh.md)记录了同一次合并给更新路径带来的另一个缺陷。
+[频道推导笔记](2026-09-19-desktop-update-channel-derivation.zh.md)记录了同一次合并给更新路径带来的另一个缺陷。[Shell 外观笔记](../architecture/2026-09-20-shell-appearance-follows-engine-theme.zh.md)记录了这些文档如何跟随应用外观。
