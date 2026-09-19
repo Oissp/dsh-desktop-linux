@@ -64,10 +64,11 @@ export class DesktopUpdateCoordinator {
     }
     this.updater.autoDownload = false
     this.updater.autoInstallOnAppQuit = false
-    // 本 fork 的更新源是独立发布仓库的 GitHub Releases：electron-builder 按默认 latest
-    // 频道生成 latest-linux.yml，随 release 资产发布。上游的 nightly 频道指向其 COS 源，
-    // GitHub provider 下会请求不存在的 nightly-linux.yml。
-    this.updater.channel = 'latest'
+    // 不设置 updater.channel：GitHub provider 里 updater.channel 优先于版本号自带的预发布
+    // 标签。本 fork 的 release tag 是 v<desktop version>（如 v0.1.6-alpha.2.1），一旦把 channel
+    // 钉成 'latest'，shouldFetchVersion 与 isNextPreRelease 都不成立，tag 保持 null，检查更新
+    // 直接抛 ERR_UPDATER_NO_PUBLISHED_VERSIONS。留空则由版本号的 'alpha' 段解析出 tag，频道
+    // 元数据回落到 electron-builder 的默认名 latest-linux.yml。
     this.updater.allowPrerelease = true
     // Selecting a channel can enable downgrade in electron-updater.
     this.updater.allowDowngrade = false

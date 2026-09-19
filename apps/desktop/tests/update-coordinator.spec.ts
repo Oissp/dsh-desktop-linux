@@ -144,9 +144,12 @@ describe('desktop update coordinator', () => {
       'available', 'downloading', 'downloading', 'verifying', 'ready', 'installing',
     ])
     expect(f.updater).toMatchObject({
-      autoDownload: false, autoInstallOnAppQuit: false, channel: 'latest',
+      autoDownload: false, autoInstallOnAppQuit: false,
       allowPrerelease: true, allowDowngrade: false,
     })
+    // 钉住频道会让 GitHub provider 解析不出 release tag；频道必须留给 electron-updater 从
+    // 已安装版本的预发布段推导。
+    expect(f.updater.channel).toBeUndefined()
   })
 
   it('joins checks and downloads without retargeting a prepared release', async () => {
