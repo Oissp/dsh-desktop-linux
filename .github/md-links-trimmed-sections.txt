@@ -1,0 +1,6 @@
+# 链接裁剪清单：本 fork 保留了上游文件，但删掉了其中若干章节，指向这些章节的链接在 fork 里没有目标。
+# verify-md-links-trimmed.ts 读取本清单（忽略 # 注释行），把「文件#锚点」形式的断链视为有意裁剪。
+# 文件级裁剪——fork 完全不携带的上游文件——不在这里，见 sync-trimmed-paths.txt。
+apps/desktop/README.md#windows-ev-signing
+apps/desktop/README.md#release-versions
+apps/desktop/README.zh.md#release-versions
