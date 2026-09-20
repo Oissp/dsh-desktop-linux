@@ -23,6 +23,10 @@ export function createElectronBuilderConfig(
   return {
     appId,
     productName: 'DeepSeek Harness',
+    // Linux 靠 .desktop 的 StartupWMClass 匹配窗口的 WM_CLASS/app_id，而两边的回退值不一致：
+    // electron-builder 回退到 productName，Electron 回退到 app 名的小写 slug。把 desktopName
+    // 显式写成 appId 并随包写入 manifest，两处才取到同一个反向 DNS 身份。
+    extraMetadata: { desktopName: appId },
     // electron-builder 的 linux ${arch} 宏是 amd64/x86_64（非 x64），本仓库仅构建
     // linux-x64，硬编码命名以与 README/校验/发布 glob 保持一致。
     artifactName: 'deepseek-harness-${version}-linux-x64.${ext}',
@@ -63,6 +67,9 @@ export function createElectronBuilderConfig(
       // scoped 包名 @deepseek-ai/dsh-desktop 会被 electron-builder 算成非法的
       // @deepseek-aidsh-desktop（含 @/ 分隔符），必须显式给安全的可执行名。
       executableName: 'deepseek-harness-desktop',
+      // 让 .desktop 文件名跟随 desktopName，而不是 executableName：桌面环境按文件名
+      // 标识启动项，名字与窗口身份不一致时窗口不会被归到该启动项下。
+      syncDesktopName: true,
       icon: 'build/icon.png',
       target: linuxFormats,
     },

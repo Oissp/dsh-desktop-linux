@@ -80,6 +80,8 @@ pnpm run package:desktop:linux:x64
 
 The command requires Linux x64 and builds a `.deb` installer plus an AppImage; the AppImage is the electron-updater payload because Debian packages cannot carry differential updates.
 
+Packaging installs the launcher entry under the application ID and sets its `StartupWMClass` to the same identity Electron reports as the window's `WM_CLASS` and Wayland application ID, so a desktop environment associates a running window with the installed entry instead of showing it as a separate one.
+
 Each target owns its packed package inputs, prepared runtime, package set, dsh tree, pnpm preparation state, unpacked application, update metadata, and final artifacts under `apps/desktop/.desktop-build/targets/<target>/`. The Node.js archive cache remains shared under `.desktop-build/downloads` because every archive name includes its version, platform, and architecture and is verified before extraction. A target build never consumes another target's mutable preparation state.
 
 ### Runtime file selection

@@ -19,6 +19,16 @@ describe('desktop package target', () => {
     expect(join(config.electronDist, 'electron')).toContain(join('targets', 'linux-x64', 'electron'))
   })
 
+  it('gives the packaged Linux app one identity for window association', async () => {
+    const { createElectronBuilderConfig } = await import('../electron-builder.config.mjs')
+    const config = createElectronBuilderConfig({ DSH_DESKTOP_APP_ID: 'com.example.desktop-test' }, 'linux', 'x64')
+    // 桌面环境用窗口的 WM_CLASS/app_id 匹配 .desktop 的 StartupWMClass。两处回退值并不相等
+    // （Electron 用 app 名的小写 slug，electron-builder 用 productName），只有随包写入的
+    // desktopName 让它们取到同一个身份，.desktop 文件名也才会跟着它。
+    expect(config.extraMetadata.desktopName).toBe(config.appId)
+    expect(config.linux.syncDesktopName).toBe(true)
+  })
+
   it('selects the Linux x64 target selectors', () => {
     expect(resolveDesktopPackageTarget('linux-x64', 'linux', 'x64')).toMatchObject({
       platform: 'linux', arch: 'x64', builderPlatform: '--linux', builderArch: '--x64',

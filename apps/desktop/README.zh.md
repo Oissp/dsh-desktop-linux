@@ -81,6 +81,8 @@ pnpm run package:desktop:linux:x64
 
 该命令要求 Linux x64，会生成 `.deb` 安装包和 AppImage；AppImage 作为 electron-updater 更新负载，因为 Debian 包无法携带差分更新。
 
+打包把启动项装在应用 ID 之下，并让它的 `StartupWMClass` 与 Electron 上报的窗口 `WM_CLASS`／Wayland 应用 ID 取同一个身份，桌面环境因此把运行中的窗口归到已安装的启动项，而不是另起一项。
+
 每个目标都在 `apps/desktop/.desktop-build/targets/<target>/` 下持有自己的打包输入、已准备运行时、包集合、dsh 依赖树、pnpm 准备状态、未打包应用、更新元数据和最终产物。Node.js 归档缓存继续由 `.desktop-build/downloads` 共享，因为每个归档文件名都包含版本、平台和架构，并且在解包前经过验证。目标构建绝不读取其他目标的可变准备状态。
 
 ### 运行时文件筛选

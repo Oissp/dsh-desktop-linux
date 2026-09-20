@@ -156,7 +156,19 @@ jobs:
           for f in icon-dark.png tray-dark.png icon-white.png tray-white.png; do
             test -f "$ART/linux-unpacked/resources/$f" || { echo "::error::缺少运行时图标 resources/$f"; exit 1; }
           done
-          dpkg-deb -c "$DEB" | grep -E "icons/hicolor|/\.desktop" | head -12
+          echo "--- 桌面启动项（窗口关联身份） ---"
+          # 桌面环境用窗口的 WM_CLASS/app_id 匹配启动项的 StartupWMClass。两边必须取同一个
+          # 反向 DNS 身份（appId 去掉 .desktop 后缀），否则运行中的窗口不会被归到启动项下。
+          APP_ID="${DSH_DESKTOP_APP_ID}"
+          WM_CLASS="${APP_ID%.desktop}"
+          DESKTOP_ENTRY="./usr/share/applications/${WM_CLASS}.desktop"
+          dpkg-deb -c "$DEB" | grep -F "${DESKTOP_ENTRY#./}" >/dev/null \
+            || { echo "::error::deb 中缺少启动项 ${DESKTOP_ENTRY#./}"; exit 1; }
+          dpkg-deb --fsys-tarfile "$DEB" | tar -xO "$DESKTOP_ENTRY" > "$RUNNER_TEMP/desktop-entry"
+          cat "$RUNNER_TEMP/desktop-entry"
+          grep -qx "StartupWMClass=$WM_CLASS" "$RUNNER_TEMP/desktop-entry" \
+            || { echo "::error::启动项的 StartupWMClass 与窗口身份 $WM_CLASS 不一致"; exit 1; }
+          dpkg-deb -c "$DEB" | grep -E "icons/hicolor|\.desktop" | head -12
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v7

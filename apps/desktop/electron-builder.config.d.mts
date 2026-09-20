@@ -14,6 +14,9 @@ export interface DesktopElectronBuilderConfig {
   ]
   readonly electronDist: string
   readonly asarUnpack: readonly string[]
+  readonly extraMetadata: {
+    readonly desktopName: string
+  }
   readonly extraResources: readonly [
     { readonly from: string, readonly to: 'runtime' },
     { readonly from: string, readonly to: 'icon-dark.png' },
@@ -23,6 +26,7 @@ export interface DesktopElectronBuilderConfig {
   ]
   readonly linux: {
     readonly category: string
+    readonly syncDesktopName: boolean
     readonly target: readonly string[]
   }
   readonly publish: readonly [{ readonly provider: 'github', readonly owner: string, readonly repo: string }]
