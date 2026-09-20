@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { DesktopMandatoryUpdatePolicy, desktopPolicyPage, resolveDesktopPolicyConfig, type DesktopPolicyState } from '../src/mandatory-update-policy.ts'
+import { DesktopMandatoryUpdatePolicy, desktopPolicyPage, resolveDesktopPolicyConfig,
+  type DesktopPolicyIdentity, type DesktopPolicyState } from '../src/mandatory-update-policy.ts'
 
 const identity = { platform: 'desktop-win', arch: 'x64', version: '0.1.5-rc.1', bundledDshVersion: '0.1.5-rc.1',
   bundleId: 'com.deepseek.dsh', locale: 'zh-CN' } as const
@@ -178,5 +179,21 @@ describe('policy deployment and page validation', () => {
     { origin: 'https://example.com/path' }, { authentication: 'feishu' },
     { authentication: 'feishu-test', origin: 'http://127.0.0.1:9000' }])('rejects invalid deployment input: %j', (change) => {
     expect(() => resolveDesktopPolicyConfig({ ...deployment, ...change })).toThrow()
+  })
+})
+
+describe('installed client identity validation', () => {
+  const config = resolveDesktopPolicyConfig({ ...deployment, authentication: 'anonymous' })!
+  const build = (change: Partial<DesktopPolicyIdentity>): DesktopMandatoryUpdatePolicy =>
+    new DesktopMandatoryUpdatePolicy(config, { ...identity, ...change }, () => {})
+
+  it('rejects an identity it cannot report while keeping the shipped macOS arm64 client', () => {
+    expect(() => build({ arch: 'arm64' })).toThrow('invalid installed client identity')
+    expect(() => build({ version: 'not-a-version' })).toThrow('invalid installed client identity')
+    expect(() => build({ bundledDshVersion: '' })).toThrow('invalid installed client identity')
+    expect(() => build({ bundleId: '   ' })).toThrow('invalid installed client identity')
+    const macArm64 = build({ platform: 'desktop-mac', arch: 'arm64' })
+    instances.push(macArm64)
+    expect(macArm64.state).toEqual({ blocking: false, checking: false })
   })
 })
