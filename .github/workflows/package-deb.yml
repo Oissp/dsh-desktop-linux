@@ -31,8 +31,10 @@ on:
         type: boolean
         default: false
 
+# 全程只用 GITHUB_TOKEN 做只读操作（checkout、artifact 上传/下载）；跨仓库发布走
+# RELEASE_TOKEN PAT，因此 workflow 级别 contents: read 即可，不授予 write。
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: package-deb-${{ github.ref }}
@@ -46,7 +48,9 @@ env:
 jobs:
   package:
     name: Build .deb + AppImage (linux x64)
-    runs-on: ubuntu-latest
+    # 固定 24.04：ubuntu-latest 将自 2026-10-19 起迁移到 Ubuntu 26（runner-images#14748），
+    # 打包宿主的 apt 依赖集与 electron-builder 行为先在受控版本上验证，再手动跟进升级。
+    runs-on: ubuntu-24.04
     outputs:
       version: ${{ steps.version.outputs.version }}
     steps:
@@ -85,6 +89,8 @@ jobs:
             ~/.cache/electron
             ~/.cache/electron-builder
           key: ${{ runner.os }}-eb-${{ hashFiles('apps/desktop/electron-builder.config.mjs') }}
+          restore-keys: |
+            ${{ runner.os }}-eb-
 
       - name: Install build prerequisites
         run: |
@@ -169,7 +175,7 @@ jobs:
     name: Publish to dsh-desktop-linux-release
     needs: package
     if: ${{ !cancelled() && needs.package.result == 'success' }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     env:
       RELEASE_REPO: Oissp/dsh-desktop-linux-release
     steps:

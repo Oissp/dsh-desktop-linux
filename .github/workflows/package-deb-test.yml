@@ -1,15 +1,36 @@
 name: Package test (deb only)
 
-# 提交级打包冒烟：推送到 main 的提交、指向 main 的 PR、以及手动触发都会跑一遍
+# 打包冒烟：指向 main 的 PR、触及引擎源码的 push、以及手动触发都会跑一遍
 # 桌面打包测试，并只构建 .deb —— 不构建 AppImage、不生成更新频道元数据、不发布 Release。
 # 发版仍由 package-deb.yml 负责。
 #
+# push 只监听引擎源码路径，与 package-deb.yml 的触发路径（package.json、apps/desktop/**）
+# 互补且不相交：壳改动只跑发版 workflow（它本身包含同样的测试与产物校验，冒烟是冗余的），
+# 引擎改动只跑本冒烟，docs-only 提交两者都不跑。避免同一次 push 双 workflow 并行各建一遍
+# 引擎 —— 两者同时启动，共享的引擎缓存对并行 run 必然双 miss。一次 push 同时触及两边
+# 路径时两者都会跑，属于少数情况。PR 上不做路径过滤：PR 不会触发发版 workflow，
+# 本冒烟是 PR 唯一的打包验证。
+#
 # 两个 workflow 共用 ./.github/actions/prepare-desktop-engine，因此共享同一份引擎缓存：
-# 同一提交在冒烟里构建过一次，发版时直接命中。
+# 引擎源码不变时（如纯版本 bump），后跑的 run 直接命中。
 
 on:
   push:
     branches: [main]
+    # 与 prepare-desktop-engine 的引擎 key pathspec 对齐（去掉 apps/desktop 与根
+    # package.json，它们由 package-deb.yml 负责触发）。
+    paths:
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
+      - 'tsconfig*.json'
+      - 'scripts/**'
+      - 'packages/**'
+      - 'vendor/**'
+      - 'native/**'
+      - 'apps/cli/**'
+      - 'apps/web/**'
+      - 'apps/desktop-host/**'
+      - '.github/actions/prepare-desktop-engine/**'
   pull_request:
     branches: [main]
   workflow_dispatch:
@@ -31,7 +52,9 @@ env:
 jobs:
   deb:
     name: Build .deb only (linux x64)
-    runs-on: ubuntu-latest
+    # 固定 24.04：ubuntu-latest 将自 2026-10-19 起迁移到 Ubuntu 26（runner-images#14748），
+    # 打包宿主的 apt 依赖集与 electron-builder 行为先在受控版本上验证，再手动跟进升级。
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v5
 
@@ -65,6 +88,8 @@ jobs:
             ~/.cache/electron
             ~/.cache/electron-builder
           key: ${{ runner.os }}-eb-${{ hashFiles('apps/desktop/electron-builder.config.mjs') }}
+          restore-keys: |
+            ${{ runner.os }}-eb-
 
       - name: Install build prerequisites
         run: |
