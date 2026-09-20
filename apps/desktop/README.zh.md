@@ -110,7 +110,7 @@ pnpm run prepare:desktop
 
 这条诊断命令是另一种停止位置，并非两条命令构建流程的前半段。之后执行 `package:desktop*` 时仍会重新完成正式构建与准备，避免使用陈旧的 dsh 包、运行时文件或 dsh 内容。
 
-每条打包命令都会构建仓库，打包以 dsh 和私有 Desktop Host 为根的第一方生产依赖闭包，并准备目标专用的 Node 与 pnpm 可执行文件。`prepare:dsh` 在构建时安装一次生产依赖图，把物化包复制到将由 electron-builder 打进 `app.asar` 的 `dsh` 树，移除包管理器元数据，并生成包含共享包版本和最终文件哈希的 `desktop-runtime.json`。在完整性封存之前，[Electron 指纹调和器](scripts/native-electron-fingerprint.ts)会把内置 node-addon-require-builtin 记录的 Electron profile（加载器按 Node.js 版本三元组加 V8 版本字符串精确匹配）改写为打包 Electron 的标识——Electron 补丁版本会在同一大版本内移动这两者；随后在实际的 Electron 二进制下加载该加载器，作为打包验收门槛。资源映射明确包含默认根目录过滤器会忽略的 `dsh/node_modules`；复制后的清单在复制完成时验证一次，并在运行时 smoke 之后再验证一次，两次都在 electron-builder 运行之前。已安装应用升级和各目标原生模块的验收需要发布环境。
+每条打包命令都会构建仓库，打包以 dsh 和私有 Desktop Host 为根的第一方生产依赖闭包，并准备目标专用的 Node 与 pnpm 可执行文件。`prepare:dsh` 在构建时安装一次生产依赖图，并为该依赖图安装的包重新应用仓库的 pnpm 补丁，把物化包复制到将由 electron-builder 打进 `app.asar` 的 `dsh` 树，移除包管理器元数据，并生成包含共享包版本和最终文件哈希的 `desktop-runtime.json`。在完整性封存之前，[Electron 指纹调和器](scripts/native-electron-fingerprint.ts)会把内置 node-addon-require-builtin 记录的 Electron profile（加载器按 Node.js 版本三元组加 V8 版本字符串精确匹配）改写为打包 Electron 的标识——Electron 补丁版本会在同一大版本内移动这两者；随后在实际的 Electron 二进制下加载该加载器，作为打包验收门槛。资源映射明确包含默认根目录过滤器会忽略的 `dsh/node_modules`；复制后的清单在复制完成时验证一次，并在运行时 smoke 之后再验证一次，两次都在 electron-builder 运行之前。已安装应用升级和各目标原生模块的验收需要发布环境。
 
 未压缩产物包含 Electron 壳（物化后的 dsh 生产依赖树打包在其 `app.asar` 内）、上游 Node.js 与 pnpm。安装包大小与文件系统占用不同；发布验收需要测量两者，以及 profile 插件存储和首次启动耗时。此布局用更多应用内文件换取消除用户机器上的核心包安装过程。
 
