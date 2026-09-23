@@ -10,6 +10,7 @@ overrides:
   '@deepseek-ai/schemastery': link:vendor/schemastery
 
 patchedDependencies:
+  '@deepseek-ai/libreoffice-kit@0.1.0': df0523dbc820e168fcbbf8fd17618e7881a9dbabdbb21ae70a1283254a27775a
   '@earendil-works/pi-ai@0.85.1': b9bcce474fb2ac44633dff0fa722816a5bff5451b4575d5874035ea14ba70a4f
   '@electron/osx-sign@1.3.3': 280e7b2816caf01423097d24e79107a66afeb563a348630ce9928ae8499a5861
   '@fortune-sheet/core@1.0.4': 886223a70a0cf76d4fa174608852763fe76bbdc9374db127665024c8c150dd68
@@ -686,7 +687,7 @@ importers:
         version: link:../../packages/skill/tool-workspace-dependencies
       '@deepseek-ai/libreoffice-kit':
         specifier: ^0.1.0
-        version: 0.1.0
+        version: 0.1.0(patch_hash=df0523dbc820e168fcbbf8fd17618e7881a9dbabdbb21ae70a1283254a27775a)
 
   apps/web:
     devDependencies:
@@ -2680,7 +2681,7 @@ importers:
         version: link:../../typert/registry
       '@deepseek-ai/libreoffice-kit':
         specifier: ^0.1.0
-        version: 0.1.0
+        version: 0.1.0(patch_hash=df0523dbc820e168fcbbf8fd17618e7881a9dbabdbb21ae70a1283254a27775a)
 
   packages/client/connection:
     dependencies:
@@ -6790,7 +6791,7 @@ importers:
         version: link:../../typert/protocol
       '@deepseek-ai/libreoffice-kit':
         specifier: ^0.1.0
-        version: 0.1.0
+        version: 0.1.0(patch_hash=df0523dbc820e168fcbbf8fd17618e7881a9dbabdbb21ae70a1283254a27775a)
       '@deepseek-ai/schemastery':
         specifier: link:../../../vendor/schemastery
         version: link:../../../vendor/schemastery
@@ -11260,7 +11261,7 @@ importers:
     dependencies:
       '@deepseek-ai/libreoffice-kit':
         specifier: ^0.1.0
-        version: 0.1.0
+        version: 0.1.0(patch_hash=df0523dbc820e168fcbbf8fd17618e7881a9dbabdbb21ae70a1283254a27775a)
       '@deepseek-ai/schemastery':
         specifier: link:../../../vendor/schemastery
         version: link:../../../vendor/schemastery
@@ -21895,7 +21896,7 @@ snapshots:
   '@deepseek-ai/libreoffice-kit-win32-x64@0.1.0':
     optional: true
 
-  '@deepseek-ai/libreoffice-kit@0.1.0':
+  '@deepseek-ai/libreoffice-kit@0.1.0(patch_hash=df0523dbc820e168fcbbf8fd17618e7881a9dbabdbb21ae70a1283254a27775a)':
     dependencies:
       fflate: 0.8.2
       fontkit: 2.0.4
