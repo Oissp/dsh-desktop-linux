@@ -51,11 +51,12 @@ async function compose(root: string, names: readonly string[]): Promise<{
   const ctx = new Context()
   ctx.baseUrl = `${pathToFileURL(root).href}/`
   ctx.provide('loader', { internal: undefined, entries: loaderEntries(names, ctx.baseUrl) })
-  ctx.provide('webServer', {
+  const webServer: Pick<WebServer, 'port' | 'register' | 'tapIndex'> = {
     port: 0,
     register: () => () => {},
     tapIndex: () => () => {},
-  } as unknown as WebServer)
+  }
+  ctx.provide('webServer', webServer as WebServer)
   const started = performance.now()
   const registry = new ClientModuleRegistry(ctx)
   const graph = registry.graph()

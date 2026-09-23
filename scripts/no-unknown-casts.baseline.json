@@ -26,23 +26,11 @@
   "apps/desktop-host/tests/office.spec.ts": {
     "3f8653cd87f99ebd70765379dae51ab308ed9c280e831d39e1abd469bfcdc6e3": 1
   },
-  "apps/desktop/scripts/installed-update-qualification.ts": {
-    "5a8270cf9b1e554ae0cff6eaf7086e44c22f61a08e5f91dc7e1397eccaa726a5": 2
-  },
-  "apps/desktop/scripts/macos-cache-policy.ts": {
-    "00e53c563f3bdaa56ac8a598ca2f46622277dd1f37af9c02a7c92abf475ddc3d": 1
-  },
-  "apps/desktop/scripts/macos-runtime.ts": {
-    "04bc8a44533574365dfedf563e2356458bcf95f990a00906938c977c1d683356": 1
-  },
   "apps/desktop/src/main.ts": {
     "e3362213edd415fbb267d8e6b94f1b3ae77e047b3a4609ccf9e08063fac7a7bd": 1
   },
   "apps/desktop/src/runtime-tree.ts": {
     "bd54ced9c67761b49e3d039cb8eb6cbcb22f1e9e51b903a3b98ed8364863fac0": 1
-  },
-  "apps/desktop/tests/desktop-policy-environment.spec.ts": {
-    "d021e1acc96493233ec8a9cba000e9847acded67c39d913fa893761aaf917250": 1
   },
   "apps/desktop/tests/directory-picker.spec.ts": {
     "326597b335539db945b2e3b7c86638d40849d2077c0a5670d064e45486f4e407": 1,
@@ -81,12 +69,6 @@
   },
   "apps/desktop/tests/update-schedule.spec.ts": {
     "d8502ebfa0f7381727d04f3999c1a1e85c27ca770ef336e6cbe9dfd41d6b53bd": 1
-  },
-  "apps/desktop/tests/windows-sign.spec.ts": {
-    "7fe58280287ff63d40e979e72329f975e11015a95e9a8eec207a5a78748d3c89": 2
-  },
-  "apps/desktop/tests/windows-update-publisher.spec.ts": {
-    "166d96cf5548261d768f2ca6566611cfed9b98c954cbf1abfb6349e5f6a1f16e": 1
   },
   "apps/web/tests/assembled-boot.ts": {
     "203f87d9e4f18ce1f00bf575fe96f724975341cbb67b8c51ea45d4cbb8e60005": 1,
