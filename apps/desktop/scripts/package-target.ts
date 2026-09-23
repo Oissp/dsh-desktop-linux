@@ -4,6 +4,7 @@ import { spawn } from 'node:child_process'
 import { existsSync, mkdirSync, readFileSync, rmSync } from 'node:fs'
 import { parseArgs } from 'node:util'
 import { join, resolve } from 'node:path'
+import { shellVersionExtendsEngine } from '../src/release-version.ts'
 import { desktopTargetBuildPaths, type DesktopTargetBuildPaths } from './desktop-build-paths.mjs'
 import { DESKTOP_BUILD_VERSION_ENV, resolveDesktopBuildVersion, validateDesktopBuildVersion } from './desktop-build-version.mjs'
 
@@ -198,8 +199,8 @@ async function main(): Promise<void> {
   const buildPaths = desktopTargetBuildPaths(target.name)
   const productVersion = packageVersion(join(APP_ROOT, 'package.json'), 'desktop package')
   const dshVersion = packageVersion(join(REPOSITORY_ROOT, 'package.json'), 'dsh package')
-  if (productVersion !== dshVersion) {
-    throw new Error(`desktop package: desktop version ${productVersion} does not match dsh version ${dshVersion}`)
+  if (!shellVersionExtendsEngine(productVersion, dshVersion)) {
+    throw new Error(`desktop package: desktop version ${productVersion} does not extend dsh version ${dshVersion}`)
   }
   const buildVersion = resolveRequestedBuildVersion(invocation, productVersion, process.env)
   process.env[DESKTOP_BUILD_VERSION_ENV] = buildVersion
