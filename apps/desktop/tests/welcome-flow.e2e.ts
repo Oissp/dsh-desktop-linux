@@ -100,7 +100,7 @@ describe.skipIf(!existsSync(builtHost))('built Desktop welcome flow', () => {
         },
         // This suite assembles a synthetic project on hosts that prepare no Desktop target, and
         // nothing it exercises compares the descriptor's platform/arch outside packaging.
-        target: 'mac-x64',
+        target: 'linux-x64',
       })
       cpSync(join(repository, 'packages/skill/skill-office/assets'), join(root, 'runtime/office-skills'), { recursive: true })
       const nodeBin = join(root, 'runtime/primary-runtime/dependencies/node/bin')

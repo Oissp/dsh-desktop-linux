@@ -62,16 +62,12 @@ export function desktopTargetBuildPaths(target) {
 
 /**
  * Return the platform and architecture of the payload one release target prepares.
- * Windows is prepared as x64 only, so this differs from the build host on an arm64 Windows machine.
- * @param {'mac-arm64' | 'mac-x64' | 'win-x64'} target - Supported Desktop target name.
- * @returns {{ platform: 'darwin' | 'win32', arch: 'arm64' | 'x64' }} Platform and architecture of the prepared payload.
+ * @param {'linux-x64'} target - Supported Desktop target name.
+ * @returns {{ platform: 'linux', arch: 'x64' }} Platform and architecture of the prepared payload.
  */
 export function desktopTargetPlatform(target) {
   assertSupportedTarget(target)
-  return {
-    platform: /** @type {'darwin' | 'win32'} */ (target === 'win-x64' ? 'win32' : 'darwin'),
-    arch: /** @type {'arm64' | 'x64'} */ (target === 'mac-arm64' ? 'arm64' : 'x64'),
-  }
+  return { platform: 'linux', arch: 'x64' }
 }
 
 /**
@@ -91,8 +87,8 @@ export function resolveDesktopTargetBuildPaths(
 
 /**
  * Resolve the primary-runtime directory an unpackaged development launch uses.
- * The build target fixes Windows to x64, so the shell cannot derive this directory from
- * the architecture of the process that launched it.
+ * The selected build target owns the prepared runtime, so the shell cannot derive
+ * this directory from the process that launched it.
  * @param {NodeJS.ProcessEnv} env - Packaging environment.
  * @param {NodeJS.Platform} hostPlatform - Build-host platform used when no target override exists.
  * @param {string} hostArch - Build-host architecture used when no target override exists.
