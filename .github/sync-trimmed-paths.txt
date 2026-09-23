@@ -246,7 +246,6 @@ apps/desktop/tests/expected/test-release-upload-mac-x64.json
 apps/desktop/tests/expected/test-release-upload-win-x64.json
 apps/desktop/tests/expected/windows-uninstall.json
 apps/desktop/tests/fixtures/macos-cache-writer.mjs
-apps/desktop/tests/fixtures/office-conversion-inputs.py
 apps/desktop/tests/fixtures/windows-signing-stage.mjs
 apps/desktop/tests/installed-update/README.i18n.yaml
 apps/desktop/tests/installed-update/README.md
@@ -276,9 +275,6 @@ apps/desktop/tests/windows-signing-stage.spec.ts
 apps/desktop/tests/windows-timestamp.spec.ts
 apps/desktop/tests/windows-uninstall-data.cpp
 apps/desktop/tests/windows-uninstall-smoke.ps1
-
-# primary-runtime 冒烟脚本（上游从 .ts 改名为 .py）
-scripts/primary-runtime/smoke.py
 
 # 0.1.7-alpha.2 新增 Windows installer 文件
 apps/desktop/installer/extract-report.h

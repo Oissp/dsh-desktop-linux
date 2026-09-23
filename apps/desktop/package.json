@@ -33,6 +33,9 @@
   },
   "devDependencies": {
     "@deepseek-ai/dsh-app-boot": "workspace:*",
+    "@deepseek-ai/dsh-client-ui-primitives": "workspace:*",
+    "@deepseek-ai/dsh-client-ui-settings-general": "workspace:*",
+    "@deepseek-ai/dsh-client-ui-sidebar-browser": "workspace:*",
     "@deepseek-ai/dsh-deepseek-account": "workspace:*",
     "@deepseek-ai/dsh-home-paths": "workspace:*",
     "@electron/get": "^5.1.0",
@@ -51,6 +54,7 @@
     "@types/react": "~18.3.1",
     "@types/react-dom": "~18.3.0",
     "tar": "^7.5.0",
-    "typescript": "^6.0.3"
+    "typescript": "^6.0.3",
+    "vite": "^6.0.0"
   }
 }

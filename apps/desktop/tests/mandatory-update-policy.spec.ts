@@ -201,7 +201,7 @@ describe('installed client identity validation', () => {
     expect(() => build({ version: 'not-a-version' })).toThrow('invalid installed client identity')
     expect(() => build({ bundledDshVersion: '' })).toThrow('invalid installed client identity')
     expect(() => build({ bundleId: '   ' })).toThrow('invalid installed client identity')
-    const macArm64 = build({ platform: 'desktop-mac', arch: 'arm64' })
+    const macArm64 = build({ platform: 'darwin', arch: 'arm64' })
     instances.push(macArm64)
     expect(macArm64.state).toEqual({ blocking: false, checking: false })
   })

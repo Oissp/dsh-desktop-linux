@@ -31,6 +31,7 @@ import { DesktopBackendController } from './backend-controller.ts'
 import { DESKTOP_IPC, SCHEME, assertDesktopSender, type DesktopUpdateState } from './ipc.ts'
 import { formatDesktopMessage, resolveDesktopLocale, resolveDesktopStartupLocale } from './locale.ts'
 import { DesktopAppearanceController, desktopSettingsPath, type DesktopAppearance } from './appearance.ts'
+import { DesktopLocaleController } from './desktop-locale.ts'
 import { claimDesktopSingleInstance } from './single-instance.ts'
 import { DesktopUpdateCoordinator } from './update-coordinator.ts'
 import { serveWebDocument, authenticateWebHost, forwardWebRequest } from './web-document.ts'
@@ -60,6 +61,7 @@ let tray: Tray | undefined
 // 当前跟随 设置-通用设置-外观 解析出的外观，驱动窗口/托盘图标（资源随包携带）。
 let iconAppearance: DesktopAppearance = 'light'
 let disposeAppearance: (() => void) | undefined
+let disposeLocale: (() => void) | undefined
 // 资源名以图标自身颜色命名：浅色外观用深色鲸鱼，深色外观用白色鲸鱼。
 function windowIconPath(appearance: DesktopAppearance): string {
   return join(process.resourcesPath, appearance === 'dark' ? 'icon-white.png' : 'icon-dark.png')
@@ -1074,6 +1076,7 @@ async function main(): Promise<void> {
     if (welcomeWindow !== undefined && !welcomeWindow.isDestroyed()) welcomeWindow.hide()
     if (mainWindow !== undefined && !mainWindow.isDestroyed()) mainWindow.hide()
     disposeAppearance?.()
+    disposeLocale?.()
     updateSchedule.dispose()
     updateDialog.dispose()
     mandatoryUI?.dispose()
@@ -1100,13 +1103,21 @@ async function main(): Promise<void> {
     rebuildTrayMenu = (): void => {
       if (tray === undefined) return
       tray.setContextMenu(Menu.buildFromTemplate([
-        { label: locale.messages.showWindow, click: focusPrimaryWindow },
+        { label: currentDesktopLocale().messages.showWindow, click: focusPrimaryWindow },
         { type: 'separator' },
-        { label: locale.messages.checkUpdatesMenu, click: () => { void openUpdatePrompt(true) } },
+        { label: currentDesktopLocale().messages.checkUpdatesMenu, click: () => { void openUpdatePrompt(true) } },
         { type: 'separator' },
-        { role: 'quit', label: locale.messages.quitMenu },
+        { role: 'quit', label: currentDesktopLocale().messages.quitMenu },
       ]))
     }
+    // 语言控制器读取引擎写入的 locale.preference（通用设置 → Language），未显式
+    // 选择时退回系统语言，并在设置变更时重建托盘菜单。
+    const localeController = new DesktopLocaleController(desktopSettingsPath(), app.getLocale(), (resolved) => {
+      windowsLanguage = resolved.id
+      rebuildTrayMenu()
+    })
+    disposeLocale = () => { localeController.dispose() }
+    await localeController.start()
     tray = new Tray(trayIconPath(iconAppearance))
     tray.setToolTip(app.name)
     // 托盘菜单镜像应用入口：检查更新、退出，另加“显示主窗口”作为关窗隐藏后的恢复入口。
@@ -1148,7 +1159,7 @@ async function main(): Promise<void> {
     }, policyAuth?.request)
     const policy = mandatoryPolicy
     mandatoryUI = new DesktopMandatoryUpdateWindow({
-      preload: fileURLToPath(new URL('./preload-mandatory.cjs', import.meta.url)), locale,
+      preload: fileURLToPath(new URL('./preload-mandatory.cjs', import.meta.url)), locale: () => locale,
       allowedPageOrigins: policyConfig.allowedPageOrigins, parent: () => mainWindow,
       policy: () => policy.state, update: () => updates.state,
       refresh: async () => { await Promise.all([checkPolicyManually(), updateSchedule.check(true)]) },

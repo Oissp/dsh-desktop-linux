@@ -246,7 +246,7 @@ async function main(): Promise<void> {
           else { process.stdout.write(stdout); accept() }
         })
     })
-    await smokeDesktopRuntime(DSH_OUTPUT_ROOT, NODE, descriptor)
+    await smokeDesktopRuntime(DSH_OUTPUT_ROOT, NODE, descriptor, { ...process.env, NODE_OPTIONS: '' }, RUNTIME_ROOT)
     await verifyDesktopRuntime(DSH_OUTPUT_ROOT, release.version, target)
   } catch (error) {
     rmSync(DSH_OUTPUT_ROOT, { recursive: true, force: true })

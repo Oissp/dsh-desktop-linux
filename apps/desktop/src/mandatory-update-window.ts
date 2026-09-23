@@ -33,7 +33,8 @@ export interface MandatoryUpdateApi {
 /** Main-process operations owned by the policy client, updater, and application lifecycle. */
 export interface MandatoryUpdateWindowOptions {
   readonly preload: string
-  readonly locale: DesktopLocale
+  /** Read per use: a language change reaches copy created after it. */
+  readonly locale: () => DesktopLocale
   readonly allowedPageOrigins: readonly string[]
   readonly parent: () => BrowserWindow | undefined
   readonly policy: () => DesktopPolicyState
@@ -102,7 +103,7 @@ export class DesktopMandatoryUpdateWindow {
           case 'install': await this.options.install(version as string); break
         }
       }).catch(() => {
-        this.error = this.options.locale.messages.mandatoryActionFailed
+        this.error = this.options.locale().messages.mandatoryActionFailed
       }).finally(() => { this.action = undefined; this.sync() })
       return this.action
     })
@@ -190,7 +191,7 @@ export class DesktopMandatoryUpdateWindow {
     if (this.window === undefined) {
       const parent = this.options.parent()
       if (parent === undefined) return
-      const window = createUpdateOverlay(parent, this.options.preload, this.options.locale.messages.mandatoryTitle, false)
+      const window = createUpdateOverlay(parent, this.options.preload, this.options.locale().messages.mandatoryTitle, false)
       this.window = window
       window.setMenu(null)
       window.on('close', (event) => { if (!this.disposed && this.options.policy().blocking) { event.preventDefault(); app.quit() } })
@@ -200,12 +201,12 @@ export class DesktopMandatoryUpdateWindow {
       window.webContents.on('render-process-gone', () => {
         if (!this.disposed) void window.loadURL(page).catch(() => {
           // A failed recovery keeps the parent blocked and leaves application exit available.
-          if (!window.isDestroyed()) window.setTitle(this.options.locale.messages.mandatoryActionFailed)
+          if (!window.isDestroyed()) window.setTitle(this.options.locale().messages.mandatoryActionFailed)
         })
       })
       void window.loadURL(page).catch(() => {
         // The parent stays modal-blocked if its dedicated recovery document cannot load.
-        if (!window.isDestroyed()) window.setTitle(this.options.locale.messages.mandatoryActionFailed)
+        if (!window.isDestroyed()) window.setTitle(this.options.locale().messages.mandatoryActionFailed)
       })
     }
     this.window.webContents.send(MANDATORY_IPC.state, this.view())
@@ -242,7 +243,7 @@ export class DesktopMandatoryUpdateWindow {
   }
 
   private view(): MandatoryUpdateView {
-    return { locale: this.options.locale, policy: this.options.policy(), update: this.options.update(),
+    return { locale: this.options.locale(), policy: this.options.policy(), update: this.options.update(),
       deferred: this.deferred,
       ...(this.confirmation === undefined ? {}
         : { confirmation: { version: this.confirmation.version, active: this.confirmation.active, revision: this.confirmation.revision } }),

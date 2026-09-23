@@ -27,9 +27,9 @@ afterEach(() => {
   send.mockClear()
 })
 
-it.each(['darwin', 'win32'] as const)('mirrors the application theme source on %s', async (platform) => {
+it('mirrors the application theme source on darwin', async () => {
   vi.stubGlobal('MutationObserver', TrackedMutationObserver)
-  vi.spyOn(process, 'platform', 'get').mockReturnValue(platform)
+  vi.spyOn(process, 'platform', 'get').mockReturnValue('darwin')
   document.documentElement.setAttribute('data-ds-theme-source', 'dark')
   syncNativeTheme()
   expect(send).toHaveBeenCalledExactlyOnceWith(DESKTOP_IPC.nativeThemeSet, 'dark')
@@ -38,9 +38,18 @@ it.each(['darwin', 'win32'] as const)('mirrors the application theme source on %
   expect(send).toHaveBeenCalledTimes(2)
 })
 
+it.each(['linux', 'win32'] as const)('leaves the native theme to the appearance controller on %s', (platform) => {
+  vi.stubGlobal('MutationObserver', TrackedMutationObserver)
+  vi.spyOn(process, 'platform', 'get').mockReturnValue(platform)
+  document.documentElement.setAttribute('data-ds-theme-source', 'dark')
+  syncNativeTheme()
+  expect(send).not.toHaveBeenCalled()
+  expect(observers.size).toBe(0)
+})
+
 it('defers observation until the document root exists', () => {
   vi.stubGlobal('MutationObserver', TrackedMutationObserver)
-  vi.spyOn(process, 'platform', 'get').mockReturnValue('win32')
+  vi.spyOn(process, 'platform', 'get').mockReturnValue('darwin')
   vi.spyOn(document, 'readyState', 'get').mockReturnValue('loading')
   syncNativeTheme()
   expect(send).not.toHaveBeenCalled()
