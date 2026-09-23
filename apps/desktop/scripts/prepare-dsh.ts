@@ -9,7 +9,6 @@ import { load } from 'js-yaml'
 import { desktopNodeEnvironment } from '../src/node-environment.ts'
 import { createRuntimeProjectMetadata } from '../src/project-manager.ts'
 import { DESKTOP_HOST_PROTOCOL_VERSION } from '../src/host-protocol.ts'
-import { shellVersionExtendsEngine } from '../src/release-version.ts'
 import { parseDesktopRelease, type DesktopRelease } from '../src/release.ts'
 import {
   DESKTOP_HOST_PACKAGE,
@@ -73,8 +72,8 @@ function resolveElectronExecutable(): string {
 
 function desktopRelease(): DesktopRelease {  const desktopVersion = manifestVersion(join(APP_ROOT, 'package.json'), 'desktop package')
   const dshVersion = manifestVersion(resolve(APP_ROOT, '..', '..', 'package.json'), 'root dsh package')
-  if (!shellVersionExtendsEngine(desktopVersion, dshVersion)) {
-    throw new Error(`desktop runtime: Electron ${desktopVersion} must bind @deepseek-ai/dsh ${dshVersion} or a ${dshVersion}.N extension`)
+  if (desktopVersion !== dshVersion) {
+    throw new Error(`desktop runtime: desktop version ${desktopVersion} does not match dsh version ${dshVersion}`)
   }
   const runtime = JSON.parse(readFileSync(join(RUNTIME_ROOT, 'versions.json'), 'utf8')) as Record<string, unknown>
   return parseDesktopRelease({

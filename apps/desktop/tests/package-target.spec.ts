@@ -55,18 +55,28 @@ describe('desktop package target', () => {
       .toThrow(/at most one target/u)
   })
 
-  it('keeps electron-builder publishing to the release workflow', () => {
+  it('parses build version and keeps electron-builder publishing to the release workflow', () => {
     const target = resolveDesktopPackageTarget('linux-x64', 'linux', 'x64')
-    expect(desktopElectronBuilderArguments(target, false)).toEqual([
+    expect(parseDesktopPackageInvocation(['linux-x64'], 'linux', 'x64').requestedBuildVersion).toBeUndefined()
+    expect(parseDesktopPackageInvocation(['linux-x64', '--build-version', '0.1.7-alpha.1.20260922.1'], 'linux', 'x64')
+      .requestedBuildVersion).toBe('0.1.7-alpha.1.20260922.1')
+    // A run script's preset arguments come first, so pnpm forwards the separator after the target.
+    expect(parseDesktopPackageInvocation(['linux-x64', '--', '--build-version', '0.1.7-alpha.1.20260922.1'], 'linux', 'x64'))
+      .toMatchObject({ requestedBuildVersion: '0.1.7-alpha.1.20260922.1', target: { name: 'linux-x64' } })
+    expect(() => parseDesktopPackageInvocation(['linux-x64', '--build-version', '  '], 'linux', 'x64'))
+      .toThrow(/--build-version requires a value/u)
+    expect(desktopElectronBuilderArguments(target, false, '0.1.7-alpha.1')).toEqual([
       'exec',
       'electron-builder',
       '--config',
       'electron-builder.config.mjs',
+      '--config.extraMetadata.version',
+      '0.1.7-alpha.1',
       '--linux',
       '--x64',
       '--publish',
       'never',
     ])
-    expect(desktopElectronBuilderArguments(target, true)).toContain('--dir')
+    expect(desktopElectronBuilderArguments(target, true, '0.1.7-alpha.1')).toContain('--dir')
   })
 })

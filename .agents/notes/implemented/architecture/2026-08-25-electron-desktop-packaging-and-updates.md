@@ -40,6 +40,8 @@ The Desktop Host exposes the shared Web plugin manager for its reserved profile 
 
 The renderer uses `nodeIntegration: false`, `contextIsolation: true`, and `sandbox: true`. Preload provides boot readiness and failure reporting, native directory selection, theme synchronization, and Windows menu and appearance adapters. It exposes no raw `ipcRenderer`, filesystem access, shell commands, or pnpm arguments. Electron menus and native dialogs use typed English or Chinese copy with English fallback; Windows follows the main document’s language. The shared Web plugin manager owns its client copy.
 
+Update confirmations use the shell static origin because they must remain available without a ready Web Host. Their packaged documents and assets retain the same method and path restrictions as other local static assets.
+
 ## Filesystem layout
 
 ```text
@@ -72,6 +74,8 @@ Electron update uses one `electron-updater` release stream and signed `electron-
 The [immediate-window decision](2026-09-09-desktop-immediate-window-and-direct-start.md) owns the local loading page, direct Host startup, and recovery in the main window. Profile reconciliation follows the [bundled-runtime decision](2026-09-08-desktop-bundled-runtime-and-external-plugins.md).
 
 Packaging writes `app-update.yml` with a `provider: github` entry naming the separate release repository and passes `--publish never`, so electron-builder uploads nothing itself; the [release workflow](../../../../.github/workflows/package-deb.yml) verifies every artifact plus the channel metadata before creating the `v<version>` GitHub Release that `app-update.yml` names as the update source, and it never deletes historical releases. The installed version alone selects the update channel: the coordinator leaves `updater.channel` unset, so electron-updater derives the channel from the version's prerelease segment, requests the matching channel file first, and falls back to electron-builder's default `latest-linux.yml`. NSIS embeds its blockmap in the signed executable; the macOS ZIP carries a separate blockmap. Both let electron-updater download changed blocks when supported, while application replacement and the local pnpm package operation remain separate operations.
+
+Test releases require `DOWNLOAD_TEST_RELEASE_ID` from the platform dotenv file. Their feeds and binaries share `dsh-desk/<release-id>/`; production retains its fixed directories. The ID is part of the packaged update URL, so upload rejects a different ID. Internal distribution can supply a new installer after rotation; installed clients retain their existing feed. Random directories reduce guessing but provide no authorization for link holders. The [release configuration](../../../../apps/desktop/README.md#upload-updates) defines generation and reuse.
 
 ## Security and release policy
 

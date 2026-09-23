@@ -40,6 +40,8 @@ Desktop Host 为保留 profile 提供共享 Web 插件管理器，并通过启�
 
 渲染进程使用 `nodeIntegration: false`、`contextIsolation: true` 和 `sandbox: true`。Preload 提供启动就绪与失败报告、原生目录选择、主题同步，以及 Windows 菜单和外观适配。它不暴露原始 `ipcRenderer`、文件系统访问、shell 命令或 pnpm 参数。Electron 菜单与原生对话框使用类型化中英文文案，并以英文回退；Windows 跟随主文档语言。共享 Web 插件管理器负责自身客户端文案。
 
+更新确认使用 shell 静态 origin，因为 Web Host 尚未就绪时也必须可用。其打包文档和资源保留与其他本地静态资源相同的方法和路径限制。
+
 ## 文件系统布局
 
 ```text
@@ -72,6 +74,8 @@ Electron 更新只使用一个 `electron-updater` 发布流和签名 `electron-b
 [立即显示窗口决策](2026-09-09-desktop-immediate-window-and-direct-start.zh.md)负责本地加载页、直接启动 Host 和主窗口恢复。profile 协调遵循[内置运行时决策](2026-09-08-desktop-bundled-runtime-and-external-plugins.zh.md)。
 
 打包写入 `app-update.yml`，其 `provider: github` 指向独立发布仓库，并传 `--publish never`，electron-builder 自身不上传任何东西；[发版工作流](../../../../.github/workflows/package-deb.yml) 在校验每个产物与频道元数据之后创建 `app-update.yml` 所指的 `v<version>` GitHub Release，且从不删除历史发布。更新频道只由已安装版本决定：协调器不设置 `updater.channel`，electron-updater 于是从版本号的预发布段推导频道，先请求同名频道文件，失败时回落到 electron-builder 的默认 `latest-linux.yml`。NSIS 把 blockmap 嵌入已签名的可执行文件，macOS ZIP 则使用独立 blockmap；两者都让 electron-updater 在平台支持时只下载变化的数据块，而应用替换与本地 pnpm 包操作仍是两个独立操作。
+
+测试发布必须从平台 dotenv 文件提供 `DOWNLOAD_TEST_RELEASE_ID`。清单和安装包共用 `dsh-desk/<release-id>/`，生产环境保留固定目录。ID 是打包更新 URL 的一部分，因此上传会拒绝不同的 ID。轮换后可通过内部分发提供新安装包，已安装客户端保留原清单地址。随机目录降低被猜中的概率，但不对持有链接者进行鉴权。[发布配置](../../../../apps/desktop/README.zh.md#upload-updates)定义生成与复用方式。
 
 ## 安全与发布策略
 

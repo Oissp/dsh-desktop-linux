@@ -3,9 +3,6 @@ import { randomUUID } from 'node:crypto'
 import { BrowserWindow, session } from 'electron'
 import type { DesktopLocale } from './locale.ts'
 
-const FEISHU_ORIGINS = ['https://open.feishu.cn', 'https://accounts.feishu.cn',
-  'https://passport.feishu.cn', 'https://login.feishu.cn']
-
 /** Packaged placeholder document; it is the window's first document and needs no network. */
 const LOGIN_LOADING_PAGE = 'renderer/policy-login-loading.html'
 
@@ -28,11 +25,13 @@ export class DesktopPolicyTestAuth {
 
   /**
    * @param origin Validated HTTPS policy origin; login always starts at its root with fresh gateway state.
+   * @param allowedAuthOrigins Validated HTTPS origins for login document navigation.
    * @param locale Shell-owned login title.
    * @param parent Current application or mandatory-update window.
    * @param record Fixed, nonsecret login outcomes for diagnostic evidence.
    */
-  constructor(private readonly origin: string, private readonly locale: () => DesktopLocale,
+  constructor(private readonly origin: string, private readonly allowedAuthOrigins: readonly string[],
+    private readonly locale: DesktopLocale,
     private readonly parent: () => BrowserWindow | undefined,
     private readonly record: (event: 'opened' | DesktopPolicyLoginResult) => void) {
     this.browserSession.setPermissionRequestHandler((_contents, _permission, callback) => { callback(false) })
@@ -72,7 +71,7 @@ export class DesktopPolicyTestAuth {
     const result = Promise.withResolvers<DesktopPolicyLoginResult>()
     const parent = this.parent()
     const window = new BrowserWindow({ width: 720, height: 760, ...(parent === undefined ? {} : { parent }),
-      title: this.locale().messages.policyLoginTitle, autoHideMenuBar: true,
+      title: this.locale.messages.policyLoginTitle, autoHideMenuBar: true,
       webPreferences: { session: this.browserSession, nodeIntegration: false, contextIsolation: true,
         sandbox: true, webSecurity: true, webviewTag: false, devTools: true, spellcheck: false } })
     this.pending = result.promise
@@ -126,7 +125,7 @@ export class DesktopPolicyTestAuth {
     // third-party page, and no later subresource keeps a placeholder on screen.
     // A placeholder that cannot load leaves the window blank, as before.
     void window.loadFile(LOGIN_LOADING_PAGE,
-      { query: { label: this.locale().messages.policyLoginLoading } }).then(loadLogin, loadLogin)
+      { query: { label: this.locale.messages.policyLoginLoading } }).then(loadLogin, loadLogin)
     return result.promise
   }
 
@@ -144,7 +143,7 @@ export class DesktopPolicyTestAuth {
     let url: URL
     try { url = new URL(value) } catch { return false }
     return url.protocol === 'https:' && url.username === '' && url.password === ''
-      && (url.origin === this.origin || FEISHU_ORIGINS.includes(url.origin))
+      && (url.origin === this.origin || this.allowedAuthOrigins.includes(url.origin))
   }
 
   /**

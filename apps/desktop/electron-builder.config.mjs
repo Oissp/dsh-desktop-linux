@@ -48,7 +48,8 @@ export function createElectronBuilderConfig(
       '**/*.{node,dylib,dll,so,exe}',
       '**/*.so.*',
       '**/spawn-helper',
-      '**/@vscode/ripgrep/bin/rg',
+      '**/@vscode/ripgrep-*/bin/rg',
+      '**/node_modules/@deepseek-ai/libreoffice-kit-*/**/*',
     ],
     extraResources: [
       { from: buildPaths.runtime, to: 'runtime' },
