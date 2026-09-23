@@ -1,4 +1,4 @@
-/** Prepare the target Electron distribution and pinned pnpm CLI. */
+/** Prepare the target Electron distribution, pinned pnpm CLI and primary runtime. */
 
 import { execFileSync } from 'node:child_process'
 import { chmodSync, cpSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
@@ -6,6 +6,7 @@ import { createRequire } from 'node:module'
 import { dirname, join } from 'node:path'
 import { downloadArtifact } from '@electron/get'
 import extractZip from 'extract-zip'
+import { preparePrimaryRuntime, smokePrimaryRuntime } from '../../../scripts/primary-runtime/prepare.ts'
 import { resolveDesktopBuildTarget, resolveDesktopTargetBuildPaths } from './desktop-build-paths.mjs'
 
 const BUILD_PATHS = resolveDesktopTargetBuildPaths()
@@ -45,6 +46,9 @@ async function main(): Promise<void> {
     node: nodeVersion,
     pnpm: pnpmVersion,
   }, undefined, 2)}\n`)
+  const desktopVersion = (JSON.parse(readFileSync(join(import.meta.dirname, '..', 'package.json'), 'utf8')) as { version: string }).version
+  await preparePrimaryRuntime({ target, output: RUNTIME_ROOT, cache: BUILD_PATHS.downloads, version: desktopVersion })
+  smokePrimaryRuntime(join(RUNTIME_ROOT, 'primary-runtime'))
 }
 
 await main()
