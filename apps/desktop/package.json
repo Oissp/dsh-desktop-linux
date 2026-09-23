@@ -4,7 +4,7 @@
   "description": "Electron desktop shell for a bundled dsh runtime and external plugins",
   "author": "Oissp <19642615+Oissp@users.noreply.github.com>",
   "homepage": "https://github.com/Oissp/dsh-desktop-linux",
-  "version": "0.1.7-alpha.1",
+  "version": "0.1.7-alpha.2",
   "private": true,
   "license": "MIT",
   "type": "module",
@@ -28,12 +28,13 @@
     "electron-updater": "^6.8.9",
     "semver": "^7.8.5",
     "ws": "^8.21.0",
-    "@deepseek-ai/dsh-api-gateway": "workspace:^"
+    "@deepseek-ai/dsh-api-gateway": "workspace:*",
+    "@deepseek-ai/cordis": "workspace:~"
   },
   "devDependencies": {
-    "@deepseek-ai/dsh-app-boot": "workspace:^",
-    "@deepseek-ai/dsh-deepseek-account": "workspace:^",
-    "@deepseek-ai/dsh-home-paths": "workspace:^",
+    "@deepseek-ai/dsh-app-boot": "workspace:*",
+    "@deepseek-ai/dsh-deepseek-account": "workspace:*",
+    "@deepseek-ai/dsh-home-paths": "workspace:*",
     "@electron/get": "^5.1.0",
     "@types/js-yaml": "^4.0.9",
     "@types/node": "^22.20.0",

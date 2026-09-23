@@ -279,3 +279,7 @@ apps/desktop/tests/windows-uninstall-smoke.ps1
 
 # primary-runtime 冒烟脚本（上游从 .ts 改名为 .py）
 scripts/primary-runtime/smoke.py
+
+# 0.1.7-alpha.2 新增 Windows installer 文件
+apps/desktop/installer/extract-report.h
+apps/desktop/tests/windows-installer-extract-report.cpp
