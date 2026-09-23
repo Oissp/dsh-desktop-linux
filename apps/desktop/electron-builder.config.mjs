@@ -1,9 +1,10 @@
-import { join } from 'node:path'
+import { join, relative, sep } from 'node:path'
+import { officePackageDirectories } from '../../scripts/libreoffice-packages.mjs'
 import {
   resolveDesktopAppId,
 } from './scripts/desktop-release-environment.mjs'
 import { resolveDesktopLinuxFormats } from './scripts/desktop-linux-formats.mjs'
-import { desktopTargetBuildPaths, resolveDesktopBuildTarget } from './scripts/desktop-build-paths.mjs'
+import { desktopTargetBuildPaths, desktopTargetPlatform, resolveDesktopBuildTarget } from './scripts/desktop-build-paths.mjs'
 
 /**
  * Create electron-builder configuration from one release environment.
@@ -19,6 +20,7 @@ export function createElectronBuilderConfig(
 ) {
   const appId = resolveDesktopAppId(env)
   const buildPaths = desktopTargetBuildPaths(resolveDesktopBuildTarget(env, hostPlatform, hostArch))
+  const payloadTarget = desktopTargetPlatform(resolveDesktopBuildTarget(env, hostPlatform, hostArch))
   const linuxFormats = resolveDesktopLinuxFormats(env)
   return {
     appId,
@@ -51,6 +53,16 @@ export function createElectronBuilderConfig(
       '**/@vscode/ripgrep-*/bin/rg',
       '**/node_modules/@deepseek-ai/libreoffice-kit-*/**/*',
     ],
+    // 上面的通配只命中引擎包（libreoffice-kit-*），kit 本体仍留在 asar 内。而 desktop-host
+    // 把 kit 的 CLI 路径映射到 app.asar.unpacked 下交给 skill-office，后者在插件加载时
+    // stat 该文件，缺失会让宿主启动直接失败。这里按上游同一处逻辑解包完整 Office 闭包
+    // （kit 本体、其依赖与选定引擎），使映射到的路径真实存在。
+    beforePack: async context => {
+      const office = await officePackageDirectories(buildPaths.dsh, payloadTarget)
+      const patterns = office.map(directory => `**/${relative(buildPaths.dsh, directory).split(sep).join('/')}/**/*`)
+      const existing = context.packager.config.asarUnpack ?? []
+      context.packager.config.asarUnpack = [...(typeof existing === 'string' ? [existing] : existing), ...patterns]
+    },
     extraResources: [
       { from: buildPaths.runtime, to: 'runtime' },
       // About 面板图标（main.ts setAboutPanelOptions 读取 resources/icon.png）。
