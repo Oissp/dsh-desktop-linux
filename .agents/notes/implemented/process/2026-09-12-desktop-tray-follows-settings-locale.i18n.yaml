@@ -2,5 +2,5 @@
 # side as of the last confirmed-consistent state. Both languages carry equal authority;
 # after editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/process/2026-09-12-desktop-tray-follows-settings-locale.md
-2026-09-12-desktop-tray-follows-settings-locale.md: 1c299716668e38f36b71d32e3850bac7c7678d92
-2026-09-12-desktop-tray-follows-settings-locale.zh.md: 9e1985ad0957672913ea606137a9f25fb2d0c93e
+2026-09-12-desktop-tray-follows-settings-locale.md: 0e8b4c4a809f1d2cb29322ac8c817a5b0dfcaae2
+2026-09-12-desktop-tray-follows-settings-locale.zh.md: 6d13f2ae852e3b7766f6469abee0cb5fa0cfdc12

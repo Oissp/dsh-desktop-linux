@@ -28,7 +28,7 @@ protocol handler 用现成的 `serveWebDocument` 从 `join(app.getAppPath(), 're
 
 主进程把选定的表面形式发布为 `UpdateDialogView.surface` 与 `MandatoryUpdateView.surface`。两个渲染进程各自把它写到 `document.body.dataset.surface`，`update-dialog.css` 依据该属性去掉遮罩以及卡片的圆角与阴影。它不再让 `main` 铺满窗口，否则高度测量就失去意义。
 
-Shell 的每个语言消费方都接收 `() => DesktopLocale` 而不是 `DesktopLocale`。`DesktopLocaleController` 在 `main.ts` 第 787 行才从 `settings.yaml` 解析出引擎的 `locale.preference`，远晚于第 227 行构造更新机制，而且它只赋值 `windowsLanguage`。构造时捕获的词典因此把所有提示在整个进程生命周期里钉在 `app.getLocale()` 上，而每次重建都调用 `currentDesktopLocale()` 的菜单却跟随了设置。改为显示时读取，下一次提示才能用上新语言。`MandatoryUpdateView.locale` 仍是取值：它要跨 IPC 送到渲染进程，而渲染进程无法调用函数。
+Shell 的每个语言消费方都接收 `() => DesktopLocale` 而不是 `DesktopLocale`。`DesktopLocaleController` 在 `main.ts` 的 Linux 托盘块里才从 `settings.yaml` 解析出引擎的 `locale.preference`，远晚于更新机制的构造，而且它只赋值 `windowsLanguage`。构造时捕获的词典因此把所有提示在整个进程生命周期里钉在 `app.getLocale()` 上，而每次重建都调用 `currentDesktopLocale()` 的菜单却跟随了设置。改为显示时读取，下一次提示才能用上新语言。`MandatoryUpdateView.locale` 仍是取值：它要跨 IPC 送到渲染进程，而渲染进程无法调用函数。
 
 保留自绘窗口而不回退到原生对话框，是因为合并后的流程需要以程序方式关闭提示：`controller.abort()` 在检查返回的瞬间关闭瞬时的检查提示，`updateDialog.cancel()` 在策略转为强制或关闭应用时关闭普通提示。`dialog.showMessageBox` 没有提供任何关闭操作，原生提示会一直留在屏幕上直到用户点击。
 

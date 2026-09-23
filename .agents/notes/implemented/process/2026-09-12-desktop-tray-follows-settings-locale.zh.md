@@ -14,7 +14,7 @@ Status: implemented
 
 **抽取共享的 settings 监视器。** `DesktopAppearanceController` 原本用的父目录监视机制（150 ms 防抖、home 目录缺失时 2 s 重挂、监视父目录以覆盖建/替换/删）原样抽进 `DesktopSettingsWatcher`（`settings-watcher.ts`）。外观与语言两个控制器现在共用它，行为不变。
 
-**语言变更时重建托盘。** `main.ts` 持有一对可变 `locale`/`messages` 与一个 `rebuildTrayMenu()` 闭包。控制器的 apply 回调切换这对值、按当前词典重建托盘右键菜单，并重设插件窗口标题。`quit` 角色项带上显式 `messages.quitMenu` 标签——否则 Electron 会用自己内置的本地化标签覆盖词典。
+**语言变更时重建托盘。** `main.ts` 持有一个可变 `locale` 与一个 `rebuildTrayMenu()` 闭包，后者的标签取自 `currentDesktopLocale()`（由 `windowsLanguage` 解析而来）。控制器的 apply 回调把解析出的 id 记进 `windowsLanguage`，并重建托盘右键菜单。`quit` 角色项带上显式 `messages.quitMenu` 标签——否则 Electron 会用自己内置的本地化标签覆盖词典。
 
 **读失败保留当前语言。** 引擎写入窗口期间的一次读失败不被当作「偏好被清成默认」：控制器保留已应用的语言，与外观控制器既有的读失败语义一致。
 
@@ -26,4 +26,4 @@ Status: implemented
 
 ## 后果
 
-托盘菜单、它的退出标签以及插件窗口标题现在实时跟随 通用设置 → Language，在用户做出显式选择前退回系统语言。测试覆盖了存储偏好读取、系统语言回退、读失败保留已应用语言、以及文档变更后的实时切换。`DesktopSettingsWatcher` 的抽取让两个控制器共用一份监视实现。
+托盘菜单及其退出标签现在实时跟随 通用设置 → Language，在用户做出显式选择前退回系统语言。测试覆盖了存储偏好读取、系统语言回退、读失败保留已应用语言、以及文档变更后的实时切换。`DesktopSettingsWatcher` 的抽取让两个控制器共用一份监视实现。

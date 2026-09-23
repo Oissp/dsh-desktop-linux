@@ -14,7 +14,7 @@ The tray menu — including the Desktop Plugins submenu — shipped with full Ch
 
 **Extract the shared settings watcher.** The parent-directory watch machinery that `DesktopAppearanceController` already used (150 ms debounce, 2 s re-arm when the home directory is missing, parent-dir watch so creates/replaces/deletes fire) is extracted verbatim into `DesktopSettingsWatcher` (`settings-watcher.ts`). Both the appearance and locale controllers now use it; behavior is unchanged.
 
-**Rebuild the tray on language change.** `main.ts` holds a mutable `locale`/`messages` pair and a `rebuildTrayMenu()` closure. The controller's apply callback swaps the pair, rebuilds the tray context menu from the current dictionary, and retitles the plugin window. The `quit` role item gets an explicit `messages.quitMenu` label — Electron would otherwise override the dictionary with its own built-in localized label.
+**Rebuild the tray on language change.** `main.ts` holds a mutable `locale` and a `rebuildTrayMenu()` closure whose labels come from `currentDesktopLocale()`, which resolves `windowsLanguage`. The controller's apply callback records the resolved id in `windowsLanguage` and rebuilds the tray context menu. The `quit` role item gets an explicit `messages.quitMenu` label — Electron would otherwise override the dictionary with its own built-in localized label.
 
 **Unreadable document keeps the current language.** A read failure during the engine's write window is not treated as "preference cleared to default": the controller retains the applied locale, mirroring the appearance controller's established read-failure semantics.
 
@@ -26,4 +26,4 @@ The tray menu — including the Desktop Plugins submenu — shipped with full Ch
 
 ## Consequences
 
-The tray menu, its quit label, and the plugin window title now follow 通用设置 → Language live, falling back to the system locale until the user makes an explicit choice. Tests cover the stored-preference read, system-locale fallback, an unreadable document keeping the applied locale, and the live switch after a document edit. The extraction of `DesktopSettingsWatcher` keeps the two controllers on one watch implementation.
+The tray menu and its quit label now follow 通用设置 → Language live, falling back to the system locale until the user makes an explicit choice. Tests cover the stored-preference read, system-locale fallback, an unreadable document keeping the applied locale, and the live switch after a document edit. The extraction of `DesktopSettingsWatcher` keeps the two controllers on one watch implementation.
