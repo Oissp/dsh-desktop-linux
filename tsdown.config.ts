@@ -16,9 +16,14 @@ function isBuildFaceClient(value: unknown): boolean {
 export default defineConfig(({ env }) => {
   const client = isBuildFaceClient(env?.DSH_BUILD_FACE)
   return {
+    // The Desktop shell bundles the workspace packages it imports, resolving them
+    // through their own tsdown output. Building it inside this concurrent pass lets
+    // that resolution lose the race against the package being written, and tsdown
+    // then records the import as external instead of failing. It builds last, from
+    // its own package script, after every package it resolves is on disk.
     workspace: client
       ? ['vendor/*', 'packages/*/*', 'apps/cli']
-      : ['vendor/*', 'packages/*/*', 'apps/cli', 'apps/desktop', 'apps/desktop-host'],
+      : ['vendor/*', 'packages/*/*', 'apps/cli', 'apps/desktop-host'],
     entry: client ? '' : ['lib/types/{index,invariant,startup}.js'],
     outDir: 'lib',
     format: ['esm'],
