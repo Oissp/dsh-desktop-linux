@@ -26,11 +26,11 @@ const LOCKFILE = [
   '  .:',
   '    dependencies:',
   '      \'@deepseek-ai/dsh\':',
-  '        specifier: 0.1.6-alpha.2',
+  '        specifier: 0.1.7-rc.1',
   '',
   'packages:',
   '',
-  '  \'@deepseek-ai/libreoffice-kit@0.0.1\':',
+  '  \'@deepseek-ai/libreoffice-kit@0.1.0\':',
   '    resolution: {integrity: sha512-} }',
   '',
   '  node-pty@1.2.0-beta.15:',
@@ -38,7 +38,7 @@ const LOCKFILE = [
   '',
   'snapshots:',
   '',
-  '  \'@deepseek-ai/libreoffice-kit@0.0.1\':',
+  '  \'@deepseek-ai/libreoffice-kit@0.1.0(patch_hash=df0523db)\':',
   '',
   '  node-pty@1.2.0-beta.15(node):',
   '',
@@ -49,7 +49,7 @@ const REPO_WORKSPACE = [
   '  - .',
   '',
   'patchedDependencies:',
-  '  \'@deepseek-ai/libreoffice-kit@0.0.1\': patches/@deepseek-ai__libreoffice-kit@0.0.1.patch',
+  '  \'@deepseek-ai/libreoffice-kit@0.1.0\': patches/@deepseek-ai__libreoffice-kit@0.1.0.patch',
   '  \'@electron/osx-sign@1.3.3\': patches/@electron__osx-sign@1.3.3.patch',
   '  \'@yao-pkg/pkg@6.21.0\': patches/@yao-pkg__pkg@6.21.0.patch',
   '  node-pty@1.2.0-beta.15: patches/node-pty@1.2.0-beta.15.patch',
@@ -73,20 +73,20 @@ function buildRoot(workspace: string): string {
 }
 
 describe('desktop runtime patch carrying', () => {
-  it('matches installed packages regardless of scope quoting or peer suffixes', () => {
-    expect(lockfileHasPackage(LOCKFILE, '@deepseek-ai/libreoffice-kit@0.0.1')).toBe(true)
+  it('matches installed packages regardless of scope quoting, peer suffixes, or patch hashes', () => {
+    expect(lockfileHasPackage(LOCKFILE, '@deepseek-ai/libreoffice-kit@0.1.0')).toBe(true)
     expect(lockfileHasPackage(LOCKFILE, 'node-pty@1.2.0-beta.15')).toBe(true)
   })
 
   it('does not match a package absent from the lockfile', () => {
     expect(lockfileHasPackage(LOCKFILE, '@electron/osx-sign@1.3.3')).toBe(false)
     expect(lockfileHasPackage(LOCKFILE, '@yao-pkg/pkg@6.21.0')).toBe(false)
-    expect(lockfileHasPackage(LOCKFILE, '@deepseek-ai/libreoffice-kit@0.0.2')).toBe(false)
+    expect(lockfileHasPackage(LOCKFILE, '@deepseek-ai/libreoffice-kit@0.1.1')).toBe(false)
   })
 
   it('carries only installed patches and declares them in the build workspace', () => {
     const repo = repoRoot(REPO_WORKSPACE, {
-      'patches/@deepseek-ai__libreoffice-kit@0.0.1.patch': 'libreoffice patch\n',
+      'patches/@deepseek-ai__libreoffice-kit@0.1.0.patch': 'libreoffice patch\n',
       'patches/node-pty@1.2.0-beta.15.patch': 'node-pty patch\n',
       'patches/@electron__osx-sign@1.3.3.patch': 'osx-sign patch\n',
       'patches/@yao-pkg__pkg@6.21.0.patch': 'pkg patch\n',
@@ -96,11 +96,11 @@ describe('desktop runtime patch carrying', () => {
       expect(applyRuntimePatches(repo, build, LOCKFILE)).toBe(true)
       const workspace = readFileSync(join(build, 'pnpm-workspace.yaml'), 'utf8')
       expect(workspace).toContain('patchedDependencies:')
-      expect(workspace).toContain('"@deepseek-ai/libreoffice-kit@0.0.1": patches/@deepseek-ai__libreoffice-kit@0.0.1.patch')
+      expect(workspace).toContain('"@deepseek-ai/libreoffice-kit@0.1.0": patches/@deepseek-ai__libreoffice-kit@0.1.0.patch')
       expect(workspace).toContain('"node-pty@1.2.0-beta.15": patches/node-pty@1.2.0-beta.15.patch')
       expect(workspace).not.toContain('@electron/osx-sign')
       expect(workspace).not.toContain('@yao-pkg/pkg')
-      expect(readFileSync(join(build, 'patches', '@deepseek-ai__libreoffice-kit@0.0.1.patch'), 'utf8')).toBe('libreoffice patch\n')
+      expect(readFileSync(join(build, 'patches', '@deepseek-ai__libreoffice-kit@0.1.0.patch'), 'utf8')).toBe('libreoffice patch\n')
       expect(readFileSync(join(build, 'patches', 'node-pty@1.2.0-beta.15.patch'), 'utf8')).toBe('node-pty patch\n')
       expect(() => readFileSync(join(build, 'patches', '@electron__osx-sign@1.3.3.patch'), 'utf8')).toThrow()
     } finally {

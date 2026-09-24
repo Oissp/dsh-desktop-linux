@@ -15,3 +15,11 @@ export function selectOfficeEngine(manifest: { optionalDependencies?: Record<str
  * @returns Installed package directories.
  */
 export function officePackageDirectories(staging: string, target: { platform: string; arch: string }): Promise<string[]>
+
+/**
+ * Produce electron-builder `asarUnpack` glob patterns for the complete Office package closure.
+ * @param staging - Symlink-free installed Node project.
+ * @param target - Distribution platform and CPU.
+ * @returns `asarUnpack` patterns, one per closure package.
+ */
+export function officeAsarUnpackPatterns(staging: string, target: { platform: string; arch: string }): Promise<string[]>

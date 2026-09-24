@@ -70,6 +70,20 @@ export async function officePackageDirectories(staging, target) {
 }
 
 /**
+ * Produce electron-builder `asarUnpack` glob patterns for the complete Office package closure.
+ * Patterns carry forward slashes so they match on every packaging host; the static
+ * `asarUnpack` list only matches engine packages (`libreoffice-kit-*`), so the kit body
+ * and its runtime dependencies reach the archive unless this closure unpacks them.
+ * @param {string} staging - Symlink-free installed Node project.
+ * @param {{ platform: string, arch: string }} target - Distribution platform and CPU.
+ * @returns {Promise<string[]>} `asarUnpack` patterns, one per closure package.
+ */
+export async function officeAsarUnpackPatterns(staging, target) {
+  const directories = await officePackageDirectories(staging, target)
+  return directories.map(directory => `**/${relative(staging, directory).split(sep).join('/')}/**/*`)
+}
+
+/**
  * @param {string[] | undefined} values - npm platform or CPU selectors.
  * @param {string} value - Target platform or CPU.
  * @returns {boolean} Whether the optional package supports the target.

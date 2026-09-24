@@ -9,11 +9,13 @@ export interface DesktopElectronBuilderConfig {
     string,
     string,
     string,
+    string,
     { readonly from: string, readonly to: 'dsh', readonly filter: readonly ['**/*'] },
     { readonly from: string, readonly to: 'dsh/node_modules', readonly filter: readonly ['**/*'] },
   ]
   readonly electronDist: string
   readonly asarUnpack: readonly string[]
+  readonly beforePack: (context: unknown) => Promise<void>
   readonly extraMetadata: {
     readonly desktopName: string
   }

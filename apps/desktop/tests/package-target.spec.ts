@@ -29,6 +29,24 @@ describe('desktop package target', () => {
     expect(config.linux.syncDesktopName).toBe(true)
   })
 
+  it('registers a beforePack hook that unpacks the Office closure beside the engine glob', async () => {
+    const { createElectronBuilderConfig } = await import('../electron-builder.config.mjs')
+    const config = createElectronBuilderConfig({ DSH_DESKTOP_APP_ID: 'com.example.desktop-test' }, 'linux', 'x64')
+    // 静态 asarUnpack 只命中引擎包（libreoffice-kit-*），kit 本体靠 beforePack 在打包期
+    // 追加闭包模式解包；缺失该钩子会让 skill-office 的 CLI 路径不存在、宿主启动即失败。
+    expect(typeof config.beforePack).toBe('function')
+  })
+
+  it('packs the welcome renderer bundle that welcome.html loads from lib/welcome', async () => {
+    const { createElectronBuilderConfig } = await import('../electron-builder.config.mjs')
+    const config = createElectronBuilderConfig({ DSH_DESKTOP_APP_ID: 'com.example.desktop-test' }, 'linux', 'x64')
+    // welcome.html 通过相对路径引用 ../lib/welcome/welcome.js 与样式/字体；'lib/*.js' 只匹配
+    // 顶层文件，不会带入该子目录。缺这条模式，打包后 welcome 窗口加载即失败，显示空白竖长窗口。
+    const files = config.files as readonly (string | { filter?: readonly string[] })[]
+    const patterns = files.flatMap(entry => typeof entry === 'string' ? [entry] : (entry.filter ?? []))
+    expect(patterns).toContain('lib/welcome/**/*')
+  })
+
   it('selects the Linux x64 target selectors', () => {
     expect(resolveDesktopPackageTarget('linux-x64', 'linux', 'x64')).toMatchObject({
       platform: 'linux', arch: 'x64', builderPlatform: '--linux', builderArch: '--x64',

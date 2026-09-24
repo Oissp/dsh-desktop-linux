@@ -1,5 +1,5 @@
-import { join, relative, sep } from 'node:path'
-import { officePackageDirectories } from '../../scripts/libreoffice-packages.mjs'
+import { join } from 'node:path'
+import { officeAsarUnpackPatterns } from '../../scripts/libreoffice-packages.mjs'
 import {
   resolveDesktopAppId,
 } from './scripts/desktop-release-environment.mjs'
@@ -40,6 +40,10 @@ export function createElectronBuilderConfig(
     files: [
       'lib/*.js',
       'lib/*.cjs',
+      // welcome.html 通过相对路径引用 lib/welcome/ 下的 React 产物（welcome.js/welcome.css、
+      // brand-font.css 及字体）；'lib/*.js' 只匹配顶层，不会带入该子目录，缺这条 welcome
+      // 窗口加载即失败、显示空白竖长窗口（0.1.7-rc.1 回归）。
+      'lib/welcome/**/*',
       'renderer/**/*',
       'package.json',
       { from: buildPaths.dsh, to: 'dsh', filter: ['**/*'] },
@@ -58,8 +62,7 @@ export function createElectronBuilderConfig(
     // stat 该文件，缺失会让宿主启动直接失败。这里按上游同一处逻辑解包完整 Office 闭包
     // （kit 本体、其依赖与选定引擎），使映射到的路径真实存在。
     beforePack: async context => {
-      const office = await officePackageDirectories(buildPaths.dsh, payloadTarget)
-      const patterns = office.map(directory => `**/${relative(buildPaths.dsh, directory).split(sep).join('/')}/**/*`)
+      const patterns = await officeAsarUnpackPatterns(buildPaths.dsh, payloadTarget)
       const existing = context.packager.config.asarUnpack ?? []
       context.packager.config.asarUnpack = [...(typeof existing === 'string' ? [existing] : existing), ...patterns]
     },
