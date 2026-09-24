@@ -32,8 +32,8 @@ function setup() {
   installMandatoryUpdateOverlay()
   const publish = ipc.on.mock.calls.find(([name]) => name === MANDATORY_IPC.state)![1] as
     (event: unknown, state: MandatoryUpdateView) => void
-  const view: MandatoryUpdateView = { locale: resolveDesktopLocale('zh-CN'), policy: { blocking: true, checking: false },
-    update: { phase: 'available', version: '2.0.0' }, deferred: false }
+  const view: MandatoryUpdateView = { locale: resolveDesktopLocale('zh-CN'), surface: 'window',
+    policy: { blocking: true, checking: false }, update: { phase: 'available', version: '2.0.0' }, deferred: false }
   publish({}, view)
   ipc.invoke.mockClear()
   const root = shadow.mock.results[0]!.value as ShadowRoot

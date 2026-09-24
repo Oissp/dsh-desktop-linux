@@ -2,6 +2,7 @@
 
 import { spawn } from 'node:child_process'
 import { existsSync, mkdirSync, readFileSync, rmSync } from 'node:fs'
+import { createRequire } from 'node:module'
 import { parseArgs } from 'node:util'
 import { join, resolve } from 'node:path'
 import { shellVersionExtendsEngine } from '../src/release-version.ts'
@@ -243,6 +244,22 @@ async function main(): Promise<void> {
 }
 
 /**
+ * Bare specifiers the built shell bundle imports, so Electron resolves them while loading
+ * its main script. A package whose build output the prepare step never produced still
+ * resolves as a directory, so resolution — not existence — is what proves it usable.
+ * @param bundle - Built shell main bundle.
+ * @returns Sorted specifiers, excluding relative paths and Node.js builtins.
+ */
+export function shellRuntimeImports(bundle: string): string[] {
+  const specifiers = new Set<string>()
+  for (const match of bundle.matchAll(/(?:from|import)\s*\(?\s*"([^"]+)"/gu)) {
+    const specifier = match[1]!
+    if (!specifier.startsWith('.') && !specifier.startsWith('node:')) specifiers.add(specifier)
+  }
+  return [...specifiers].sort()
+}
+
+/**
  * Verify every prepared input electron-builder consumes exists before a cache-backed build.
  * @param buildPaths - Target paths whose prepared engine and runtime directories are required.
  */
@@ -253,6 +270,16 @@ function assertBuilderInputsPresent(buildPaths: DesktopTargetBuildPaths): void {
     ['dsh runtime manifest', join(buildPaths.dsh, 'package.json')],
   ]
   const missing = required.filter(([, path]) => !existsSync(path))
+  // The prepare step this cache-backed build skipped is also what builds the shell's
+  // workspace dependencies, and electron-builder packs their output into the application.
+  const resolve = createRequire(import.meta.url).resolve
+  for (const specifier of shellRuntimeImports(readFileSync(join(APP_ROOT, 'lib', 'main.js'), 'utf8'))) {
+    try {
+      resolve(specifier)
+    } catch {
+      missing.push([`${specifier} build output`, specifier])
+    }
+  }
   if (missing.length > 0) {
     throw new Error(`desktop package: --builder-only needs prepared outputs missing: ${missing.map(([label]) => label).join(', ')}`)
   }

@@ -20,7 +20,7 @@ protocol handler 用现成的 `serveWebDocument` 从 `join(app.getAppPath(), 're
 
 表面形式由 `update-overlay.ts` 决定，并且按平台而非全局选择，因此上游的覆盖层在所有能用的地方都保留下来。
 
-`desktopDialogSurface(platform)` 在 Linux 上返回 `window`，其他平台返回 `overlay`。`createUpdatePromptWindow` 在 `window` 下构造不透明无边框卡片：宽 420，居中于父窗口内容区，`backgroundColor: '#ffffff'`，不带 `transparent`，也不向父窗口插入任何 CSS；在 `overlay` 下构造未改动的透明覆盖层。
+`desktopDialogSurface(platform)` 在 Linux 上返回 `window`，其他平台返回 `overlay`。`createUpdatePromptWindow` 在 `window` 下构造不透明无边框卡片：宽 420，居中于父窗口内容区，`backgroundColor` 用 `surfaceBackground()` 按当前主题预涂，不带 `transparent`，也不向父窗口插入任何 CSS；在 `overlay` 下构造覆盖层，并沿用普通提示本来就在用的非原生 `nativeModal`，使 macOS 不进入整屏 sheet 动画、由覆盖层自己拦截父窗口输入。
 
 卡片自身没有内容高度，固定高度会在短文案下方留出一片裸露的白底。文档在布局完成后量出 `#dialog` 的高度，经 `UPDATE_DIALOG_IPC.resize` 回报；`fitDialogCard` 把它下钳到 `CARD_MIN_HEIGHT`、上钳到父窗口内容区高度，然后重新居中。`ResizeObserver` 与技术详情的 `toggle` 事件会再次回报，因此展开详情是把窗口撑大而不是在内部滚动。覆盖层本身已铺满父窗口，`fitDialogCard` 在该表面忽略测量值，渲染进程也不会发送。
 
@@ -28,7 +28,7 @@ protocol handler 用现成的 `serveWebDocument` 从 `join(app.getAppPath(), 're
 
 主进程把选定的表面形式发布为 `UpdateDialogView.surface` 与 `MandatoryUpdateView.surface`。两个渲染进程各自把它写到 `document.body.dataset.surface`，`update-dialog.css` 依据该属性去掉遮罩以及卡片的圆角与阴影。它不再让 `main` 铺满窗口，否则高度测量就失去意义。
 
-Shell 的每个语言消费方都接收 `() => DesktopLocale` 而不是 `DesktopLocale`。`DesktopLocaleController` 在 `main.ts` 的 Linux 托盘块里才从 `settings.yaml` 解析出引擎的 `locale.preference`，远晚于更新机制的构造，而且它只赋值 `windowsLanguage`。构造时捕获的词典因此把所有提示在整个进程生命周期里钉在 `app.getLocale()` 上，而每次重建都调用 `currentDesktopLocale()` 的菜单却跟随了设置。改为显示时读取，下一次提示才能用上新语言。`MandatoryUpdateView.locale` 仍是取值：它要跨 IPC 送到渲染进程，而渲染进程无法调用函数。
+Shell 的每个语言消费方都接收 `() => DesktopLocale` 而不是 `DesktopLocale`。`DesktopLocaleController` 在更新机制构造之后才从 `settings.yaml` 读出引擎的 `locale.preference` 并重新赋值 `locale` 绑定；构造时捕获的词典因此把所有提示在整个进程生命周期里钉在 `app.getLocale()` 上，而按 `currentDesktopLocale()` 重建的菜单却跟随了设置。传 `() => locale` 在显示时才读当前绑定，下一次提示才能用上新语言。`MandatoryUpdateView.locale` 仍是取值：它要跨 IPC 送到渲染进程，而渲染进程无法调用函数。
 
 保留自绘窗口而不回退到原生对话框，是因为合并后的流程需要以程序方式关闭提示：`controller.abort()` 在检查返回的瞬间关闭瞬时的检查提示，`updateDialog.cancel()` 在策略转为强制或关闭应用时关闭普通提示。`dialog.showMessageBox` 没有提供任何关闭操作，原生提示会一直留在屏幕上直到用户点击。
 
@@ -53,6 +53,8 @@ Shell 的每个语言消费方都接收 `() => DesktopLocale` 而不是 `Desktop
 Linux 上的提示不再盖住产品窗口，强制更新模态在该平台也保留了原生窗口控件。剩下的代价是卡片只在创建与每次测量时居中，不再像覆盖层那样跟随父窗口的移动与缩放。
 
 fork 相对上游的差异落在 `main.ts` 里的 `shell` 分支、`update-overlay.ts` 里的 Linux 分支与表面/定尺寸函数、`resize` 通道，以及那些语言取值器上。上游 `master` 的 handler 没有 `shell` 分支，也没有其他代码服务该 host，因此一次整体采用上游 handler 的合并会再次删掉该分支，让所有提示重新变成空白。`.github/sync-trimmed-paths.txt` 记录的是被删除的文件而非被修改的行为，这些分叉都不在它的覆盖范围内。
+
+这个风险不是假设，而且不限于 handler。0.1.7-alpha.1 的合并整体采用了上游的 `update-overlay.ts`、`update-dialog.ts` 和 `update-dialog.css`，把本笔记的整套设计退了回去：提示退回铺满父窗口的透明覆盖层，而 Wayland 会话无法把它定位到父窗口上，于是主窗口露出一部分且仍可交互；配色退回只有浅色；词典退回启动时捕获。被退回的样式表是肉眼可见的线索——`mandatory-update.css` 仍在引用 `update-dialog.css` 已不再定义的 `--shell-*` 令牌。任何触及这三个文件的合并都要重新核对表面分流、令牌表和语言取值器，而不只是协议 handler。
 
 这些文档静默 404 了两个版本，这一点最值得记住：`loadURL` 解析 404 时并不 reject，因此 `void window.loadURL(page).catch(abort)` 从未触发，提示在什么都没显示的情况下报告成功。
 

@@ -60,6 +60,10 @@ Electron 拥有 `$DSH_HOME/profiles/desktop`。其 `dependencies` 包含 pnpm �
 
 `dsh-app://shell/` 无需联系 Host 即可提供打包的更新文档、脚本和样式。静态请求保留 GET/HEAD、路径范围和 MIME 处理；每个更新文档继续使用隔离 preload 和所属窗口的 IPC 校验。
 
+Shell 提示是产品窗口的模态子窗口。在能合成透明窗口的平台上，无边框覆盖层连同变暗遮罩盖住父窗口内容；Linux 改用居中于父窗口的不透明卡片，因为未被合成的透明窗口会把 alpha 画成不透明底色，反而用一块深色板盖住产品窗口。卡片自身没有内容高度，因此其文档在布局完成后量出自己的高度，由主进程据此给窗口定尺寸，下限为控件自身高度，上限为父窗口。强制更新模态提供原生移动、缩放与最大化，因此除 macOS 外都使用带边框窗口。提示文案在每次提示打开时从语言词典读取，而不是启动时捕获：语言控制器要在更新机制构造完成之后才从 `settings.yaml` 解析出引擎的 Language 选择，捕获一次会把所有提示钉在系统语言上。
+
+Shell 文档跟随应用外观。`settings.yaml` 中的偏好会成为 `nativeTheme.themeSource`，因此每个 Shell 文档的 `prefers-color-scheme` 跟随 设置 → 通用设置 → 外观 而不是操作系统，各文档再用自己那份产品别名令牌取值重绘。偏好写成自定义主题时不覆盖任何东西：只有内置的 `light` 与 `dark` 这一对在 Shell 里有对应取值。不透明提示窗口按解析出的表面色预涂底色，避免文档首次绘制时闪一下。
+
 产品 UI 保留 Web 操作，包括通过共享认证 HTTP 路由执行的“打开方式…”。Desktop 使用 Web 的自动目录选择机制，并以共享 Web 模板的 bundle 列表初始化新 profile。
 
 Electron 根据应用语言选择类型化的英文或中文 shell 文案，并回退到英文。macOS 应用包通过 `CFBundleLocalizations` 声明支持英语和简体中文，让 macOS 根据用户的首选语言匹配初始应用语言。主界面仍优先使用已保存的 Client UI 语言偏好。在 Windows 上，主文档的语言会更新桌面菜单、恢复与更新提示。仓库 Client UI i18n 检查覆盖桌面端源码。

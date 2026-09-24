@@ -13,7 +13,10 @@ vi.mock('electron', () => ({ ipcMain: {
   handle: (channel: string, handler: (...args: unknown[]) => unknown) => native.handlers.set(channel, handler),
   removeHandler: (channel: string) => native.handlers.delete(channel),
 }, app: { quit: native.quit }, shell: { openExternal: native.open }, clipboard: { writeText: native.write, readText: native.read } }))
-vi.mock('../src/update-overlay.ts', () => ({ createUpdateOverlay: vi.fn(() => window) }))
+vi.mock('../src/update-overlay.ts', () => ({
+  createMandatoryUpdateWindow: () => window,
+  mandatoryUpdateSurface: () => 'window',
+}))
 
 let window: ReturnType<typeof fakeWindow>
 let ui: DesktopMandatoryUpdateWindow | undefined

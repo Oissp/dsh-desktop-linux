@@ -5,7 +5,7 @@ import type { DesktopLocale } from './locale.ts'
 import { assertDesktopSender, type DesktopUpdateState } from './ipc.ts'
 import { desktopPolicyPage, type DesktopPolicyState } from './mandatory-update-policy.ts'
 import { MANDATORY_IPC } from './mandatory-update-ipc.ts'
-import { createUpdateOverlay } from './update-overlay.ts'
+import { createMandatoryUpdateWindow, mandatoryUpdateSurface, type DesktopDialogSurface } from './update-overlay.ts'
 import { DesktopUpdateAttention } from './update-attention.ts'
 
 /** A renderer action never carries a URL or authorizes a different version. */
@@ -14,6 +14,8 @@ export type MandatoryUpdateAction = 'refresh' | 'download' | 'install' | 'later'
 /** Combined view rendered as text by the shell-owned page. */
 export interface MandatoryUpdateView {
   readonly locale: DesktopLocale
+  /** Which surface hosts this document, so the document drops the sheet scrim on a framed modal. */
+  readonly surface: DesktopDialogSurface
   readonly policy: DesktopPolicyState
   readonly update: DesktopUpdateState
   readonly error?: string
@@ -191,7 +193,7 @@ export class DesktopMandatoryUpdateWindow {
     if (this.window === undefined) {
       const parent = this.options.parent()
       if (parent === undefined) return
-      const window = createUpdateOverlay(parent, this.options.preload, this.options.locale().messages.mandatoryTitle, false)
+      const window = createMandatoryUpdateWindow(parent, this.options.preload, this.options.locale().messages.mandatoryTitle)
       this.window = window
       window.setMenu(null)
       window.on('close', (event) => { if (!this.disposed && this.options.policy().blocking) { event.preventDefault(); app.quit() } })
@@ -243,7 +245,8 @@ export class DesktopMandatoryUpdateWindow {
   }
 
   private view(): MandatoryUpdateView {
-    return { locale: this.options.locale(), policy: this.options.policy(), update: this.options.update(),
+    return { locale: this.options.locale(), surface: mandatoryUpdateSurface(),
+      policy: this.options.policy(), update: this.options.update(),
       deferred: this.deferred,
       ...(this.confirmation === undefined ? {}
         : { confirmation: { version: this.confirmation.version, active: this.confirmation.active, revision: this.confirmation.revision } }),

@@ -26,12 +26,12 @@ export class DesktopPolicyTestAuth {
   /**
    * @param origin Validated HTTPS policy origin; login always starts at its root with fresh gateway state.
    * @param allowedAuthOrigins Validated HTTPS origins for login document navigation.
-   * @param locale Shell-owned login title.
+   * @param locale Reads the shell-owned login title when the window opens.
    * @param parent Current application or mandatory-update window.
    * @param record Fixed, nonsecret login outcomes for diagnostic evidence.
    */
   constructor(private readonly origin: string, private readonly allowedAuthOrigins: readonly string[],
-    private readonly locale: DesktopLocale,
+    private readonly locale: () => DesktopLocale,
     private readonly parent: () => BrowserWindow | undefined,
     private readonly record: (event: 'opened' | DesktopPolicyLoginResult) => void) {
     this.browserSession.setPermissionRequestHandler((_contents, _permission, callback) => { callback(false) })
@@ -71,7 +71,7 @@ export class DesktopPolicyTestAuth {
     const result = Promise.withResolvers<DesktopPolicyLoginResult>()
     const parent = this.parent()
     const window = new BrowserWindow({ width: 720, height: 760, ...(parent === undefined ? {} : { parent }),
-      title: this.locale.messages.policyLoginTitle, autoHideMenuBar: true,
+      title: this.locale().messages.policyLoginTitle, autoHideMenuBar: true,
       webPreferences: { session: this.browserSession, nodeIntegration: false, contextIsolation: true,
         sandbox: true, webSecurity: true, webviewTag: false, devTools: true, spellcheck: false } })
     this.pending = result.promise
@@ -125,7 +125,7 @@ export class DesktopPolicyTestAuth {
     // third-party page, and no later subresource keeps a placeholder on screen.
     // A placeholder that cannot load leaves the window blank, as before.
     void window.loadFile(LOGIN_LOADING_PAGE,
-      { query: { label: this.locale.messages.policyLoginLoading } }).then(loadLogin, loadLogin)
+      { query: { label: this.locale().messages.policyLoginLoading } }).then(loadLogin, loadLogin)
     return result.promise
   }
 

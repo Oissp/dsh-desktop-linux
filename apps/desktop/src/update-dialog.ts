@@ -1,16 +1,19 @@
 /** Main-owned update confirmations; closing or replacing a dialog never grants installation permission. */
 import { ipcMain, type BrowserWindow, type IpcMainInvokeEvent, type MessageBoxOptions, type MessageBoxReturnValue } from 'electron'
 import type { DesktopLocale } from './locale.ts'
-import { createUpdateOverlay } from './update-overlay.ts'
+import { createUpdatePromptWindow, desktopDialogSurface, fitDialogCard, type DesktopDialogSurface } from './update-overlay.ts'
 
 /** Channels available only to the isolated update-dialog document. */
-export const UPDATE_DIALOG_IPC = { status: 'dsh-update-dialog:status', changed: 'dsh-update-dialog:changed', respond: 'dsh-update-dialog:respond' } as const
+export const UPDATE_DIALOG_IPC = { status: 'dsh-update-dialog:status', changed: 'dsh-update-dialog:changed', respond: 'dsh-update-dialog:respond',
+  resize: 'dsh-update-dialog:resize' } as const
 
 /** Text and choices supplied by the main process, never by product documents. */
 export interface UpdateDialogView {
   /** Identifies the displayed choices; a response from an older prompt is rejected. */
   readonly revision: number
   readonly locale: string
+  /** Which surface hosts this document, so the document drops the sheet scrim on an opaque card. */
+  readonly surface: DesktopDialogSurface
   readonly title: string
   readonly message: string
   readonly detail: string
@@ -26,10 +29,12 @@ export interface UpdateDialogOptions extends MessageBoxOptions {
   readonly technicalDetails?: string
 }
 
-/** The document can select only a displayed response index. */
+/** The document can select only a displayed response index and report its own content height. */
 export interface UpdateDialogApi {
   status(): Promise<UpdateDialogView | null>
   respond(revision: number, index: number): Promise<void>
+  /** Ask the card surface to fit this measured document height; ignored on the sheet. */
+  resize(height: number): Promise<void>
   subscribe(listener: (view: UpdateDialogView | null) => void): () => void
 }
 
@@ -50,9 +55,12 @@ export class DesktopUpdateDialog {
 
   /**
    * @param preload - Bundled isolated preload.
-   * @param locale - Shell-owned copy or a reader of the current UI language.
+   * @param locale - Reads the shell-owned copy at display time, so a prompt opened after the
+   * engine's Language preference changes uses the current dictionary.
+   * @param platform - Platform that hosts the modal, selecting its surface.
    */
-  constructor(private readonly preload: string, private readonly locale: DesktopLocale | (() => DesktopLocale)) {
+  constructor(private readonly preload: string, private readonly locale: () => DesktopLocale,
+    private readonly platform: NodeJS.Platform = process.platform) {
     ipcMain.handle(UPDATE_DIALOG_IPC.status, (event) => { this.owned(event); return this.active?.view ?? null })
     ipcMain.handle(UPDATE_DIALOG_IPC.respond, (event, revision: unknown, index: unknown) => {
       this.owned(event)
@@ -64,6 +72,15 @@ export class DesktopUpdateDialog {
       }
       active.finish(index)
     })
+    ipcMain.handle(UPDATE_DIALOG_IPC.resize, (event, height: unknown) => {
+      this.owned(event)
+      const window = this.window
+      if (window === undefined) return
+      if (typeof height !== 'number' || !Number.isFinite(height) || height <= 0) {
+        throw new Error('desktop update: invalid dialog height')
+      }
+      fitDialogCard(window, height, this.platform)
+    })
   }
 
   /**
@@ -72,7 +89,7 @@ export class DesktopUpdateDialog {
    * @returns A displayed response, or cancellation on replacement, abort, close, or load failure; backdrop dismissal fades independently.
    */
   show(parent: BrowserWindow, options: UpdateDialogOptions): Promise<MessageBoxReturnValue> {
-    const locale = typeof this.locale === 'function' ? this.locale() : this.locale
+    const locale = this.locale()
     const buttons = options.buttons ?? [locale.messages.updateAcknowledge]
     const cancelId = options.cancelId ?? buttons.length - 1
     if (this.disposed || options.signal?.aborted === true || parent.isDestroyed()) {
@@ -83,10 +100,11 @@ export class DesktopUpdateDialog {
     clearTimeout(this.closing)
     this.closing = undefined
     const existing = this.window
-    const window = existing ?? createUpdateOverlay(parent, this.preload, options.title ?? locale.messages.updateTitle, false)
+    const window = existing ?? createUpdatePromptWindow(parent, this.preload, options.title ?? locale.messages.updateTitle, this.platform)
     this.window = window
     this.parent = parent
-    const view: UpdateDialogView = { revision: ++this.revision, locale: locale.id, title: options.title ?? '', message: options.message,
+    const view: UpdateDialogView = { revision: ++this.revision, locale: locale.id, surface: desktopDialogSurface(this.platform),
+      title: options.title ?? '', message: options.message,
       detail: options.detail ?? '', buttons, cancelId, closeLabel: locale.messages.updateClose,
       technicalDetails: options.technicalDetails ?? '', technicalDetailsLabel: locale.messages.updateTechnicalDetails }
     return new Promise((resolve) => {
@@ -123,6 +141,7 @@ export class DesktopUpdateDialog {
     this.close()
     ipcMain.removeHandler(UPDATE_DIALOG_IPC.status)
     ipcMain.removeHandler(UPDATE_DIALOG_IPC.respond)
+    ipcMain.removeHandler(UPDATE_DIALOG_IPC.resize)
   }
 
   private close(): void {

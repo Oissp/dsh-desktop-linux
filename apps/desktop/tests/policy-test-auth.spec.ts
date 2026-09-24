@@ -35,7 +35,7 @@ beforeEach(() => {
   vi.clearAllMocks()
   browserSession = makeSession(); window = makeWindow()
   native.partition.mockReturnValue(browserSession); native.create.mockReturnValue(window)
-  auth = new DesktopPolicyTestAuth('https://policy.example.com', ['https://login.example.com'], resolveDesktopLocale('zh'), () => undefined, record)
+  auth = new DesktopPolicyTestAuth('https://policy.example.com', ['https://login.example.com'], () => resolveDesktopLocale('zh'), () => undefined, record)
 })
 afterEach(async () => { await auth.dispose() })
 

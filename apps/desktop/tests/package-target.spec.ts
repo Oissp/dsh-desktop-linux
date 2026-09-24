@@ -4,6 +4,7 @@ import {
   desktopElectronBuilderArguments,
   parseDesktopPackageInvocation,
   resolveDesktopPackageTarget,
+  shellRuntimeImports,
 } from '../scripts/package-target.ts'
 import { desktopTargetBuildPaths } from '../scripts/desktop-build-paths.mjs'
 
@@ -45,6 +46,21 @@ describe('desktop package target', () => {
     const files = config.files as readonly (string | { filter?: readonly string[] })[]
     const patterns = files.flatMap(entry => typeof entry === 'string' ? [entry] : (entry.filter ?? []))
     expect(patterns).toContain('lib/welcome/**/*')
+  })
+
+  it('checks every package the built shell bundle imports at load time', () => {
+    // prepare 既准备 Electron/dsh，也是唯一构建壳自身 workspace 依赖的步骤；命中缓存跳过它
+    // 会让 app.asar 缺少这些包的 lib/，主进程 import 失败、窗口不出现。断言必须只看真正的
+    // 外部依赖，否则会把相对导入和内置模块也当成待构建产物。
+    expect(shellRuntimeImports([
+      'import { app } from "electron";',
+      'import { Context } from "@deepseek-ai/cordis";',
+      'import { parse } from "@deepseek-ai/dsh-api-gateway/stream-protocol";',
+      'import "./local.ts";',
+      'import "node:fs";',
+      'import "@deepseek-ai/dsh-brand";',
+      'const lazy = await import("ws");',
+    ].join('\n'))).toEqual(['@deepseek-ai/cordis', '@deepseek-ai/dsh-api-gateway/stream-protocol', '@deepseek-ai/dsh-brand', 'electron', 'ws'])
   })
 
   it('selects the Linux x64 target selectors', () => {

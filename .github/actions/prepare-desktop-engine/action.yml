@@ -3,12 +3,17 @@ description: Restore, build, and save the cached dsh engine and Electron runtime
 
 # 缓存 key 只哈希已跟踪源码：git ls-files 排序输出，且天然排除 pnpm install 与 prepare:*
 # 写入的 node_modules、构建产物，所以同一次 run 的 restore 与 save 才会算出同一个 key。
-# 纯壳版本 bump（apps/desktop/package.json 不在 pathspec 内）命中缓存；依赖变化由
-# pnpm-lock.yaml 捕获。
+# 依赖变化由 pnpm-lock.yaml 捕获。
 #
 # pathspec 必须覆盖每一份随 dsh/ 进包的源码，否则该处的改动不会让缓存失效，
 # --builder-only 会复用旧产物。apps/cli 即 @deepseek-ai/dsh，apps/web 是被
 # dsh-web-app 依赖的 @deepseek-ai/dsh-web-frontend，两者都不是壳代码。
+#
+# apps/desktop/package.json 也在 pathspec 内：prepare 既把壳版本写进
+# runtime/primary-runtime/runtime.json 的 desktopVersion，又是唯一构建壳自身
+# workspace 依赖 lib/ 的步骤，而 electron-builder 会把那些 lib/ 打进 app.asar。
+# 版本 bump 命中缓存就会跳过该步骤，产物缺少 node_modules/@deepseek-ai/*/lib，
+# 主进程 import 直接失败、窗口不出现（0.1.7-rc.1.2 即为此）。
 #
 # 缓存路径必须覆盖 package-target.ts --builder-only 断言的每一份产物（壳 bundle、
 # Electron 运行时、dsh 运行时清单），缺一份命中缓存时就会直接失败。
@@ -24,6 +29,7 @@ runs:
           package.json pnpm-lock.yaml pnpm-workspace.yaml \
           'tsconfig*.json' 'scripts/**' 'packages/**' 'vendor/**' 'native/**' \
           'apps/cli/**' 'apps/web/**' 'apps/desktop-host/**' \
+          'apps/desktop/package.json' \
           'apps/desktop/src/**' 'apps/desktop/renderer/**' \
           'apps/desktop/scripts/**' apps/desktop/electron-builder.config.mjs \
           apps/desktop/tsdown.config.ts apps/desktop/tsconfig.json \
