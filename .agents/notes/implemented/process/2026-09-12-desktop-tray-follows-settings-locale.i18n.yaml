@@ -1,6 +1,19 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-09-12-desktop-tray-follows-settings-locale.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/process/2026-09-12-desktop-tray-follows-settings-locale.md
-2026-09-12-desktop-tray-follows-settings-locale.md: 0e8b4c4a809f1d2cb29322ac8c817a5b0dfcaae2
-2026-09-12-desktop-tray-follows-settings-locale.zh.md: 6d13f2ae852e3b7766f6469abee0cb5fa0cfdc12
+/agent-note-desktop-tray-follows-the-engine-s-language-preference:
+  en: 67857a8788b26837
+  zh: c9795ce4505d2227
+/agent-note-desktop-tray-follows-the-engine-s-language-preference/problem:
+  en: 711fef3378791c54
+  zh: 570e6d484896015f
+/agent-note-desktop-tray-follows-the-engine-s-language-preference/decision:
+  en: 3b283657b049eae1
+  zh: 689793cad93122c1
+/agent-note-desktop-tray-follows-the-engine-s-language-preference/alternatives-considered:
+  en: 7d45002aa8b30ffc
+  zh: 49c4dadd73ad81d1
+/agent-note-desktop-tray-follows-the-engine-s-language-preference/consequences:
+  en: afc6728a690b93ed
+  zh: dac5360a7485006e

@@ -1,6 +1,25 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-09-20-shell-appearance-follows-engine-theme.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-09-20-shell-appearance-follows-engine-theme.md
-2026-09-20-shell-appearance-follows-engine-theme.md: 748d5957cbb5add478c331fba65b60a6063b4007
-2026-09-20-shell-appearance-follows-engine-theme.zh.md: bac7b30dc6d1d4db2339bcef2e9988d6af777c5a
+/agent-note-shell-documents-follow-the-engine-appearance:
+  en: 6e13694700829957
+  zh: 8c88f5458dcde4fb
+/agent-note-shell-documents-follow-the-engine-appearance/problem:
+  en: 6ad369b34e1951ed
+  zh: a1c1245c0ee98380
+/agent-note-shell-documents-follow-the-engine-appearance/decision:
+  en: e532e1a771a45afb
+  zh: 9e5bf53c8f347d5a
+/agent-note-shell-documents-follow-the-engine-appearance/alternatives-considered:
+  en: 644ebe7ec6098a68
+  zh: 4a4841c9fd940311
+/agent-note-shell-documents-follow-the-engine-appearance/consequences:
+  en: 2e48ed6de5f428c6
+  zh: 2a418f138f336e7d
+/agent-note-shell-documents-follow-the-engine-appearance/testing:
+  en: 7224deb0baaf0936
+  zh: f3669ef20270f6d5
+/agent-note-shell-documents-follow-the-engine-appearance/related:
+  en: 8dc1e905f14d1417
+  zh: 07e2add8ca669dab

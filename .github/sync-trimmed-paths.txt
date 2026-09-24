@@ -205,6 +205,7 @@ apps/desktop/scripts/desktop-build-commit.mjs
 apps/desktop/scripts/desktop-build-version-discovery.ts
 apps/desktop/scripts/desktop-release-tag.ts
 apps/desktop/scripts/desktop-toolchain-preflight.ts
+apps/desktop/scripts/flock-entry.ts
 apps/desktop/scripts/jit-entitlements.plist
 apps/desktop/scripts/logged-notarytool.d.mts
 apps/desktop/scripts/logged-notarytool.mjs
@@ -241,6 +242,7 @@ apps/desktop/scripts/windows-timestamp.mjs
 apps/desktop/tests/desktop-build-commit.spec.ts
 apps/desktop/tests/desktop-build-version-discovery.spec.ts
 apps/desktop/tests/desktop-release-tag.spec.ts
+apps/desktop/tests/flock-entry.spec.ts
 apps/desktop/tests/expected/test-release-upload-mac-arm64.json
 apps/desktop/tests/expected/test-release-upload-mac-x64.json
 apps/desktop/tests/expected/test-release-upload-win-x64.json

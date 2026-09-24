@@ -1,6 +1,19 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-09-16-desktop-native-loader-electron-fingerprint-patch.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/process/2026-09-16-desktop-native-loader-electron-fingerprint-patch.md
-2026-09-16-desktop-native-loader-electron-fingerprint-patch.md: b59b15e43df62374cb5d3966a77a15eecb71e3f1
-2026-09-16-desktop-native-loader-electron-fingerprint-patch.zh.md: fb46b5a730c9bcadc1dffd59499578da05ea40a6
+/agent-note-rewrite-the-desktop-native-loader-s-electron-fingerprint-at-packaging-time:
+  en: c682fc595f53950e
+  zh: 2ead85e1ef7dad32
+/agent-note-rewrite-the-desktop-native-loader-s-electron-fingerprint-at-packaging-time/problem:
+  en: 12c134553d8435ff
+  zh: 543c7c2cfc6e69ed
+/agent-note-rewrite-the-desktop-native-loader-s-electron-fingerprint-at-packaging-time/decision:
+  en: c4cd14f09f47ba08
+  zh: f11b845a336b09ae
+/agent-note-rewrite-the-desktop-native-loader-s-electron-fingerprint-at-packaging-time/consequences:
+  en: 863dae54d1bce60d
+  zh: e2c214d942cb9b42
+/agent-note-rewrite-the-desktop-native-loader-s-electron-fingerprint-at-packaging-time/alternatives-considered:
+  en: 1c66cfcf1a14927d
+  zh: 1e1c4a380fdf3216

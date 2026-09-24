@@ -1,6 +1,22 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-09-20-linux-desktop-window-association.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/bug-fix/2026-09-20-linux-desktop-window-association.md
-2026-09-20-linux-desktop-window-association.md: 7a9a084fcc5caa6c8285ac89d0be69736e9f55db
-2026-09-20-linux-desktop-window-association.zh.md: 67001cbbd1bdc008cbb3ea841c35f81d96b06946
+/agent-note-linux-desktop-entry-and-window-share-one-identity:
+  en: 59ebc750bf2d0cb7
+  zh: e2772da2ab57f823
+/agent-note-linux-desktop-entry-and-window-share-one-identity/problem:
+  en: 763c84148b1a907a
+  zh: 9cfe296185defddd
+/agent-note-linux-desktop-entry-and-window-share-one-identity/decision:
+  en: 954ff34ecb7e7ea7
+  zh: 4b87ef6e365e9e68
+/agent-note-linux-desktop-entry-and-window-share-one-identity/alternatives-considered:
+  en: 1f88e714c6370f9c
+  zh: 630fbd7fa62f116f
+/agent-note-linux-desktop-entry-and-window-share-one-identity/consequences:
+  en: 75e599b124be88c6
+  zh: 11005631381653ea
+/agent-note-linux-desktop-entry-and-window-share-one-identity/testing:
+  en: 93edd628dac548a0
+  zh: ecf308c3a8173835

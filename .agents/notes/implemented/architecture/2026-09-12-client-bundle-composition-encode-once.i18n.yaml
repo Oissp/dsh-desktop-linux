@@ -1,6 +1,22 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-09-12-client-bundle-composition-encode-once.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-09-12-client-bundle-composition-encode-once.md
-2026-09-12-client-bundle-composition-encode-once.md: b190d88913b91cfd4aa4eb4a8f781c57c33f6106
-2026-09-12-client-bundle-composition-encode-once.zh.md: d0f270f97a175fae195c9b3f229ca59d5ed44373
+/agent-note-client-bundle-composition-encodes-each-bundle-once:
+  en: 8e6b89a5924e839b
+  zh: 0ca5adbe0d7e4e4d
+/agent-note-client-bundle-composition-encodes-each-bundle-once/problem:
+  en: a52c1ca07d4bddac
+  zh: b7e1a93c7c9d40d4
+/agent-note-client-bundle-composition-encodes-each-bundle-once/decision:
+  en: ebaaa613f6c7bd24
+  zh: 67d348fa2b313fc5
+/agent-note-client-bundle-composition-encodes-each-bundle-once/testing:
+  en: 9d9ccc931ed2085e
+  zh: 73d1aca698dd6104
+/agent-note-client-bundle-composition-encodes-each-bundle-once/alternatives-considered:
+  en: 8e0108a6da51e9ed
+  zh: 5a67cfd105255e2e
+/agent-note-client-bundle-composition-encodes-each-bundle-once/consequences:
+  en: 550308e1f018a9d5
+  zh: a35c9771d743513e

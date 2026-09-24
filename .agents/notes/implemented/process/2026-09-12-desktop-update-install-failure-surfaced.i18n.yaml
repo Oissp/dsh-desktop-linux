@@ -1,6 +1,19 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-09-12-desktop-update-install-failure-surfaced.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/process/2026-09-12-desktop-update-install-failure-surfaced.md
-2026-09-12-desktop-update-install-failure-surfaced.md: 93bc34cb07c647fb052897edc8989bea813e7812
-2026-09-12-desktop-update-install-failure-surfaced.zh.md: bd87231a8839d6d6e9cd5f2074224347e5377bab
+/agent-note-desktop-update-install-surface-failed-installs-and-recover-the-session:
+  en: 2595d89c93c8f7b7
+  zh: 5486d2a4aa58af65
+/agent-note-desktop-update-install-surface-failed-installs-and-recover-the-session/problem:
+  en: 0bb33ab848ce3084
+  zh: cf49c838102c2147
+/agent-note-desktop-update-install-surface-failed-installs-and-recover-the-session/decision:
+  en: b16567bf3d138d3f
+  zh: 942b168dbb1751c0
+/agent-note-desktop-update-install-surface-failed-installs-and-recover-the-session/alternatives-considered:
+  en: 1f7da3f6cbbd099d
+  zh: 40ca3d19ab3110bb
+/agent-note-desktop-update-install-surface-failed-installs-and-recover-the-session/consequences:
+  en: f8928c67bef9b9da
+  zh: 047bd980b50a30ba

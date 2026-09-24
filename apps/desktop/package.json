@@ -4,16 +4,18 @@
   "description": "Electron desktop shell for a bundled dsh runtime and external plugins",
   "author": "Oissp <19642615+Oissp@users.noreply.github.com>",
   "homepage": "https://github.com/Oissp/dsh-desktop-linux",
-  "version": "0.1.7-rc.1.3",
+  "version": "0.1.7-rc.2",
   "private": true,
   "license": "MIT",
   "type": "module",
   "main": "lib/main.js",
   "scripts": {
-    "build": "tsc -b && tsdown",
+    "build": "tsc -b && pnpm run bundle",
+    "bundle": "tsdown",
     "dev": "tsx scripts/dev.ts",
     "start": "tsx scripts/dev.ts --skip-build",
     "prepare:runtime": "tsx scripts/prepare-runtime.ts",
+    "render:tray-icon": "tsx scripts/render-tray-icon.ts",
     "prepare:packages": "tsx scripts/prepare-package-set.ts",
     "prepare:dsh": "tsx scripts/prepare-dsh.ts",
     "prepare:package": "tsx scripts/package-target.ts --prepare-only",
@@ -38,6 +40,7 @@
     "@deepseek-ai/dsh-client-ui-sidebar-browser": "workspace:*",
     "@deepseek-ai/dsh-deepseek-account": "workspace:*",
     "@deepseek-ai/dsh-home-paths": "workspace:*",
+    "@deepseek-ai/node-addon-system": "workspace:~",
     "@electron/get": "^5.1.0",
     "@types/js-yaml": "^4.0.9",
     "@types/node": "^22.20.0",
@@ -53,8 +56,12 @@
     "react-dom": "^18.2.0",
     "@types/react": "~18.3.1",
     "@types/react-dom": "~18.3.0",
+    "sharp": "^0.35.3",
     "tar": "^7.5.0",
     "typescript": "^6.0.3",
-    "vite": "^6.0.0"
+    "vite": "^6.0.0",
+    "@deepseek-ai/dsh-client-ui-theme": "workspace:*",
+    "@deepseek-ai/dsh-client-shortcuts": "workspace:*",
+    "@deepseek-ai/dsh-atomic-write": "workspace:*"
   }
 }

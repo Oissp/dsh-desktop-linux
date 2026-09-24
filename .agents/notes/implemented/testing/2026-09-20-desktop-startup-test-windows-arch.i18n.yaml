@@ -1,6 +1,22 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-09-20-desktop-startup-test-windows-arch.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/testing/2026-09-20-desktop-startup-test-windows-arch.md
-2026-09-20-desktop-startup-test-windows-arch.md: 6bf7cc23aba535f028549bb3e8541434f9c09a10
-2026-09-20-desktop-startup-test-windows-arch.zh.md: b768885b122e172eb358993ec4ed4f90586047bc
+/agent-note-desktop-startup-tests-pin-the-simulated-windows-architecture:
+  en: 9b234a59713de7fe
+  zh: dfd752f1e42b126b
+/agent-note-desktop-startup-tests-pin-the-simulated-windows-architecture/problem:
+  en: 7a4788777b98ff90
+  zh: 7ca9c9b3c7c3e01a
+/agent-note-desktop-startup-tests-pin-the-simulated-windows-architecture/decision:
+  en: d71ae6639c3147d1
+  zh: 46c1128a34538db0
+/agent-note-desktop-startup-tests-pin-the-simulated-windows-architecture/alternatives-considered:
+  en: fcd06953f1539f3b
+  zh: bf7486f2bca8b47c
+/agent-note-desktop-startup-tests-pin-the-simulated-windows-architecture/consequences:
+  en: 314c4adac73310ee
+  zh: 8026e1bf5910cf6c
+/agent-note-desktop-startup-tests-pin-the-simulated-windows-architecture/testing:
+  en: 8e0988c84e198af1
+  zh: bdec2cef7611c99b

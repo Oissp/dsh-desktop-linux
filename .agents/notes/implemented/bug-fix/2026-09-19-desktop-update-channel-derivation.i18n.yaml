@@ -1,6 +1,22 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-09-19-desktop-update-channel-derivation.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/bug-fix/2026-09-19-desktop-update-channel-derivation.md
-2026-09-19-desktop-update-channel-derivation.md: 821a5d3fd3308a95e0b6f3f10be286b36be9c7e3
-2026-09-19-desktop-update-channel-derivation.zh.md: 2f331a2d200a40ddcbf9361e0d4843be1c82a007
+/agent-note-desktop-update-channel-derives-from-the-installed-version:
+  en: da7eab8192d7acd6
+  zh: ec686bd3c60abeec
+/agent-note-desktop-update-channel-derives-from-the-installed-version/problem:
+  en: 072e6b26a372de0c
+  zh: 7a30aae4bd4f9bd5
+/agent-note-desktop-update-channel-derives-from-the-installed-version/decision:
+  en: 529abb6b1a7b1a7a
+  zh: 3afb3743f0e098ee
+/agent-note-desktop-update-channel-derives-from-the-installed-version/alternatives-considered:
+  en: d270811b46f00f10
+  zh: b4ba422ee3dc322b
+/agent-note-desktop-update-channel-derives-from-the-installed-version/consequences:
+  en: ff3a959525ef9fa9
+  zh: bab163a1208e31ad
+/agent-note-desktop-update-channel-derives-from-the-installed-version/testing:
+  en: 77264ba8df8b27bb
+  zh: d366bc44f2db4ee8

@@ -1,0 +1,22 @@
+diff --git a/lib/index.js b/lib/index.js
+index 17eb488f907f6ff01bf1497fe8b2c071ce17823e..34ddb6cb04e1a9daf3770d54184e3398eabf70d7 100644
+--- a/lib/index.js
++++ b/lib/index.js
+@@ -1222,7 +1222,16 @@ const ENGINE_PREFIX = "@deepseek-ai/libreoffice-kit";
+ * @returns true when at least one resolution directory holds the package.
+ */
+ function installedPackageExists(name) {
+-	return (require.resolve.paths(name) ?? []).some((directory) => lstatSync(join(directory, name), { throwIfNoEntry: false }) !== void 0);
++	return (require.resolve.paths(name) ?? []).some((directory) => {
++		try {
++			// Electron's asar fs shim violates the throwIfNoEntry contract for archive-internal
++			// paths: missing directories surface as null (truthy) or code-less throws instead of
++			// undefined, which misreads an absent native engine package as an incomplete install.
++			return Boolean(lstatSync(join(directory, name), { throwIfNoEntry: false }));
++		} catch (_error) {
++			return false;
++		}
++	});
+ }
+ /**
+ * Return the optional package target for the current process ABI.

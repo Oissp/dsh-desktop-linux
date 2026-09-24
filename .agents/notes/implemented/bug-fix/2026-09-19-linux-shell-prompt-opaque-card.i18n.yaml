@@ -1,6 +1,25 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-09-19-linux-shell-prompt-opaque-card.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/bug-fix/2026-09-19-linux-shell-prompt-opaque-card.md
-2026-09-19-linux-shell-prompt-opaque-card.md: 53a001ffae3737a3de6c3998d55082c57669d74e
-2026-09-19-linux-shell-prompt-opaque-card.zh.md: 270755c9951d7719b93953f65b5cef4c5490ce02
+/agent-note-shell-prompt-documents-are-served-and-linux-uses-an-opaque-card:
+  en: c6e75e0b1373b5c8
+  zh: 977c28de58f77f7c
+/agent-note-shell-prompt-documents-are-served-and-linux-uses-an-opaque-card/problem:
+  en: fa3fc8db08b6d1d7
+  zh: 853a141fa4aae2cb
+/agent-note-shell-prompt-documents-are-served-and-linux-uses-an-opaque-card/decision:
+  en: 3b9a7bd80731ce27
+  zh: bac73bf0e58d1ce2
+/agent-note-shell-prompt-documents-are-served-and-linux-uses-an-opaque-card/alternatives-considered:
+  en: 6dea11cb346d78d3
+  zh: 6dd513d856126314
+/agent-note-shell-prompt-documents-are-served-and-linux-uses-an-opaque-card/consequences:
+  en: f26c97335c29b729
+  zh: fa082f7c2f74f9ac
+/agent-note-shell-prompt-documents-are-served-and-linux-uses-an-opaque-card/testing:
+  en: 6b04123a57f90b00
+  zh: d9b26e741e48506b
+/agent-note-shell-prompt-documents-are-served-and-linux-uses-an-opaque-card/related:
+  en: f36e2914a2bcf40e
+  zh: 43f729f19ce38e88

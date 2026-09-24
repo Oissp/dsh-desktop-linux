@@ -5,7 +5,8 @@ import type { DesktopLocale } from './locale.ts'
 import { assertDesktopSender, type DesktopUpdateState } from './ipc.ts'
 import { desktopPolicyPage, type DesktopPolicyState } from './mandatory-update-policy.ts'
 import { MANDATORY_IPC } from './mandatory-update-ipc.ts'
-import { createMandatoryUpdateWindow, mandatoryUpdateSurface, type DesktopDialogSurface } from './update-overlay.ts'
+import type { DesktopUpdateOverlays } from './update-overlay.ts'
+import { mandatoryUpdateSurface, type DesktopDialogSurface } from './update-overlay.ts'
 import { DesktopUpdateAttention } from './update-attention.ts'
 
 /** A renderer action never carries a URL or authorizes a different version. */
@@ -35,6 +36,7 @@ export interface MandatoryUpdateApi {
 /** Main-process operations owned by the policy client, updater, and application lifecycle. */
 export interface MandatoryUpdateWindowOptions {
   readonly preload: string
+  readonly overlays: Pick<DesktopUpdateOverlays, 'createMandatory'>
   /** Read per use: a language change reaches copy created after it. */
   readonly locale: () => DesktopLocale
   readonly allowedPageOrigins: readonly string[]
@@ -193,7 +195,7 @@ export class DesktopMandatoryUpdateWindow {
     if (this.window === undefined) {
       const parent = this.options.parent()
       if (parent === undefined) return
-      const window = createMandatoryUpdateWindow(parent, this.options.preload, this.options.locale().messages.mandatoryTitle)
+      const window = this.options.overlays.createMandatory(parent, this.options.preload, this.options.locale().messages.mandatoryTitle)
       this.window = window
       window.setMenu(null)
       window.on('close', (event) => { if (!this.disposed && this.options.policy().blocking) { event.preventDefault(); app.quit() } })

@@ -1,6 +1,22 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-09-20-fork-trimmed-link-gate.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/process/2026-09-20-fork-trimmed-link-gate.md
-2026-09-20-fork-trimmed-link-gate.md: 82cfab6ee66d35188b7b45dbb28643d3d410688d
-2026-09-20-fork-trimmed-link-gate.zh.md: 38502b23ce19cef2df20a3c350042aab1da27284
+/agent-note-fork-trimmed-links-are-declared-not-rewritten:
+  en: 7420ab882c39e05e
+  zh: 12a7c49383a31d4b
+/agent-note-fork-trimmed-links-are-declared-not-rewritten/problem:
+  en: ae1bb8b18304fbc7
+  zh: a8e7a13952cec5d2
+/agent-note-fork-trimmed-links-are-declared-not-rewritten/decision:
+  en: 0064aa3dc736dc51
+  zh: 3f9564d1cd5eb2ef
+/agent-note-fork-trimmed-links-are-declared-not-rewritten/alternatives-considered:
+  en: 12e47b85aaabb017
+  zh: 612f3a40545268e0
+/agent-note-fork-trimmed-links-are-declared-not-rewritten/consequences:
+  en: 65ab14582c7d33fb
+  zh: edb3a4f1bb3a3edc
+/agent-note-fork-trimmed-links-are-declared-not-rewritten/testing:
+  en: 046c6c1d9c712db6
+  zh: 940a93b63cb37d1f

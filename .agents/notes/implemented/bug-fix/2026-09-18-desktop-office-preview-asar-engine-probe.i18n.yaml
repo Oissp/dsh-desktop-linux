@@ -1,6 +1,22 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-09-18-desktop-office-preview-asar-engine-probe.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/bug-fix/2026-09-18-desktop-office-preview-asar-engine-probe.md
-2026-09-18-desktop-office-preview-asar-engine-probe.md: 67aa1caa2de6d7fd5e81679f2aa8dc94a79829b4
-2026-09-18-desktop-office-preview-asar-engine-probe.zh.md: 7e02f75e4cd0dd377ee6bf557e8ecf04ad9c91a1
+/agent-note-the-packaged-linux-office-preview-needs-a-fork-patch-on-the-libreoffice-kit:
+  en: 7facccf42be2c669
+  zh: 4a358c6b81784ba6
+/agent-note-the-packaged-linux-office-preview-needs-a-fork-patch-on-the-libreoffice-kit/problem:
+  en: 2903c7869dd2f1f9
+  zh: 8c3a70cc128345be
+/agent-note-the-packaged-linux-office-preview-needs-a-fork-patch-on-the-libreoffice-kit/decision:
+  en: 4caa46590bc47938
+  zh: dd6efc10bbe2a25d
+/agent-note-the-packaged-linux-office-preview-needs-a-fork-patch-on-the-libreoffice-kit/alternatives-considered:
+  en: 89b27ee25f1c1b57
+  zh: 6420b93014bb1387
+/agent-note-the-packaged-linux-office-preview-needs-a-fork-patch-on-the-libreoffice-kit/consequences:
+  en: 070e20815cda97ee
+  zh: 46a6c6187027f506
+/agent-note-the-packaged-linux-office-preview-needs-a-fork-patch-on-the-libreoffice-kit/testing:
+  en: d18658d18672e3ca
+  zh: 390240681e6df575

@@ -15,6 +15,8 @@ const CARD_HEIGHT = 320
 /** Keeps a card that reports an implausibly small height from collapsing past its controls. */
 const CARD_MIN_HEIGHT = 120
 
+const unblockedInput = { revision: 0, blocked: false } as const
+
 /**
  * Pre-paint background for an opaque shell window. The document paints the same
  * color from its `--shell-surface` token once it loads, so a mismatch would flash.
@@ -70,6 +72,26 @@ function createDialogCard(parent: BrowserWindow, preload: string, title: string)
 }
 
 /**
+ * A native framed modal retains its own title bar while the product window remains blocked.
+ * @param parent - Product window whose content is blocked while the modal is open.
+ * @param preload - Isolated shell-only preload.
+ * @param title - Localized window title.
+ * @returns A resizable framed child centered by the window manager.
+ */
+function createFramedModal(parent: BrowserWindow, preload: string, title: string): BrowserWindow {
+  const window = new BrowserWindow({
+    parent, modal: true, show: false, title,
+    width: 640, height: 560, minWidth: 480, minHeight: 360,
+    movable: true, resizable: true, maximizable: true,
+    backgroundColor: surfaceBackground(),
+    webPreferences: { preload, contextIsolation: true, sandbox: true, nodeIntegration: false, webSecurity: true },
+  })
+  window.once('ready-to-show', () => { if (!window.isDestroyed()) window.show() })
+  window.webContents.setWindowOpenHandler(() => ({ action: 'deny' }))
+  return window
+}
+
+/**
  * Resize an opaque card to the height its document measured, keeping it centered on
  * the parent. The sheet surface already spans its parent, so this is a no-op there.
  * @param window - The prompt window to fit.
@@ -91,81 +113,101 @@ export function fitDialogCard(window: BrowserWindow, height: number,
   })
 }
 
-/**
- * @param parent - Product window whose content is blocked while the prompt is open.
- * @param preload - Isolated shell-only preload.
- * @param title - Localized window title.
- * @param platform - Platform that will host the prompt.
- * @returns The prompt modal for that platform.
- */
-export function createUpdatePromptWindow(parent: BrowserWindow, preload: string, title: string,
-  platform: NodeJS.Platform = process.platform): BrowserWindow {
-  return desktopDialogSurface(platform) === 'window'
-    ? createDialogCard(parent, preload, title)
-    : createUpdateOverlay(parent, preload, title, platform, false)
-}
+/** Tracks application-owned update overlays and their parent input state. */
+export class DesktopUpdateOverlays {
+  private readonly inputStates = new WeakMap<BrowserWindow, { revision: number; active: number; readonly blocked: boolean }>()
 
-/**
- * @param parent - Product window whose content is blocked while the overlay is open.
- * @param preload - Isolated shell-only preload.
- * @param title - Localized window title.
- * @param platform - Platform that hosts the overlay, deciding whether it is a native modal.
- * @param nativeModal - Use a native modal; false keeps overlays out of macOS sheets.
- * @returns A transparent child that follows its parent's content bounds and releases its listeners on close.
- */
-function createUpdateOverlay(parent: BrowserWindow, preload: string, title: string, platform: NodeJS.Platform,
-  nativeModal: boolean): BrowserWindow {
-  const window = new BrowserWindow({
-    parent, modal: nativeModal || platform !== 'darwin', show: false, frame: false, transparent: true,
-    ...parent.getContentBounds(), resizable: false, minimizable: false, maximizable: false,
-    skipTaskbar: true, hasShadow: false, title,
-    webPreferences: { preload, contextIsolation: true, sandbox: true, nodeIntegration: false, webSecurity: true },
-  })
-  // macOS native modals animate the entire viewport as a sheet.
-  const focus = (): void => { if (!window.isDestroyed()) window.focus() }
-  const blockInput = (event: Electron.Event): void => { event.preventDefault(); focus() }
-  if (!nativeModal && platform === 'darwin') {
-    parent.on('focus', focus)
-    parent.webContents.on('before-input-event', blockInput)
-    window.once('closed', () => {
-      parent.off('focus', focus)
-      parent.webContents.off('before-input-event', blockInput)
+  /**
+   * @param parent - Product window whose input may belong to an update dialog.
+   * @returns Current blocking state; its revision changes whenever an overlay opens or closes.
+   */
+  input(parent: BrowserWindow): { readonly revision: number; readonly blocked: boolean } {
+    return this.inputStates.get(parent) ?? unblockedInput
+  }
+
+  /**
+   * @param parent - Product window whose content is blocked while the overlay is open.
+   * @param preload - Isolated shell-only preload.
+   * @param title - Localized window title.
+   * @param nativeModal - Use a native modal; false keeps overlays out of macOS sheets.
+   * @param platform - Platform that hosts the overlay, deciding whether it is a native modal.
+   * @returns A transparent child that follows its parent's bounds and visibility after loading and releases its listeners on close.
+   */
+  create(parent: BrowserWindow, preload: string, title: string, nativeModal = true,
+    platform: NodeJS.Platform = process.platform): BrowserWindow {
+    const window = new BrowserWindow({
+      parent, modal: nativeModal || platform !== 'darwin', show: false, frame: false, transparent: true,
+      ...parent.getContentBounds(), resizable: false, minimizable: false, maximizable: false,
+      skipTaskbar: true, hasShadow: false, title,
+      webPreferences: { preload, contextIsolation: true, sandbox: true, nodeIntegration: false, webSecurity: true },
     })
+    this.track(parent, window)
+    // macOS native modals animate the entire viewport as a sheet.
+    const focus = (): void => { if (!window.isDestroyed()) window.focus() }
+    const blockInput = (event: Electron.Event): void => { event.preventDefault(); focus() }
+    if (!nativeModal && platform === 'darwin') {
+      parent.on('focus', focus)
+      // Shell dialogs block input before product shortcut listeners can dispatch it.
+      parent.webContents.prependListener('before-input-event', blockInput)
+      window.once('closed', () => {
+        parent.off('focus', focus)
+        if (!parent.isDestroyed()) parent.webContents.off('before-input-event', blockInput)
+      })
+    }
+    const follow = (): void => { if (!window.isDestroyed()) window.setBounds(parent.getContentBounds()) }
+    parent.on('move', follow)
+    parent.on('resize', follow)
+    window.once('closed', () => { parent.off('move', follow); parent.off('resize', follow) })
+    let ready = false
+    const show = (): void => {
+      if (ready && !window.isDestroyed() && !parent.isDestroyed() && parent.isVisible()) window.show()
+    }
+    parent.on('show', show)
+    window.once('closed', () => { parent.off('show', show) })
+    window.once('ready-to-show', () => { ready = true; show() })
+    window.setMenu(null)
+    window.webContents.setWindowOpenHandler(() => ({ action: 'deny' }))
+    return window
   }
-  const follow = (): void => { if (!window.isDestroyed()) window.setBounds(parent.getContentBounds()) }
-  parent.on('move', follow)
-  parent.on('resize', follow)
-  let closed = false
-  let blur: string | undefined
-  const unblur = (): void => {
-    if (blur === undefined || parent.isDestroyed()) return
-    void parent.webContents.removeInsertedCSS(blur).catch((error: unknown) => { console.warn('desktop update: could not remove background blur', error) })
-    blur = undefined
-  }
-  void parent.webContents.insertCSS('body { filter: blur(2px) !important; }').then((key) => {
-    blur = key
-    if (closed) unblur()
-  }).catch((error: unknown) => { console.warn('desktop update: could not blur background', error) })
-  window.once('closed', () => { closed = true; unblur() })
-  window.once('closed', () => { parent.off('move', follow); parent.off('resize', follow) })
-  window.once('ready-to-show', () => { if (!window.isDestroyed()) window.show() })
-  window.setMenu(null)
-  window.webContents.setWindowOpenHandler(() => ({ action: 'deny' }))
-  return window
-}
 
-/** A native framed modal retains its own title bar while the product window remains blocked. */
-export function createMandatoryUpdateWindow(parent: BrowserWindow, preload: string, title: string,
-  platform: NodeJS.Platform = process.platform): BrowserWindow {
-  if (mandatoryUpdateSurface(platform) === 'overlay') return createUpdateOverlay(parent, preload, title, platform, false)
-  const window = new BrowserWindow({
-    parent, modal: true, show: false, title,
-    width: 640, height: 560, minWidth: 480, minHeight: 360,
-    movable: true, resizable: true, maximizable: true,
-    backgroundColor: surfaceBackground(),
-    webPreferences: { preload, contextIsolation: true, sandbox: true, nodeIntegration: false, webSecurity: true },
-  })
-  window.once('ready-to-show', () => { if (!window.isDestroyed()) window.show() })
-  window.webContents.setWindowOpenHandler(() => ({ action: 'deny' }))
-  return window
+  /**
+   * @param parent - Product window whose content is blocked while the prompt is open.
+   * @param preload - Isolated shell-only preload.
+   * @param title - Localized window title.
+   * @param platform - Platform that hosts the prompt, selecting its surface.
+   * @returns The prompt modal for that platform.
+   */
+  createPrompt(parent: BrowserWindow, preload: string, title: string,
+    platform: NodeJS.Platform = process.platform): BrowserWindow {
+    return desktopDialogSurface(platform) === 'window'
+      ? this.track(parent, createDialogCard(parent, preload, title))
+      : this.create(parent, preload, title, false, platform)
+  }
+
+  /**
+   * @param parent - Product window whose content is blocked while the modal is open.
+   * @param preload - Isolated shell-only preload.
+   * @param title - Localized window title.
+   * @param platform - Platform that hosts the modal, selecting its surface.
+   * @returns The mandatory modal for that platform.
+   */
+  createMandatory(parent: BrowserWindow, preload: string, title: string,
+    platform: NodeJS.Platform = process.platform): BrowserWindow {
+    return mandatoryUpdateSurface(platform) === 'window'
+      ? this.track(parent, createFramedModal(parent, preload, title))
+      : this.create(parent, preload, title, false, platform)
+  }
+
+  /**
+   * @param parent - Product window whose input this overlay blocks.
+   * @param window - Overlay that owns the block.
+   * @returns The tracked overlay.
+   */
+  private track(parent: BrowserWindow, window: BrowserWindow): BrowserWindow {
+    const inputState = this.inputStates.get(parent) ?? { revision: 0, active: 0, get blocked() { return this.active > 0 } }
+    this.inputStates.set(parent, inputState)
+    inputState.active++; inputState.revision++
+    window.once('closed', () => { inputState.active--; inputState.revision++ })
+    return window
+  }
 }

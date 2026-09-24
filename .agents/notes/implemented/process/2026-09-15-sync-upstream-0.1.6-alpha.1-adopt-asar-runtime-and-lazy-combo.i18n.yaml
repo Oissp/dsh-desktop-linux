@@ -1,6 +1,22 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-09-15-sync-upstream-0.1.6-alpha.1-adopt-asar-runtime-and-lazy-combo.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/process/2026-09-15-sync-upstream-0.1.6-alpha.1-adopt-asar-runtime-and-lazy-combo.md
-2026-09-15-sync-upstream-0.1.6-alpha.1-adopt-asar-runtime-and-lazy-combo.md: 8fc6c98acd84ddb309f8c8306a14f4e7cd065403
-2026-09-15-sync-upstream-0.1.6-alpha.1-adopt-asar-runtime-and-lazy-combo.zh.md: c63014d687c6737a8068e4b4ce264b7b4bb66001
+/agent-note-sync-upstream-0-1-6-alpha-1-adopt-asar-runtime-and-lazy-combo-assembly-keep-linux-trims:
+  en: c74717d73ddc6385
+  zh: a7edafe1f8ac7590
+/agent-note-sync-upstream-0-1-6-alpha-1-adopt-asar-runtime-and-lazy-combo-assembly-keep-linux-trims/problem:
+  en: 551dfce00060696a
+  zh: e158efb30d4a7249
+/agent-note-sync-upstream-0-1-6-alpha-1-adopt-asar-runtime-and-lazy-combo-assembly-keep-linux-trims/decision:
+  en: 3fd30dafaea68dbd
+  zh: beb9b6109c3d488a
+/agent-note-sync-upstream-0-1-6-alpha-1-adopt-asar-runtime-and-lazy-combo-assembly-keep-linux-trims/testing:
+  en: 83d228f1863bd294
+  zh: 9a450ea7f8da1cdc
+/agent-note-sync-upstream-0-1-6-alpha-1-adopt-asar-runtime-and-lazy-combo-assembly-keep-linux-trims/alternatives-considered:
+  en: e8f675fabdedb14e
+  zh: 7b6edc5d870b43e5
+/agent-note-sync-upstream-0-1-6-alpha-1-adopt-asar-runtime-and-lazy-combo-assembly-keep-linux-trims/consequences:
+  en: 06654a266ded9530
+  zh: e6f395c4bcbd7751

@@ -1,6 +1,25 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-09-18-merge-0.1.6-alpha.2-linux-desktop.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-09-18-merge-0.1.6-alpha.2-linux-desktop.md
-2026-09-18-merge-0.1.6-alpha.2-linux-desktop.md: 08b36f6af5cb6e245a08911bfb0a4ddea54f0bce
-2026-09-18-merge-0.1.6-alpha.2-linux-desktop.zh.md: 5d6ef52549194672217f6e7d1443707e4d93a202
+/agent-note-0-1-6-alpha-2-merge-linux-desktop-trade-offs:
+  en: 84ea64c624ce7055
+  zh: b2ad459c82528c22
+/agent-note-0-1-6-alpha-2-merge-linux-desktop-trade-offs/problem:
+  en: bc8bf6ffbaa99e54
+  zh: 626b686be7e9e558
+/agent-note-0-1-6-alpha-2-merge-linux-desktop-trade-offs/decision:
+  en: 278ef16677f17264
+  zh: cb1b73b6e50bdac3
+/agent-note-0-1-6-alpha-2-merge-linux-desktop-trade-offs/deferred:
+  en: a0e33aabf78c4dbe
+  zh: 5a4fbf3255b62142
+/agent-note-0-1-6-alpha-2-merge-linux-desktop-trade-offs/alternatives-considered:
+  en: a8732251f832d51a
+  zh: 99259d27e6a3f58a
+/agent-note-0-1-6-alpha-2-merge-linux-desktop-trade-offs/consequences:
+  en: 2bf98ecc573ecf70
+  zh: 1959cc07612631d1
+/agent-note-0-1-6-alpha-2-merge-linux-desktop-trade-offs/testing:
+  en: a856df5cb47ffc05
+  zh: 7375f941fc2bfc94

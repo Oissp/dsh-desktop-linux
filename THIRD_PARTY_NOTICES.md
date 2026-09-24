@@ -43,6 +43,7 @@ External packages installed for runtime use or distributed inside the prebuilt b
 | [`@fortune-sheet/react`](https://github.com/ruilisi/fortune-sheet) | MIT |
 | [`@joplin/turndown-plugin-gfm`](https://github.com/laurent22/joplin-turndown-plugin-gfm) | MIT |
 | [`@jridgewell/gen-mapping`](https://github.com/jridgewell/sourcemaps) | MIT |
+| [`@js-temporal/polyfill`](https://github.com/js-temporal/temporal-polyfill) | ISC |
 | [`@lexical/history`](https://github.com/facebook/lexical) | MIT |
 | [`@lexical/plain-text`](https://github.com/facebook/lexical) | MIT |
 | [`@lexical/text`](https://github.com/facebook/lexical) | MIT |
@@ -138,7 +139,7 @@ External packages installed for runtime use or distributed inside the prebuilt b
 
 pnpm applies local patches to the following packages at install time, so shipped artifacts carry modified copies; each patch file is the complete record of the modification:
 
-- `@deepseek-ai/libreoffice-kit@0.1.0` — [`patches/@deepseek-ai__libreoffice-kit@0.1.0.patch`](patches/@deepseek-ai__libreoffice-kit@0.1.0.patch)
+- `@deepseek-ai/libreoffice-kit@0.1.1` — [`patches/@deepseek-ai__libreoffice-kit@0.1.1.patch`](patches/@deepseek-ai__libreoffice-kit@0.1.1.patch)
 - `@earendil-works/pi-ai@0.85.1` — [`patches/@earendil-works__pi-ai@0.85.1.patch`](patches/@earendil-works__pi-ai@0.85.1.patch)
 - `@electron/osx-sign@1.3.3` — [`patches/@electron__osx-sign@1.3.3.patch`](patches/@electron__osx-sign@1.3.3.patch)
 - `@fortune-sheet/core@1.0.4` — [`patches/@fortune-sheet__core@1.0.4.patch`](patches/@fortune-sheet__core@1.0.4.patch)

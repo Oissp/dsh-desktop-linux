@@ -1,6 +1,19 @@
-# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
-# side as of the last confirmed-consistent state. Both languages carry equal authority;
-# after editing either side, bring the other along and re-record with:
+# Bilingual-pair consistency record for 2026-09-12-desktop-package-ci-cache-key-and-release-notes.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/process/2026-09-12-desktop-package-ci-cache-key-and-release-notes.md
-2026-09-12-desktop-package-ci-cache-key-and-release-notes.md: 6c3aedcfba4bdabdb666197d7aa7691d4f42f9d8
-2026-09-12-desktop-package-ci-cache-key-and-release-notes.zh.md: 7fa3ddfbcd30efb96aea5d1a3e0a1e386fd9aa54
+/agent-note-desktop-package-ci-deterministic-cache-key-and-release-note-boundaries:
+  en: a28f462e16cf8896
+  zh: 8d201bb40058b094
+/agent-note-desktop-package-ci-deterministic-cache-key-and-release-note-boundaries/problem:
+  en: c438df2f66d0c276
+  zh: 334ada66bbefd924
+/agent-note-desktop-package-ci-deterministic-cache-key-and-release-note-boundaries/decision:
+  en: da58ea354f369382
+  zh: e78fd1f19fb27bee
+/agent-note-desktop-package-ci-deterministic-cache-key-and-release-note-boundaries/alternatives-considered:
+  en: d577ba334cd97835
+  zh: 9974e30695f6fb43
+/agent-note-desktop-package-ci-deterministic-cache-key-and-release-note-boundaries/consequences:
+  en: 20d3b16843f59cde
+  zh: f5abe719f95b9af0
