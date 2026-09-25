@@ -127,7 +127,7 @@ Contributors can opt into the comprehensive local gate set with `pnpm run check:
 
 ### CI gates
 
-The fork does not run upstream's CI lanes. Its workflows are [package-deb.yml](../.github/workflows/package-deb.yml) — the desktop packaging gate, running the `apps/desktop` test suite and release artifact verification — and [sync-upstream.yml](../.github/workflows/sync-upstream.yml), which merges upstream releases into `main`. The repository's documentation, hygiene, and reference gates run through [scripts/run-gates.ts](../scripts/run-gates.ts); see that file for the current gate inventory, and run the gates locally before pushing.
+The fork does not run upstream's CI lanes. Its workflows are [package-deb.yml](../.github/workflows/package-deb.yml) — the desktop packaging gate, running the `apps/desktop` test suite and release artifact verification — and [package-deb-test.yml](../.github/workflows/package-deb-test.yml), the `.deb`-only pull-request smoke. Upstream releases are merged into `main` by hand. The repository's documentation, hygiene, and reference gates run through [scripts/run-gates.ts](../scripts/run-gates.ts); see that file for the current gate inventory, and run the gates locally before pushing.
 
 
 ### Daily commands

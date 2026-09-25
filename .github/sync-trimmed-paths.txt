@@ -1,13 +1,12 @@
 # Linux 裁剪清单：本 fork 有意不运行、不携带的上游文件。
-# sync-upstream.yml 读取本清单（忽略 # 注释行）：
-#   1. 合并冲突落在清单内的路径时，按「保留裁剪」自动解决（fork 侧为准），不再开 issue；
-#   2. 合并完成后删除清单内被上游重新带回或新增的文件——上游恢复/新增这些文件时
-#      合并不冲突，会直接进入 fork 代码树，必须在合并提交前移除。
-# 清单外冲突仍中止合并并开 issue 交人工处理。
-# 注意：fork 自有文件（package-deb.yml、sync-upstream.yml、托盘/外观等）不在清单内，
+# 人工合并上游时按本清单保留裁剪（忽略 # 注释行）：冲突落在清单内的路径时以 fork 侧为准，
+# 合并只在清单外冲突时中止；合并完成后删除清单内被上游重新带回或新增的文件——上游恢复或
+# 新增这些文件时合并不冲突，会直接进入 fork 代码树，必须在合并提交前移除。
+# scripts/verify-md-links-trimmed.ts 也读取本清单，用来豁免指向被裁剪文件的相对链接。
+# 注意：fork 自有文件（package-deb.yml、package-deb-test.yml、托盘/外观等）不在清单内，
 # 上游没有同名文件，永远不会被本清单误删。
 
-# 上游 CI/发布 workflow：fork 仅运行自己的 package-deb.yml 与 sync-upstream.yml，
+# 上游 CI/发布 workflow：fork 仅运行自己的 package-deb.yml 与 package-deb-test.yml，
 # 无法承载 macOS/Windows 签名、云端预览、Python SDK 等流程。
 .github/workflows/build-exe-for-python-sdk.yml
 .github/workflows/build-preview-cloudflare.yml

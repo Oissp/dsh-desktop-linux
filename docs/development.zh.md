@@ -131,7 +131,7 @@ vendor manifest 守卫检查 `vendor/*/src` 下的改动是否连同对应的 `v
 
 ### CI 门禁
 
-fork 不运行上游的 CI lane。它的 workflow 是 [package-deb.yml](../.github/workflows/package-deb.yml)——桌面打包门禁，运行 `apps/desktop` 测试套件与发布产物校验——以及 [sync-upstream.yml](../.github/workflows/sync-upstream.yml)，把上游发布合并进 `main`。仓库的文档、卫生与引用门禁经 [scripts/run-gates.ts](../scripts/run-gates.ts) 运行；当前门禁清单以该文件为准，推送前请在本地跑过门禁。
+fork 不运行上游的 CI lane。它的 workflow 是 [package-deb.yml](../.github/workflows/package-deb.yml)——桌面打包门禁，运行 `apps/desktop` 测试套件与发布产物校验——以及 [package-deb-test.yml](../.github/workflows/package-deb-test.yml)，只构建 `.deb` 的 PR 冒烟。上游发布由人工合并进 `main`。仓库的文档、卫生与引用门禁经 [scripts/run-gates.ts](../scripts/run-gates.ts) 运行；当前门禁清单以该文件为准，推送前请在本地跑过门禁。
 
 
 ### 日常命令

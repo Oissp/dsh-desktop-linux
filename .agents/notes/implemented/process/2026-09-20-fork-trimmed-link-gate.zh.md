@@ -14,7 +14,7 @@ Status: implemented
 
 [verify-md-links-trimmed.ts](../../../../scripts/verify-md-links-trimmed.ts) 是该门禁在 fork 里的驱动，`package.json` 的 `verify-md-links` 脚本运行它。它从未经改动的上游 [verify-md-links.ts](../../../../scripts/verify-md-links.ts) 导入 `markdownLinkSourcePaths`、`findViolations` 与 `anchorCache`，只在链接目标命中 fork 裁剪清单中的某一行时扣下该违规：
 
-- [sync-trimmed-paths.txt](../../../../.github/sync-trimmed-paths.txt)——fork 不携带的上游文件，按仓库相对路径作键。该清单由[上游同步 workflow](../../../../.github/workflows/sync-upstream.yml) 维护。
+- [sync-trimmed-paths.txt](../../../../.github/sync-trimmed-paths.txt)——fork 不携带的上游文件，按仓库相对路径作键。该清单由人工维护。
 - [md-links-trimmed-sections.txt](../../../../.github/md-links-trimmed-sections.txt)——从 fork 保留的上游文件中删掉的章节，按 `path#fragment` 作键。
 
 缺失文件以路径作键，缺失锚点以路径加锚点一起作键。其余断链照旧失败；通过时运行会报告扣下了多少条链接。

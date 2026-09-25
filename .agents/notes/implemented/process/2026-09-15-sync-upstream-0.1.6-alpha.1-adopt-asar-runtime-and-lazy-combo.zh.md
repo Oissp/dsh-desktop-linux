@@ -14,13 +14,13 @@ Status: implemented
 
 **采纳上游的延迟客户端组合装配；退役 fork 的 encode-once 优化。** 上游的 `perf(web): defer client combo assembly`以 `LazyResponse`/`ComboResource` 替代急切构造：`buildCombo` 返回一个计划，其 `scriptBody`/`sourceMapBody` 是 `lazyBody` thunk，在首次取用时物化一次并按 combo 记忆。`buildCombo` 因此离开 `ready` 路径，每个组合在请求时编码一次，而非每次激活遍都编码。fork 的 encode-once 改动（`2026-09-12-client-bundle-composition-encode-once.md`）曾以把每个 bundle 预编码为 `ComboSegment` 解决同一 `buildCombo` 启动开销；上游现已提供维护中的等价方案，故 `packages/client/modules/src/index.ts` 整体取上游版本。`registry.fetchBundle` 变为 `async`；`benchmarks/client-bundle-composition/client-bundle-composition.worker.ts` 随之 `await`。该 benchmark 的 113 ms 预算按 fork 的急切模型校准，现包含首次取用的 body 物化，其 `test:bench` 回归门禁可能需重新校准；`package-deb` 不跑 `test:bench`，故桌面发版不受阻。
 
-**Linux-only 的 CI 与平台裁剪以 modify/delete 方式保留。** fork 删除了上游的 `ci.yml`、`ci-master.yml`、`e2e.yml`、`e2b-e2e.yml`、`issue-lifecycle.yml`、`issue-policy.yml`、`python-release.yml`、`build-exe-for-python-sdk.yml`，以及 macOS 桌面 spec（`macos-signature.spec.ts` 及同级文件），仅运行 `package-deb.yml` 与 `sync-upstream.yml`。上游自同步点起修改了其中七个 workflow 与 `macos-signature.spec.ts`，形成 modify/delete 冲突。每一处都解析为 fork 的删除：fork 无法运行 Windows/macOS CI 或对 macOS 产物签名，恢复这些 workflow 只会加入 fork 不执行的 Actions。`sync-upstream.yml` 的裁剪清单（`.github/sync-trimmed-paths.txt`）自动解决这类冲突：清单内路径保留 fork 的删除结果，干净合并会移除上游重新带回的清单内文件，只有清单外的冲突才开 issue 交人工处理。
+**Linux-only 的 CI 与平台裁剪以 modify/delete 方式保留。** fork 删除了上游的 `ci.yml`、`ci-master.yml`、`e2e.yml`、`e2b-e2e.yml`、`issue-lifecycle.yml`、`issue-policy.yml`、`python-release.yml`、`build-exe-for-python-sdk.yml`，以及 macOS 桌面 spec（`macos-signature.spec.ts` 及同级文件），仅运行 `package-deb.yml`。上游自同步点起修改了其中七个 workflow 与 `macos-signature.spec.ts`，形成 modify/delete 冲突。每一处都解析为 fork 的删除：fork 无法运行 Windows/macOS CI 或对 macOS 产物签名，恢复这些 workflow 只会加入 fork 不执行的 Actions。裁剪清单（`.github/sync-trimmed-paths.txt`）自动解决这类冲突：清单内路径保留 fork 的删除结果，干净合并会移除上游重新带回的清单内文件。
 
 **桌面版本跟随引擎。** `apps/desktop/package.json` 版本为 `0.1.6-alpha.1`，与合并后根 `package.json` 的引擎版本一致，遵循发行身份规则（Electron 与 `@deepseek-ai/dsh` 共用一个精确版本）。合并推送触发 `package-deb.yml`（`paths: package.json, apps/desktop/**`），向 `dsh-desktop-linux-release` 发布尚不存在的 `v0.1.6-alpha.1`。
 
 ## 测试
 
-Host 与 client 两面类型检查通过（`tsc -b tsconfig.host.json`、`tsdown --env.DSH_BUILD_FACE host` 生成 typert 命名空间声明、`tsc -b tsconfig.client.json`）。`apps/desktop/tests` 28 个文件 176 项通过——即 `package-deb` 门禁，含 `main-startup`、`host-process`、`runtime-tree`、`package-target`、`release-version`。`packages/client/modules/tests` 85 项通过。`scripts/compare-dsh-versions.spec.ts` 通过。`verify-third-party-notices` 报告重新生成的 `THIRD_PARTY_NOTICES.md` 已最新。
+Host 与 client 两面类型检查通过（`tsc -b tsconfig.host.json`、`tsdown --env.DSH_BUILD_FACE host` 生成 typert 命名空间声明、`tsc -b tsconfig.client.json`）。`apps/desktop/tests` 28 个文件 176 项通过——即 `package-deb` 门禁，含 `main-startup`、`host-process`、`runtime-tree`、`package-target`、`release-version`。`packages/client/modules/tests` 85 项通过。`verify-third-party-notices` 报告重新生成的 `THIRD_PARTY_NOTICES.md` 已最新。
 
 ## 考虑过的替代方案
 

@@ -14,7 +14,7 @@ The fork keeps upstream Agent Notes and root `AGENTS.md` byte-identical and drop
 
 [verify-md-links-trimmed.ts](../../../../scripts/verify-md-links-trimmed.ts) is the fork's driver for that gate, and the `verify-md-links` script in `package.json` runs it. It imports `markdownLinkSourcePaths`, `findViolations`, and `anchorCache` from the unmodified upstream [verify-md-links.ts](../../../../scripts/verify-md-links.ts) and withholds a violation only when the link's target keys a line in a fork trim manifest:
 
-- [sync-trimmed-paths.txt](../../../../.github/sync-trimmed-paths.txt) — upstream files the fork does not carry, keyed by repository-relative path. The [upstream sync workflow](../../../../.github/workflows/sync-upstream.yml) owns this list.
+- [sync-trimmed-paths.txt](../../../../.github/sync-trimmed-paths.txt) — upstream files the fork does not carry, keyed by repository-relative path. The list is maintained by hand.
 - [md-links-trimmed-sections.txt](../../../../.github/md-links-trimmed-sections.txt) — sections removed from upstream files the fork keeps, keyed by `path#fragment`.
 
 A missing file keys as its path; a missing fragment as path and fragment together. Every other broken link still fails, and a passing run reports how many links it withheld.

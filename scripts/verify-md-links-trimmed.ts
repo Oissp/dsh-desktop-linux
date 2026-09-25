@@ -15,7 +15,7 @@ import { anchorCache, findViolations, markdownLinkSourcePaths } from './verify-m
 
 const root = resolve(import.meta.dirname, '..')
 
-/** Upstream files this fork does not carry; owned by the upstream sync workflow. */
+/** Upstream files this fork does not carry. */
 const TRIMMED_PATHS = '.github/sync-trimmed-paths.txt'
 /** Sections removed from upstream files this fork keeps. */
 const TRIMMED_SECTIONS = '.github/md-links-trimmed-sections.txt'
