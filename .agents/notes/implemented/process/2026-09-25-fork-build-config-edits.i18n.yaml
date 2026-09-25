@@ -1,0 +1,22 @@
+# Bilingual-pair consistency record for 2026-09-25-fork-build-config-edits.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write .agents/notes/implemented/process/2026-09-25-fork-build-config-edits.md
+/agent-note-fork-edits-to-upstream-owned-build-and-dependency-configuration:
+  en: 3a58e6ffc2516be3
+  zh: b2c21bb18de4877c
+/agent-note-fork-edits-to-upstream-owned-build-and-dependency-configuration/problem:
+  en: 6eb5b1efee6d5b7e
+  zh: 16b5168c87623bda
+/agent-note-fork-edits-to-upstream-owned-build-and-dependency-configuration/decision:
+  en: 6990fdae6271a6fe
+  zh: f5608a8c935e462d
+/agent-note-fork-edits-to-upstream-owned-build-and-dependency-configuration/alternatives-considered:
+  en: a7909935e6dbf878
+  zh: 9700af7be043cabd
+/agent-note-fork-edits-to-upstream-owned-build-and-dependency-configuration/consequences:
+  en: 60c5341feb9949a8
+  zh: c4c5827ec1cbdbf9
+/agent-note-fork-edits-to-upstream-owned-build-and-dependency-configuration/testing:
+  en: f22af6e855ec2414
+  zh: 4652810c67a102ac

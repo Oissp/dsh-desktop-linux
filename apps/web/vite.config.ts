@@ -178,6 +178,13 @@ export default defineConfig({
     // `modules` target (es2020-era) rejects that syntax.
     target: 'es2022',
     sourcemap: true,
+    // Vite's 500 kB default predates this chunk plan. `vendor` carries the whole
+    // heavy render family (KaTeX, Shiki with its three boot grammars, the
+    // micromark pipeline) as one cache entry that changes only on dependency
+    // bumps, and the largest lazy `@shikijs/langs` grammar (C++) is a single
+    // generated file. Both exceed the default by construction, so the ceiling
+    // sits just above the largest shipped chunk and still trips on real growth.
+    chunkSizeWarningLimit: 800,
     rollupOptions: {
       input: {
         index: src('./index.html'),
