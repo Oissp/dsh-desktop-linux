@@ -112,7 +112,7 @@ describe('desktop runtime project patched-package pins', () => {
     return root
   }
 
-  it('pins every patched package to its declared version in the build-root overrides', () => {
+  it('pins every patched package version in the workspace overrides but not as direct dependencies', () => {
     const { root } = packageSetProject()
     const repo = repoRootWithPatches([
       '  \'@deepseek-ai/libreoffice-kit@0.1.2\': patches/@deepseek-ai__libreoffice-kit@0.1.2.patch',
@@ -126,8 +126,8 @@ describe('desktop runtime project patched-package pins', () => {
     expect(workspace).toContain('"@deepseek-ai/libreoffice-kit": "0.1.2"')
     expect(workspace).toContain('"node-pty": "1.2.0-beta.15"')
     const manifest = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8')) as { dependencies: Record<string, string> }
-    expect(manifest.dependencies['@deepseek-ai/libreoffice-kit']).toBe('0.1.2')
-    expect(manifest.dependencies['node-pty']).toBe('1.2.0-beta.15')
+    expect(manifest.dependencies['@deepseek-ai/libreoffice-kit']).toBeUndefined()
+    expect(manifest.dependencies['node-pty']).toBeUndefined()
   })
 
   it('adds no version overrides when the repository declares no patches', () => {

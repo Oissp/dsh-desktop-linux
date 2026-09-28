@@ -138,7 +138,10 @@ export class DesktopProjectManager {
  * patchedDependencies, so a patched transitive dependency (notably
  * libreoffice-kit) otherwise drifts to the latest registry release that
  * satisfies its range — and the patch is then silently dropped because its
- * `name@version` key no longer matches the resolved lockfile entry.
+ * `name@version` key no longer matches the resolved lockfile entry. These pins
+ * go into the workspace `overrides:` section only, not into `package.json`
+ * `dependencies`, so they steer version resolution for packages already in the
+ * transitive tree without forcing absent packages to install.
  * @param repoRoot - Repository root holding pnpm-workspace.yaml.
  * @returns Overrides mapping each patched package name to its pinned version.
  */
@@ -160,18 +163,18 @@ function patchedPackageOverrides(repoRoot: string): Record<string, string> {
 export function createRuntimeProjectMetadata(projectDir: string, release: DesktopRelease, repoRoot: string): void {
   mkdirSync(projectDir, { recursive: true, mode: 0o700 })
   const packageSet = verifyDesktopCorePackageSet(projectDir, release.version)
-  const overrides = { ...desktopCorePackageOverrides(packageSet), ...patchedPackageOverrides(repoRoot) }
+  const coreOverrides = desktopCorePackageOverrides(packageSet)
   const manifest = {
     name: PROJECT_NAME,
     private: true,
     version: '0.0.0',
-    dependencies: overrides,
+    dependencies: coreOverrides,
     dsh: { profile: { bundles: [...WEB_PROFILE.bundles] } },
   }
   writeJson(join(projectDir, 'package.json'), manifest)
   writeFileSync(
     join(projectDir, 'pnpm-workspace.yaml'),
-    workspaceFile(overrides),
+    workspaceFile({ ...coreOverrides, ...patchedPackageOverrides(repoRoot) }),
     { mode: 0o600 },
   )
 }

@@ -16,7 +16,7 @@ fork 给 kit 打补丁，而不是等上游发版。`patches/@deepseek-ai__libre
 
 补丁之所以能进入打包产物，是因为 [prepare-dsh.ts](../../../../apps/desktop/scripts/prepare-dsh.ts) 携带了它：`applyRuntimePatches` 在正式安装前把仓库的补丁文件及其 `patchedDependencies` 条目复制进临时构建根，并以生成的 lockfile 中出现的 `name@version` 为键筛选。缺少这一步时，即使仓库声明了补丁，打包运行时仍会带上未打补丁的包。
 
-构建根从核心包集生成自己的 `pnpm-workspace.yaml`，因此仓库 catalog 及其 `patchedDependencies` 不会进入正式安装。被打补丁的传递依赖（kit）否则会漂移到满足其范围的最新 registry 版本，补丁随后因 `name@version` 不再匹配 lockfile 条目而被静默丢弃。该漂移已发生过：0.1.7-rc.2.1 构建解析到 kit 0.1.2，而补丁针对 0.1.1，打包运行时因此带上了未打补丁的 kit，每次 Office 预览都失败。`createRuntimeProjectMetadata` 现在读取仓库 `patchedDependencies`，把每个被打补丁的包按其声明版本作为构建根 override 钉住，使正式安装无论 registry 发什么版本都解析到补丁对应的版本。`applyRuntimePatches` 还在被跳过的补丁（其 `name@version` 不在 lockfile 中）上发出 CI 可见的 `::warning::`，使未来的漂移无法静默失败。
+构建根从核心包集生成自己的 `pnpm-workspace.yaml`，因此仓库 catalog 及其 `patchedDependencies` 不会进入正式安装。被打补丁的传递依赖（kit）否则会漂移到满足其范围的最新 registry 版本，补丁随后因 `name@version` 不再匹配 lockfile 条目而被静默丢弃。该漂移已发生过：0.1.7-rc.2.1 构建解析到 kit 0.1.2，而补丁针对 0.1.1，打包运行时因此带上了未打补丁的 kit，每次 Office 预览都失败。`createRuntimeProjectMetadata` 现在读取仓库 `patchedDependencies`，把每个被打补丁的包按其声明版本钉在构建根的 `overrides:` 段中（不作为 `package.json` 直接依赖，因此不在树中的包不会被强制安装），使正式安装无论 registry 发什么版本都解析到补丁对应的版本。`applyRuntimePatches` 还在被跳过的补丁（其 `name@version` 不在 lockfile 中）上发出 CI 可见的 `::warning::`，使未来的漂移无法静默失败。
 
 声明与文件名都带 kit 版本，且 pnpm 在 lockfile 中记录 patch hash，因此 kit 升级会让补丁失效。用 `pnpm patch @deepseek-ai/libreoffice-kit@<version>` 加 `pnpm patch-commit` 重新生成，并确认解析到的是 `_patch_hash=` 目录下的副本。
 
