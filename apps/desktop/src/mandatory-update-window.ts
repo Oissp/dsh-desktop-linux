@@ -247,7 +247,11 @@ export class DesktopMandatoryUpdateWindow {
   }
 
   private view(): MandatoryUpdateView {
-    return { locale: this.options.locale(), surface: mandatoryUpdateSurface(),
+    const locale = process.platform === 'win32'
+      ? { ...this.options.locale(), messages: { ...this.options.locale().messages,
+        mandatoryReadyDetail: this.options.locale().messages.updateDownloadedDetailWindows } }
+      : this.options.locale()
+    return { locale, surface: mandatoryUpdateSurface(),
       policy: this.options.policy(), update: this.options.update(),
       deferred: this.deferred,
       ...(this.confirmation === undefined ? {}
