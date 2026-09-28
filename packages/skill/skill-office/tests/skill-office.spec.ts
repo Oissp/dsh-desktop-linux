@@ -154,13 +154,15 @@ it('executes capabilities using only paths returned by the loaded skill from a s
     const json = skill?.content.match(/\n(\{\n[\s\S]+)$/u)?.[1]
     expect(json).toBeDefined()
     const { libreofficeKit } = JSON.parse(json!) as { libreofficeKit: { node: string; cli: string } }
+    const manifestPath = fileURLToPath(import.meta.resolve('@deepseek-ai/libreoffice-kit/package.json'))
+    const { version } = JSON.parse(await readFile(manifestPath, 'utf8')) as { version: string }
     const result = await execa(libreofficeKit.node, [libreofficeKit.cli, 'capabilities'], {
       cwd: root, env: { PATH: '' }, timeout: 20_000, killSignal: 'SIGKILL', reject: false,
     })
     expect(result.timedOut, result.stderr).toBe(false)
     expect(result.signal, result.stderr).toBeUndefined()
     expect(result.exitCode, result.stderr).toBe(0)
-    expect(JSON.parse(result.stdout)).toMatchObject({ runtime: { version: '0.1.1', cliPath: libreofficeKit.cli } })
+    expect(JSON.parse(result.stdout)).toMatchObject({ runtime: { version, cliPath: libreofficeKit.cli } })
   } finally {
     await ctx.fiber.dispose()
     await rm(root, { recursive: true, force: true })

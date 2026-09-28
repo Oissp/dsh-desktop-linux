@@ -1,0 +1,22 @@
+# Bilingual-pair consistency record for 2026-09-28-merge-0.2.0-rc.1-linux-desktop.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-09-28-merge-0.2.0-rc.1-linux-desktop.md
+/agent-note-0-2-0-rc-1-merge-the-linux-desktop-surfaces:
+  en: 81c2bdbdfbeb0af3
+  zh: 285a847973cdc4cc
+/agent-note-0-2-0-rc-1-merge-the-linux-desktop-surfaces/problem:
+  en: 3d5944a877cc7b76
+  zh: 7d294bafce4b1b07
+/agent-note-0-2-0-rc-1-merge-the-linux-desktop-surfaces/decision:
+  en: f2f9b82670902aa6
+  zh: 38793010adaa3e9d
+/agent-note-0-2-0-rc-1-merge-the-linux-desktop-surfaces/alternatives-considered:
+  en: e97bb4937533bf01
+  zh: b7fae7adf2f86167
+/agent-note-0-2-0-rc-1-merge-the-linux-desktop-surfaces/consequences:
+  en: a85e2403c28466ba
+  zh: ce7dd3bb8b12f07b
+/agent-note-0-2-0-rc-1-merge-the-linux-desktop-surfaces/testing:
+  en: 5699adc48271d821
+  zh: 14c5308004be15b4
