@@ -209,6 +209,7 @@ apps/desktop/scripts/jit-entitlements.plist
 apps/desktop/scripts/logged-notarytool.d.mts
 apps/desktop/scripts/logged-notarytool.mjs
 apps/desktop/scripts/macos-cache-policy.ts
+apps/desktop/scripts/macos-entitlements.plist
 apps/desktop/scripts/macos-notarization-proxy.ts
 apps/desktop/scripts/macos-package-settings.d.mts
 apps/desktop/scripts/macos-package-settings.mjs

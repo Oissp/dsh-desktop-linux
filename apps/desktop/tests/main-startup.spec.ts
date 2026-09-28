@@ -666,20 +666,22 @@ describe('desktop main startup', () => {
     }
   })
 
-  it('accepts update IPC only from the current application top frame in the owned main window', async () => {
+  it('accepts product IPC only from the current application top frame in the owned main window', async () => {
     await readyForUpdate()
-    const handler = harness.handlers.get(DESKTOP_IPC.updatesStatus)!
     const sender = harness.windows[0]!.webContents
-    expect(() => handler({ sender, senderFrame: sender.mainFrame })).not.toThrow()
-    for (const event of [
-      { sender: {}, senderFrame: sender.mainFrame },
-      { sender, senderFrame: { url: sender.mainFrame.url } },
-      { sender, senderFrame: { url: 'http://127.0.0.1:40000/' } },
-    ]) expect(() => handler(event)).toThrow('unowned renderer')
-    const original = sender.mainFrame.url
-    sender.mainFrame.url = 'http://127.0.0.1:40000/'
-    expect(() => handler({ sender, senderFrame: sender.mainFrame })).toThrow('unowned renderer')
-    sender.mainFrame.url = original
+    for (const channel of [DESKTOP_IPC.updatesStatus, DESKTOP_IPC.deviceInfo]) {
+      const handler = harness.handlers.get(channel)!
+      expect(() => handler({ sender, senderFrame: sender.mainFrame })).not.toThrow()
+      for (const event of [
+        { sender: {}, senderFrame: sender.mainFrame },
+        { sender, senderFrame: { url: sender.mainFrame.url } },
+        { sender, senderFrame: { url: 'http://127.0.0.1:40000/' } },
+      ]) expect(() => handler(event)).toThrow('unowned renderer')
+      const original = sender.mainFrame.url
+      sender.mainFrame.url = 'http://127.0.0.1:40000/'
+      expect(() => handler({ sender, senderFrame: sender.mainFrame })).toThrow('unowned renderer')
+      sender.mainFrame.url = original
+    }
   })
 
   it('serves shell-owned documents from the packaged renderer directory', async () => {
@@ -746,8 +748,8 @@ describe('desktop main startup', () => {
     expect((await handler(new Request('dsh-app://foreign/index.html'))).status).toBe(404)
   })
 
-  it('relays the macOS fullscreen state on transitions and after each load', async () => {
-    vi.spyOn(process, 'platform', 'get').mockReturnValue('darwin')
+  it.each(['darwin', 'win32'] as const)('relays the %s fullscreen state on transitions and after each load', async (platform) => {
+    vi.spyOn(process, 'platform', 'get').mockReturnValue(platform)
     await import('../src/main.ts')
     await harness.preparing.promise
     const window = harness.windows[0]!
@@ -769,7 +771,7 @@ describe('desktop main startup', () => {
     expect(sent()).toHaveLength(relayed)
   })
 
-  it.each(['win32', 'linux'] as const)('registers no fullscreen relay on %s', async (platform) => {
+  it.each(['linux'] as const)('registers no fullscreen relay on %s', async (platform) => {
     vi.spyOn(process, 'platform', 'get').mockReturnValue(platform)
     await import('../src/main.ts')
     await harness.preparing.promise
