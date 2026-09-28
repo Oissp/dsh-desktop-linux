@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto'
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
@@ -13,6 +13,8 @@ import {
   verifyDesktopCorePackageSet,
   type DesktopCorePackageRecord,
 } from '../src/core-package-set.ts'
+import { createRuntimeProjectMetadata } from '../src/project-manager.ts'
+import { parseDesktopRelease } from '../src/release.ts'
 
 const roots: string[] = []
 
@@ -99,5 +101,46 @@ describe('desktop core package set', () => {
         packageSet,
       )
     }).toThrow(/outside the local package set/u)
+  })
+})
+
+describe('desktop runtime project patched-package pins', () => {
+  function repoRootWithPatches(patchedDependencies: string): string {
+    const root = mkdtempSync(join(tmpdir(), 'dsh-desktop-patch-repo-'))
+    roots.push(root)
+    writeFileSync(join(root, 'pnpm-workspace.yaml'), `packages:\n  - .\n\npatchedDependencies:\n${patchedDependencies}`)
+    return root
+  }
+
+  it('pins every patched package to its declared version in the build-root overrides', () => {
+    const { root } = packageSetProject()
+    const repo = repoRootWithPatches([
+      '  \'@deepseek-ai/libreoffice-kit@0.1.2\': patches/@deepseek-ai__libreoffice-kit@0.1.2.patch',
+      '  node-pty@1.2.0-beta.15: patches/node-pty@1.2.0-beta.15.patch',
+    ].join('\n'))
+    const release = parseDesktopRelease({
+      schemaVersion: 1, version: '1.2.3', hostProtocolVersion: 4, nodeVersion: '24.17.0', pnpmVersion: '11.7.0',
+    })
+    createRuntimeProjectMetadata(root, release, repo)
+    const workspace = readFileSync(join(root, 'pnpm-workspace.yaml'), 'utf8')
+    expect(workspace).toContain('"@deepseek-ai/libreoffice-kit": "0.1.2"')
+    expect(workspace).toContain('"node-pty": "1.2.0-beta.15"')
+    const manifest = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8')) as { dependencies: Record<string, string> }
+    expect(manifest.dependencies['@deepseek-ai/libreoffice-kit']).toBe('0.1.2')
+    expect(manifest.dependencies['node-pty']).toBe('1.2.0-beta.15')
+  })
+
+  it('adds no version overrides when the repository declares no patches', () => {
+    const { root } = packageSetProject()
+    const repo = mkdtempSync(join(tmpdir(), 'dsh-desktop-no-patch-repo-'))
+    roots.push(repo)
+    writeFileSync(join(repo, 'pnpm-workspace.yaml'), 'packages:\n  - .\n')
+    const release = parseDesktopRelease({
+      schemaVersion: 1, version: '1.2.3', hostProtocolVersion: 4, nodeVersion: '24.17.0', pnpmVersion: '11.7.0',
+    })
+    createRuntimeProjectMetadata(root, release, repo)
+    const manifest = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8')) as { dependencies: Record<string, string> }
+    expect(manifest.dependencies['@deepseek-ai/libreoffice-kit']).toBeUndefined()
+    expect(manifest.dependencies['node-pty']).toBeUndefined()
   })
 })

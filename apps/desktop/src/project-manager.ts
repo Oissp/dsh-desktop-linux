@@ -14,6 +14,7 @@ import {
   writeSync,
 } from 'node:fs'
 import { join } from 'node:path'
+import { load } from 'js-yaml'
 import {
   DESKTOP_HOST_PACKAGE,
   desktopCorePackageOverrides,
@@ -130,21 +131,47 @@ export class DesktopProjectManager {
   }
 }
 
+/**
+ * Read version pins for patched packages from the repository workspace so the
+ * isolated build root resolves the exact version each patch targets. The build
+ * root generates its own pnpm-workspace.yaml without the repository catalog or
+ * patchedDependencies, so a patched transitive dependency (notably
+ * libreoffice-kit) otherwise drifts to the latest registry release that
+ * satisfies its range — and the patch is then silently dropped because its
+ * `name@version` key no longer matches the resolved lockfile entry.
+ * @param repoRoot - Repository root holding pnpm-workspace.yaml.
+ * @returns Overrides mapping each patched package name to its pinned version.
+ */
+function patchedPackageOverrides(repoRoot: string): Record<string, string> {
+  const declared = (load(readFileSync(join(repoRoot, 'pnpm-workspace.yaml'), 'utf8')) as {
+    patchedDependencies?: Record<string, string>
+  }).patchedDependencies
+  if (declared === undefined) return {}
+  const overrides: Record<string, string> = {}
+  for (const key of Object.keys(declared)) {
+    const at = key.lastIndexOf('@')
+    if (at <= 0) continue
+    overrides[key.slice(0, at)] = key.slice(at + 1)
+  }
+  return overrides
+}
+
 /** Create build-only project metadata for materializing the signed runtime. */
-export function createRuntimeProjectMetadata(projectDir: string, release: DesktopRelease): void {
+export function createRuntimeProjectMetadata(projectDir: string, release: DesktopRelease, repoRoot: string): void {
   mkdirSync(projectDir, { recursive: true, mode: 0o700 })
   const packageSet = verifyDesktopCorePackageSet(projectDir, release.version)
+  const overrides = { ...desktopCorePackageOverrides(packageSet), ...patchedPackageOverrides(repoRoot) }
   const manifest = {
     name: PROJECT_NAME,
     private: true,
     version: '0.0.0',
-    dependencies: desktopCorePackageOverrides(packageSet),
+    dependencies: overrides,
     dsh: { profile: { bundles: [...WEB_PROFILE.bundles] } },
   }
   writeJson(join(projectDir, 'package.json'), manifest)
   writeFileSync(
     join(projectDir, 'pnpm-workspace.yaml'),
-    workspaceFile(desktopCorePackageOverrides(packageSet)),
+    workspaceFile(overrides),
     { mode: 0o600 },
   )
 }

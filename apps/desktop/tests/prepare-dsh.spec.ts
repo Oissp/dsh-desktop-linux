@@ -120,4 +120,34 @@ describe('desktop runtime patch carrying', () => {
       rmSync(build, { recursive: true, force: true })
     }
   })
+
+  it('warns when a declared patch targets a version absent from the lockfile (version drift)', () => {
+    // The lockfile resolved libreoffice-kit@0.1.0, but the repository patch targets 0.1.2.
+    const driftedWorkspace = REPO_WORKSPACE.replace(
+      '@deepseek-ai/libreoffice-kit@0.1.0',
+      '@deepseek-ai/libreoffice-kit@0.1.2',
+    )
+    const repo = repoRoot(driftedWorkspace, {
+      'patches/@deepseek-ai__libreoffice-kit@0.1.2.patch': 'libreoffice patch\n',
+      'patches/node-pty@1.2.0-beta.15.patch': 'node-pty patch\n',
+      'patches/@electron__osx-sign@1.3.3.patch': 'osx-sign patch\n',
+      'patches/@yao-pkg__pkg@6.21.0.patch': 'pkg patch\n',
+    })
+    const build = buildRoot('packages:\n  - .\n')
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    try {
+      // node-pty is still carried; only the drifted libreoffice-kit patch is skipped.
+      expect(applyRuntimePatches(repo, build, LOCKFILE)).toBe(true)
+      const workspace = readFileSync(join(build, 'pnpm-workspace.yaml'), 'utf8')
+      expect(workspace).not.toContain('libreoffice-kit')
+      expect(workspace).toContain('"node-pty@1.2.0-beta.15"')
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringMatching(/::warning::Runtime patch @deepseek-ai\/libreoffice-kit@0\.1\.2 was not carried/),
+      )
+    } finally {
+      warn.mockRestore()
+      rmSync(repo, { recursive: true, force: true })
+      rmSync(build, { recursive: true, force: true })
+    }
+  })
 })

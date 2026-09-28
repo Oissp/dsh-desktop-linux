@@ -10,7 +10,7 @@ overrides:
   '@deepseek-ai/schemastery': link:vendor/schemastery
 
 patchedDependencies:
-  '@deepseek-ai/libreoffice-kit@0.1.1': f1783dfdd88b70a375d2501ef969de767d22ea63a5a1f80dc854cd9cf372f4dc
+  '@deepseek-ai/libreoffice-kit@0.1.2': 70faa54139ce090e12eb1e9b1fd379330a3183c19402ef306ff7d99dc9d4ff4d
   '@earendil-works/pi-ai@0.85.1': b9bcce474fb2ac44633dff0fa722816a5bff5451b4575d5874035ea14ba70a4f
   '@electron/osx-sign@1.3.3': 280e7b2816caf01423097d24e79107a66afeb563a348630ce9928ae8499a5861
   '@fortune-sheet/core@1.0.4': 8791a230763dbf853fd65d627c68c31de37209992851377855e16cf08ea70532
@@ -726,7 +726,7 @@ importers:
         version: link:../../packages/workspace/workspace
       '@deepseek-ai/libreoffice-kit':
         specifier: ^0.1.1
-        version: 0.1.1(patch_hash=f1783dfdd88b70a375d2501ef969de767d22ea63a5a1f80dc854cd9cf372f4dc)
+        version: 0.1.2(patch_hash=70faa54139ce090e12eb1e9b1fd379330a3183c19402ef306ff7d99dc9d4ff4d)
 
   apps/web:
     devDependencies:
@@ -2721,9 +2721,6 @@ importers:
         specifier: ^11.0.0
         version: 11.0.4
     devDependencies:
-      '@deepseek-ai/dsh-otel':
-        specifier: workspace:*
-        version: link:../../telemetry/otel
       '@deepseek-ai/cordis':
         specifier: workspace:~
         version: link:../../../vendor/cordis
@@ -2739,6 +2736,9 @@ importers:
       '@deepseek-ai/dsh-fs-local':
         specifier: workspace:*
         version: link:../../fs/fs-local
+      '@deepseek-ai/dsh-otel':
+        specifier: workspace:*
+        version: link:../../telemetry/otel
       '@deepseek-ai/dsh-sandbox-policy':
         specifier: workspace:*
         version: link:../../sandbox/sandbox-policy
@@ -2759,7 +2759,7 @@ importers:
         version: link:../../typert/registry
       '@deepseek-ai/libreoffice-kit':
         specifier: ^0.1.1
-        version: 0.1.1(patch_hash=f1783dfdd88b70a375d2501ef969de767d22ea63a5a1f80dc854cd9cf372f4dc)
+        version: 0.1.2(patch_hash=70faa54139ce090e12eb1e9b1fd379330a3183c19402ef306ff7d99dc9d4ff4d)
 
   packages/client/connection:
     dependencies:
@@ -2939,18 +2939,12 @@ importers:
         specifier: ^4.4.3
         version: 4.4.3
     devDependencies:
-      '@deepseek-ai/dsh-otel':
-        specifier: workspace:*
-        version: link:../../telemetry/otel
-      '@deepseek-ai/cordis-plugin-loader':
-        specifier: workspace:~
-        version: link:../../../vendor/loader
-      '@deepseek-ai/dsh-settings':
-        specifier: workspace:*
-        version: link:../../settings/settings
       '@deepseek-ai/cordis':
         specifier: workspace:~
         version: link:../../../vendor/cordis
+      '@deepseek-ai/cordis-plugin-loader':
+        specifier: workspace:~
+        version: link:../../../vendor/loader
       '@deepseek-ai/dsh-api-gateway':
         specifier: workspace:*
         version: link:../../api/gateway
@@ -2969,9 +2963,15 @@ importers:
       '@deepseek-ai/dsh-llm':
         specifier: workspace:*
         version: link:../../llm/llm
+      '@deepseek-ai/dsh-otel':
+        specifier: workspace:*
+        version: link:../../telemetry/otel
       '@deepseek-ai/dsh-session':
         specifier: workspace:*
         version: link:../../core/session
+      '@deepseek-ai/dsh-settings':
+        specifier: workspace:*
+        version: link:../../settings/settings
 
   packages/client/resources:
     devDependencies:
@@ -7120,7 +7120,7 @@ importers:
         version: link:../../typert/protocol
       '@deepseek-ai/libreoffice-kit':
         specifier: ^0.1.1
-        version: 0.1.1(patch_hash=f1783dfdd88b70a375d2501ef969de767d22ea63a5a1f80dc854cd9cf372f4dc)
+        version: 0.1.2(patch_hash=70faa54139ce090e12eb1e9b1fd379330a3183c19402ef306ff7d99dc9d4ff4d)
       '@deepseek-ai/schemastery':
         specifier: link:../../../vendor/schemastery
         version: link:../../../vendor/schemastery
@@ -11703,7 +11703,7 @@ importers:
     dependencies:
       '@deepseek-ai/libreoffice-kit':
         specifier: ^0.1.1
-        version: 0.1.1(patch_hash=f1783dfdd88b70a375d2501ef969de767d22ea63a5a1f80dc854cd9cf372f4dc)
+        version: 0.1.2(patch_hash=70faa54139ce090e12eb1e9b1fd379330a3183c19402ef306ff7d99dc9d4ff4d)
       '@deepseek-ai/schemastery':
         specifier: link:../../../vendor/schemastery
         version: link:../../../vendor/schemastery
@@ -15000,20 +15000,20 @@ packages:
     engines: {node: '>=22.19.0'}
     os: [linux]
 
-  '@deepseek-ai/libreoffice-kit-win32-arm64@0.1.1':
-    resolution: {integrity: sha512-RR05Y9NQzPYRRo9vCydlp6HKv+0eR12A99Pw7bAuUmcagyGN3gtWZKaG6xrT8vccPf3mByP3Bi0Mo31D/lrySA==}
+  '@deepseek-ai/libreoffice-kit-win32-arm64@0.1.2':
+    resolution: {integrity: sha512-+JMKIDfLfpQEIeWWJBkKeAGJ8Niiv6SLQ1SFMh8K28eUOSaLLGPt4j7ywEWtyKCtXenD+VRlKo5gZlqDmCtNCg==}
     engines: {node: '>=22.19.0'}
     cpu: [arm64]
     os: [win32]
 
-  '@deepseek-ai/libreoffice-kit-win32-x64@0.1.1':
-    resolution: {integrity: sha512-03CUYg9j2qJ7Q6K27xFCvTLa7FgawOZ1DtE6NlEYttF6TxGuyHEv358vBGc3cwlR1yG1Vfj+pa4e5MdPGpy8mA==}
+  '@deepseek-ai/libreoffice-kit-win32-x64@0.1.2':
+    resolution: {integrity: sha512-EUuTMnFF404uVVZz0j2oAoHY0Xhobdg0jChUUm74sudwaqxTM9rvgUYEWbeJd95oVjIParMdsb4hLdAhZ10BIw==}
     engines: {node: '>=22.19.0'}
     cpu: [x64]
     os: [win32]
 
-  '@deepseek-ai/libreoffice-kit@0.1.1':
-    resolution: {integrity: sha512-vML+3Nh/159k/TWuxLfZU1O39BA0m+/jybfySu9dJaTHR2oAi+hHWud6iRhBaCie5N6ADfo4DNHajBk52pmRog==}
+  '@deepseek-ai/libreoffice-kit@0.1.2':
+    resolution: {integrity: sha512-PM3GtAr8/nG7mY22yoYQgRTfkhzQ72v1sDME/46I/Kl7S4+yOFYC1h0hRT8JL9p9vjdEwXW9icdhUQK0QPz+YQ==}
     engines: {node: '>=22.19.0'}
     hasBin: true
 
@@ -21788,18 +21788,6 @@ packages:
       utf-8-validate:
         optional: true
 
-  ws@8.21.3:
-    resolution: {integrity: sha512-201TZ/kPWxoPr/OKWjquZR1SWKXcvxdH+e1xrx89b3YbmzLMFCLfnaG1HFIgWzJOEWZ7MvpK++odZufgYR50Rw==}
-    engines: {node: '>=10.0.0'}
-    peerDependencies:
-      bufferutil: ^4.0.1
-      utf-8-validate: '>=5.0.2'
-    peerDependenciesMeta:
-      bufferutil:
-        optional: true
-      utf-8-validate:
-        optional: true
-
   wsl-utils@1.0.0:
     resolution: {integrity: sha512-Hl0ZOAs672vg+06kfujwRhoS6/jehvULrlFkuF2dRu6pHgA8U06h3xqNIqNNU1LTXPcedxByAR4GS6pwQK0mgA==}
     engines: {node: '>=20'}
@@ -22535,13 +22523,13 @@ snapshots:
   '@deepseek-ai/libreoffice-kit-wasm@0.1.1':
     optional: true
 
-  '@deepseek-ai/libreoffice-kit-win32-arm64@0.1.1':
+  '@deepseek-ai/libreoffice-kit-win32-arm64@0.1.2':
     optional: true
 
-  '@deepseek-ai/libreoffice-kit-win32-x64@0.1.1':
+  '@deepseek-ai/libreoffice-kit-win32-x64@0.1.2':
     optional: true
 
-  '@deepseek-ai/libreoffice-kit@0.1.1(patch_hash=f1783dfdd88b70a375d2501ef969de767d22ea63a5a1f80dc854cd9cf372f4dc)':
+  '@deepseek-ai/libreoffice-kit@0.1.2(patch_hash=70faa54139ce090e12eb1e9b1fd379330a3183c19402ef306ff7d99dc9d4ff4d)':
     dependencies:
       fflate: 0.8.2
       fontkit: 2.0.4
@@ -22550,8 +22538,8 @@ snapshots:
       '@deepseek-ai/libreoffice-kit-darwin-arm64': 0.1.1
       '@deepseek-ai/libreoffice-kit-darwin-x64': 0.1.1
       '@deepseek-ai/libreoffice-kit-wasm': 0.1.1
-      '@deepseek-ai/libreoffice-kit-win32-arm64': 0.1.1
-      '@deepseek-ai/libreoffice-kit-win32-x64': 0.1.1
+      '@deepseek-ai/libreoffice-kit-win32-arm64': 0.1.2
+      '@deepseek-ai/libreoffice-kit-win32-x64': 0.1.2
 
   '@docsearch/css@3.8.2': {}
 
@@ -26646,7 +26634,7 @@ snapshots:
       buffer-image-size: 0.6.4
       entities: 7.0.1
       whatwg-mimetype: 3.0.0
-      ws: 8.21.3
+      ws: 8.21.0
     transitivePeerDependencies:
       - bufferutil
       - utf-8-validate
@@ -29474,8 +29462,6 @@ snapshots:
   wrappy@1.0.2: {}
 
   ws@8.21.0: {}
-
-  ws@8.21.3: {}
 
   wsl-utils@1.0.0:
     dependencies:
