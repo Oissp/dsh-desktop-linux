@@ -1,5 +1,8 @@
 [
   {
+    "label": "Check for Updates…"
+  },
+  {
     "role": "hide",
     "label": "Hide DeepSeek Harness"
   },

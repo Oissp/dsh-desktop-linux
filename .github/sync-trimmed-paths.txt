@@ -281,3 +281,42 @@ apps/desktop/tests/windows-uninstall-smoke.ps1
 # 0.1.7-alpha.2 新增 Windows installer 文件
 apps/desktop/installer/extract-report.h
 apps/desktop/tests/windows-installer-extract-report.cpp
+
+# ── 0.2.0-rc.2 合并新增裁剪：桌面「管理 dsh 命令」功能 ──
+# 该功能在 main.ts 的菜单里被 gate 为 darwin || win32，prepareDesktopCli() 只接受
+# darwin/win32，两个启动器分别是 macOS app bundle 脚本与 Windows .cmd，Linux 上没有任何
+# 代码路径。fork 只保留其中跨平台的部分：login-shell-environment.ts（POSIX 登录 shell
+# 环境读取，Linux 的 .desktop 启动同样适用）与它依赖的 duration-env.ts。
+# 说明：.agents/notes/implemented/feature/2026-09-27-desktop-cli-runtime.* 作为上游的
+# 决策记录保留（与 Windows 安装包等同类笔记一致），其中对 macOS 运行时缺口的说明与
+# 截图的说明仍然成立。
+apps/desktop/cli/dsh
+apps/desktop/cli/dsh.cmd
+apps/desktop/cli/link-entry.c
+apps/desktop-host/src/cli.ts
+apps/desktop-host/src/windows-cli-signals.ts
+apps/desktop/scripts/command-path.ps1
+apps/desktop/scripts/prepare-cli.ts
+apps/desktop/scripts/prepare-command-link.ts
+apps/desktop/src/command-installation.ts
+apps/desktop/src/command-management.ts
+apps/desktop/src/command-manager-entry.ts
+apps/desktop/tests/cli-launcher.spec.ts
+apps/desktop/tests/command-installation.spec.ts
+apps/desktop/tests/command-management.spec.ts
+apps/desktop/tests/command-manager-flow.spec.ts
+apps/desktop/tests/command-path.spec.ts
+apps/desktop/tests/windows-cli-signals.spec.ts
+apps/desktop/tests/fixtures/cli-console-probe.cpp
+apps/desktop/tests/fixtures/command-path.ps1
+apps/desktop/tests/expected/command-management-darwin-en-US.json
+apps/desktop/tests/expected/command-management-darwin-zh-CN.json
+apps/desktop/tests/expected/command-management-win32-en-US.json
+apps/desktop/tests/expected/command-management-win32-zh-CN.json
+apps/desktop/tests/expected/command-repair-en-US.json
+apps/desktop/tests/expected/command-repair-zh-CN.json
+
+# 同批到达的 macOS entitlements 与上传管线新增文件
+apps/desktop/scripts/node-x64-entitlements.plist
+apps/desktop/tests/upload-target.spec.ts
+apps/desktop/tests/expected/latest-installer-uploads.json

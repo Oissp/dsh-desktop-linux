@@ -1,5 +1,8 @@
 [
   {
+    "label": "检查更新…"
+  },
+  {
     "role": "hide",
     "label": "隐藏 DeepSeek Harness"
   },

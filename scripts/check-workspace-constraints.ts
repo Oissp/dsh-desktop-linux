@@ -62,6 +62,8 @@ const desktopApplicationDirectory = 'apps/desktop'
 const localArtifactDirs = new Set(['node_modules'])
 const appPackageFiles: Readonly<Record<string, readonly string[]>> = {
   '@deepseek-ai/dsh': ['lib/*.js', 'lib/types/*.d.ts'],
+  // Linux-only: the Desktop CLI launcher entry is not carried, so this package
+  // ships no lib/cli.js ([trim list](../.github/sync-trimmed-paths.txt)).
   '@deepseek-ai/dsh-desktop-host': [
     'lib/index.js',
   ],
