@@ -40,6 +40,7 @@ apps/desktop/scripts/prepare-runtime.ts # 恢复 CLI 准备步骤；导入 fork 
 apps/desktop/src/command-management.ts # pkexec 提权；inspect() 扩展到 Linux
 apps/desktop/src/command-manager-entry.ts # darwin||linux 合并分支
 apps/desktop/scripts/prepare-cli.ts # 接受 'linux' 平台
+apps/desktop/tsdown.config.ts # 恢复 command-manager-entry.js 入口
 apps/desktop/cli/dsh # Linux 启动器（fork 新增，改二进制名）
 apps/desktop-host/src/cli.ts # 从上游恢复（无改动，已跨平台）
 

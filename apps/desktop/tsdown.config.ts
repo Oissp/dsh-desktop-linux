@@ -34,7 +34,7 @@ const clientVersionDefine = { 'process.env.DSH_CLIENT_VERSION': JSON.stringify(c
 
 export default defineConfig([
   {
-    entry: ['lib/types/main.js'],
+    entry: ['lib/types/main.js', 'lib/types/command-manager-entry.js'],
     plugins: [packagedImportsPlugin(mainProcessImports)],
     define: clientVersionDefine,
     onSuccess: async () => {
