@@ -108,6 +108,10 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      # 合并上游后，被裁剪的文件可能被上游重新带回。发版前验证裁剪清单完整性。
+      - name: Verify trim-list integrity
+        run: scripts/verify-sync-trimmed-paths.sh
+
       - name: Read version
         # 桌面 release 版本 = apps/desktop 版本（跟随引擎版本，可带 .N 构建后缀）；
         # electron-builder 产物名也用同一版本，保证 tag / 产物 / 自动更新一致。

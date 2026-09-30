@@ -107,6 +107,11 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      # 合并上游后，被裁剪的文件可能被上游重新带回（合并不冲突就会直接进入代码树）。
+      # 在测试前验证裁剪清单完整性，确保 mac/win 专有脚本不会进入 fork 代码树。
+      - name: Verify trim-list integrity
+        run: scripts/verify-sync-trimmed-paths.sh
+
       - name: Run desktop packaging tests
         run: pnpm exec vitest run apps/desktop/tests
 

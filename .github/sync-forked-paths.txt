@@ -1,0 +1,58 @@
+# Fork 行为修改基线：本 fork 有意「修改」（非删除）的上游文件。
+#
+# 与 sync-trimmed-paths.txt 互补：那份清单跟踪被删除的文件，本清单跟踪被修改的文件。
+# 合并上游时，这些文件的冲突不能自动以 fork 侧为准——需要检查上游改动是否已兼容
+# fork 的改动，然后重新应用 fork 的修改。
+#
+# 每条格式：<路径> # <fork 改动性质>
+# 合并者看到这些文件的冲突时，参考对应 Agent Note 重新应用 fork 决策。
+
+# ── 打包入口与构建目标 ──
+# fork 硬编码 linux-x64 为唯一支持目标；上游支持 mac-arm64/mac-x64/win-x64。
+apps/desktop/scripts/desktop-build-paths.mjs # SUPPORTED_TARGETS = {'linux-x64'}；desktopTargetPlatform 返回 linux/x64
+apps/desktop/scripts/package-target.ts # DesktopPackageTargetName = 'linux-x64'；拒绝非 Linux x64 构建宿主
+apps/desktop/electron-builder.config.mjs # Linux-only 工厂：无 mac/win 块；artifactName 硬编码 linux-x64；publish 指向 Oissp/dsh-desktop-linux-release
+apps/desktop/electron-builder.config.d.mts # 镜像 .mjs 的 Linux-only 接口类型
+
+# ── 主进程 Shell ──
+# fork 的 main.ts 新增了 Linux 托盘、外观图标切换、打包时隐藏菜单栏；
+# desktop-cli 集成已同步（commandManager + 托盘菜单项 + idle()），菜单项只在托盘菜单显示。
+apps/desktop/src/main.ts # Linux 托盘 + 外观图标 + Menu.setApplicationMenu(null) + desktop-cli 托盘集成
+
+# ── 本地化 ──
+# fork 恢复了 cliCommand* 消息（desktop-cli 已同步），并新增了 showWindow/quitMenu（Linux 托盘）。
+apps/desktop/src/locale.ts # 恢复 cliCommand*；新增 showWindow/quitMenu
+
+# ── 更新协调器 ──
+# fork 不设置 updater.channel，让版本号 prerelease 标签自决频道，回落到 latest-linux.yml。
+apps/desktop/src/update-coordinator.ts # 不设置 updater.channel（参见 2026-09-19-desktop-update-channel-derivation.md）
+
+# ── 运行时准备 ──
+# fork 的 prepare-runtime.ts 恢复了 CLI 准备步骤（prepareDesktopCli + command-manager-entry.js 复制），
+# 使用 fork 自己的 preparePrimaryRuntime 导入路径（而非上游的 prepare-primary-runtime.ts）。
+apps/desktop/scripts/prepare-runtime.ts # 恢复 CLI 准备步骤；导入 fork 的 primary-runtime/prepare.ts
+
+# ── desktop-cli 命令管理（已同步，有 Linux 适配） ──
+# fork 从上游恢复了跨平台文件，并添加了 Linux 适配：
+# command-management.ts: pkexec 提权 + inspect() 在 Linux 上也调用 shellCommand()
+# command-manager-entry.ts: darwin||linux 合并分支（共享 symlink 逻辑）
+# prepare-cli.ts: 接受 'linux' 平台参数
+apps/desktop/src/command-management.ts # pkexec 提权；inspect() 扩展到 Linux
+apps/desktop/src/command-manager-entry.ts # darwin||linux 合并分支
+apps/desktop/scripts/prepare-cli.ts # 接受 'linux' 平台
+apps/desktop/cli/dsh # Linux 启动器（fork 新增，改二进制名）
+apps/desktop-host/src/cli.ts # 从上游恢复（无改动，已跨平台）
+
+# ── 桌面 README 双语对 ──
+# fork 保持 README 内容与上游一致以减少合并冲突，只改 pairing hash。
+# 合并时如果上游编辑了 README，需要手动 re-record pairing hash。
+apps/desktop/README.md # pairing hash 与 fork 侧一致（内容跟随上游）
+apps/desktop/README.zh.md # 同上；两处链接指向 fork authored path 而非上游 trimmed path
+apps/desktop/README.i18n.yaml # pairing hash 记录
+
+# ── 根 README ──
+README.md # Discord 链接改为 fork 社区
+README.zh.md # 同上
+
+# ── 打包配置 ──
+apps/desktop/package.json # version 跟随引擎 + .N 后缀；scripts 只有 linux:x64 目标；无 koffi devDependency
