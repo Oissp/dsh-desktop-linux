@@ -42,7 +42,7 @@ body::before { content: ""; position: fixed; inset: 0; z-index: -1; background: 
 body[data-surface='window'] { background: var(--shell-surface); }
 body[data-surface='window']::before { content: none; }
 /* 高度交给内容决定：主进程按量出的高度给卡片定尺寸，撑满反而会留出裸底。 */
-body[data-surface='window'] main { width: 100%; max-height: 100vh; border-radius: 0; box-shadow: none; }
+body[data-surface='window'] main { width: 100%; max-height: 100vh; overflow: visible; border-radius: 0; box-shadow: none; }
 body[data-surface='window'] { place-items: start center; }
 main { width: min(380px, calc(100vw - 32px)); max-height: calc(100vh - 32px); overflow: auto; padding: 22px 24px 24px; border-radius: 24px; background: var(--shell-surface); box-shadow: 0 0 1px rgb(0 0 0 / 20%), 0 0 4px rgb(0 0 0 / 2%), 0 12px 32px rgb(0 0 0 / 8%); }
 header { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; margin-bottom: 12px; }

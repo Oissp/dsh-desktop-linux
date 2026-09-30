@@ -55,6 +55,9 @@ function render(state) {
 }
 // 卡片窗口不跟内容走，短文案会在下方留出一片裸露的白底；量出布局后的实际
 // 高度交给主进程定尺寸。覆盖层本身铺满父窗口，主进程会忽略这个请求。
+// 用 scrollHeight 而不是 getBoundingClientRect().height：main 设了 overflow:auto
+// 和 max-height，getBoundingClientRect 返回的是被 max-height 截断后的高度而非内容
+// 高度，短提示被截断后窗口不会收缩、滚动条不消失。
 let fitted = false
 function installCardFit(state) {
   if (fitted || state.surface !== 'window') return
@@ -62,7 +65,7 @@ function installCardFit(state) {
   const report = () => {
     const main = document.getElementById('dialog')
     if (main.hidden) return
-    void api.resize(Math.ceil(main.getBoundingClientRect().height)).catch(() => {})
+    void api.resize(Math.ceil(main.scrollHeight)).catch(() => {})
   }
   report()
   if (typeof ResizeObserver === 'function') {
