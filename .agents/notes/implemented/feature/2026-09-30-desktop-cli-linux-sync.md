@@ -28,6 +28,10 @@ English | [中文](2026-09-30-desktop-cli-linux-sync.zh.md)
 
 **`prepare-runtime.ts` 恢复 CLI 准备**：恢复 `prepareDesktopCli()` 调用和 `command-manager-entry.js` 复制。平台硬编码为 `'linux'`（fork 只构建 linux-x64）。不调用 `prepareCommandLink()`（macOS 专用，编译 `link-entry.c`）。
 
+**worker 自包含打包**：命令管理 worker 用打包运行时自带的裸 Node（非 Electron）运行，是 `prepare-runtime.ts` 复制的单一文件 `runtime/cli/command-manager.js`，因此 `command-manager-entry` 在 tsdown 中拥有独立入口，`codeSplitting: false`，并用只允许 Node 内建模块的 `workerImports` 策略（由 `packagedImportsPlugin` 强制）保证自包含——避免把 `@deepseek-ai/dsh-atomic-write` 拆进不会随 worker 发布的共享 chunk 导致运行时 `ERR_MODULE_NOT_FOUND`。
+
+**提权测试在 Linux 上运行**：Node 把非零 `execFile` 退出报告为数字型 `error.code`，pkexec 取消码 126 的映射用 `=== 126` 判断；提权测试原先只跑 darwin，现在也在 Linux 上跑并覆盖 pkexec 路径，mock 用数字型 126。
+
 ## Alternatives considered
 
 **两处都加菜单项（applicationItems + 托盘）。** 拒绝：打包 Linux 隐藏顶部菜单栏，`applicationItems()` 的改动对用户不可见，只增加与上游的合并冲突。开发模式也从托盘访问（fork 的托盘在打包和开发模式都建）。

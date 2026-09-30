@@ -1,0 +1,34 @@
+# Bilingual-pair consistency record for 2026-09-30-fork-debian-linux-packaging.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-09-30-fork-debian-linux-packaging.md
+/agent-note-fork-debian-linux-packaging:
+  en: 794f025fc517960d
+  zh: 2be81337cba87fcc
+/agent-note-fork-debian-linux-packaging/problem:
+  en: db6cb18fc8cc80f0
+  zh: aa7ac5fd6711a487
+/agent-note-fork-debian-linux-packaging/decision:
+  en: b40ab87a89ced5c4
+  zh: 0e6c11398f085d58
+/agent-note-fork-debian-linux-packaging/decision/functional-parity:
+  en: bc82d920a9cf423e
+  zh: 485e92959c5e19f2
+/agent-note-fork-debian-linux-packaging/trim-reasonableness:
+  en: 75f978f66c3aeabb
+  zh: 0d8c8c6031b55506
+/agent-note-fork-debian-linux-packaging/ci-release-pipeline:
+  en: 9492b916ed016f83
+  zh: 431643028753e18e
+/agent-note-fork-debian-linux-packaging/upstream-merge-process:
+  en: 61fdbdf97409ea31
+  zh: f4de0b91431831e3
+/agent-note-fork-debian-linux-packaging/alternatives-considered:
+  en: 4048d6022b98cc35
+  zh: 88c6dcfbd653d85f
+/agent-note-fork-debian-linux-packaging/consequences:
+  en: ca958ab7f95a2c88
+  zh: c13578681b1ebfa3
+/agent-note-fork-debian-linux-packaging/testing:
+  en: 00c086482c63b664
+  zh: bb42a61de6d9fac0
