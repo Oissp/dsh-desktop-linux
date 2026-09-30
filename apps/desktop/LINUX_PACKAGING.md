@@ -135,8 +135,22 @@ deepseek-harness-desktop/
       pnpm/                               # pnpm CLI
       bin/node                            # Node bin 目录入口
       office-skills/                      # Office 技能资产
+      cli/
+        bin/dsh                           # dsh CLI 启动器（「管理 dsh 命令」的 symlink 目标）
+        command-manager.js                # 命令管理 worker（自包含 bundle）
     icon.png, icon-dark.png, ...          # 运行期图标
 ```
+
+## 内置 dsh CLI（管理 dsh 命令）
+
+Desktop 打包内含一个由内置引擎驱动的 `dsh` CLI。用户可从托盘菜单「管理 dsh 命令」安装它：在 `/usr/local/bin` 创建一个指向 `runtime/cli/bin/dsh` 启动器的 symlink，终端即可直接运行 `dsh`，无需维护另一个 npm 安装。
+
+要点：
+
+- **命令管理 worker**：`runtime/cli/command-manager.js` 是 `command-manager-entry.ts` 打出的**自包含** bundle（`codeSplitting: false`，只依赖 Node 内建模块），因为它是 `prepare-runtime.ts` 复制的单一文件，用打包运行时自带的裸 Node 运行。
+- **提权**：写入 `/usr/local/bin` 需要 root，通过 `pkexec --disable-internal-agent` 提权（PolicyKit 弹窗）；取消映射为 `ECANCELED`，不弹错误对话框。
+- **仅 deb 可靠**：AppImage 挂载点路径每次运行可能不同，symlink 指向其内部路径不可靠；AppImage 用户应使用 deb 安装包。
+- 该功能的决策记录见 [desktop-cli Linux 同步](../.agents/notes/implemented/feature/2026-09-30-desktop-cli-linux-sync.md)（Linux 适配）及其历史方案 [desktop-cli-linux-sync-plan](../.agents/notes/archived/feature/2026-09-30-desktop-cli-linux-sync-plan.md)。
 
 ## 应用 ID
 

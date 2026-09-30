@@ -13,10 +13,10 @@
 
 | 文件 | 作用 |
 |---|---|
-| [.github/sync-trimmed-paths.txt](.github/sync-trimmed-paths.txt) | 裁剪清单：fork 有意不携带的上游文件（删除） |
-| [.github/sync-forked-paths.txt](.github/sync-forked-paths.txt) | 行为修改基线：fork 有意修改（非删除）的上游文件 |
-| [scripts/verify-sync-trimmed-paths.sh](scripts/verify-sync-trimmed-paths.sh) | 验证裁剪清单完整性（清单内路径不存在于工作树） |
-| [scripts/verify-sync-pairing-after-merge.sh](scripts/verify-sync-pairing-after-merge.sh) | 合并后自动修复双语配对哈希 |
+| [.github/sync-trimmed-paths.txt](sync-trimmed-paths.txt) | 裁剪清单：fork 有意不携带的上游文件（删除） |
+| [.github/sync-forked-paths.txt](sync-forked-paths.txt) | 行为修改基线：fork 有意修改（非删除）的上游文件 |
+| [scripts/verify-sync-trimmed-paths.sh](../scripts/verify-sync-trimmed-paths.sh) | 验证裁剪清单完整性（清单内路径不存在于工作树） |
+| [scripts/verify-sync-pairing-after-merge.sh](../scripts/verify-sync-pairing-after-merge.sh) | 合并后自动修复双语配对哈希 |
 
 ## 标准流程
 
@@ -79,7 +79,7 @@ scripts/verify-sync-trimmed-paths.sh --staged
 
 #### 4c. fork 修改的文件（参考 sync-forked-paths.txt）
 
-[.github/sync-forked-paths.txt](.github/sync-forked-paths.txt) 列出了 fork 有意修改的上游文件。这些文件的冲突**不能自动以 fork 侧为准**——需要：
+[.github/sync-forked-paths.txt](sync-forked-paths.txt) 列出了 fork 有意修改的上游文件。这些文件的冲突**不能自动以 fork 侧为准**——需要：
 
 1. 查看上游改了什么（`git diff HEAD...MERGE_HEAD -- <path>`）
 2. 检查上游改动是否已兼容 fork 的改动
@@ -135,8 +135,8 @@ pnpm exec vitest run apps/desktop/tests
 - **Testing**：运行的验证命令和结果
 
 参考已有合并笔记：
-- [2026-09-29-merge-0.2.0-rc.2-linux-desktop.md](.agents/notes/implemented/architecture/2026-09-29-merge-0.2.0-rc.2-linux-desktop.md)
-- [2026-09-28-merge-0.2.0-rc.1-linux-desktop.md](.agents/notes/implemented/architecture/2026-09-28-merge-0.2.0-rc.1-linux-desktop.md)
+- [2026-09-29-merge-0.2.0-rc.2-linux-desktop.md](../.agents/notes/implemented/architecture/2026-09-29-merge-0.2.0-rc.2-linux-desktop.md)
+- [2026-09-28-merge-0.2.0-rc.1-linux-desktop.md](../.agents/notes/implemented/architecture/2026-09-28-merge-0.2.0-rc.1-linux-desktop.md)
 
 ### 7. 提升桌面版本号
 
@@ -177,7 +177,7 @@ git push origin merge/upstream-<version>
 
 ### Q: 上游重构了 fork 修改的文件
 
-参考 [.github/sync-forked-paths.txt](.github/sync-forked-paths.txt) 中该文件的注释，判断 fork 的改动是否仍需要。如果上游已修复 fork 的问题，可以放弃 fork 改动；否则重新应用。在合并 Agent Note 中记录决策。
+参考 [.github/sync-forked-paths.txt](sync-forked-paths.txt) 中该文件的注释，判断 fork 的改动是否仍需要。如果上游已修复 fork 的问题，可以放弃 fork 改动；否则重新应用。在合并 Agent Note 中记录决策。
 
 ### Q: `vitest run apps/desktop/tests` 有失败
 

@@ -53,7 +53,7 @@ fork 发版管线在功能上与上游等价；更新源与签名链路不同（
 
 fork 已完成多次上游合并（0.1.6-alpha.2 / 0.1.7-rc.1 / 0.1.7-rc.2 / 0.2.0-rc.1 / 0.2.0-rc.2），裁剪清单是合并核心工具，每次合并都有 Agent Note 记录冲突决策。
 
-优化方向：裁剪清单完整性自动验证（`package-deb-test.yml` 中校验清单内文件不存在）、行为修改的可追踪基线（`sync-forked-paths.txt`）、pairing hash 自动 re-record、合并运行清单文档化。
+优化方向：裁剪清单完整性自动验证（`package-deb-test.yml` 中校验清单内文件不存在）、行为修改的可追踪基线（`sync-forked-paths.txt`）、pairing hash 自动 re-record。合并运行清单位于 `.github/MERGE_UPSTREAM.md`，Linux 打包指南位于 `apps/desktop/LINUX_PACKAGING.md`。
 
 ## Alternatives considered
 

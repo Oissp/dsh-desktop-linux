@@ -53,7 +53,7 @@ The fork's release pipeline is functionally equivalent to upstream's; only the u
 
 The fork has completed several upstream merges (0.1.6-alpha.2 / 0.1.7-rc.1 / 0.1.7-rc.2 / 0.2.0-rc.1 / 0.2.0-rc.2); the trim list is the core merge toolatead, and each merge has an Agent Note recording the conflict decisions.
 
-Improvement directions: automatic trim-list completeness verification (check in `package-deb-test.yml` that trimmed files are absent), a machine-readable baseline for behavior modifications (`sync-forked-paths.txt`), automatic pairing-hash re-record, and a documented merge runbook.
+Improvement directions: automatic trim-list completeness verification (check in `package-deb-test.yml` that trimmed files are absent), a machine-readable baseline for behavior modifications (`sync-forked-paths.txt`), and automatic pairing-hash re-record. The merge runbook lives at `.github/MERGE_UPSTREAM.md` and the Linux packaging guide at `apps/desktop/LINUX_PACKAGING.md`.
 
 ## Alternatives considered
 
