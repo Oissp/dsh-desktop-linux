@@ -19,6 +19,12 @@ const mainProcessImports = { packages: new Set(['electron', ...Object.keys(manif
  * (Electron: Process Sandboxing, "Preload scripts").
  */
 const preloadImports = { packages: new Set(['electron', 'events', 'timers', 'url']), nodeBuiltins: false }
+/**
+ * The command-management worker runs with the bare packaged runtime Node (not Electron),
+ * from a single copied file in runtime/cli/, so it must be self-contained: only Node
+ * builtins resolve; every workspace and third-party dependency is inlined.
+ */
+const workerImports = { packages: new Set(), nodeBuiltins: true }
 
 const REPOSITORY_ROOT = fileURLToPath(new URL('../..', import.meta.url))
 
@@ -34,7 +40,7 @@ const clientVersionDefine = { 'process.env.DSH_CLIENT_VERSION': JSON.stringify(c
 
 export default defineConfig([
   {
-    entry: ['lib/types/main.js', 'lib/types/command-manager-entry.js'],
+    entry: ['lib/types/main.js'],
     plugins: [packagedImportsPlugin(mainProcessImports)],
     define: clientVersionDefine,
     onSuccess: async () => {
@@ -71,6 +77,22 @@ export default defineConfig([
     outDir: 'lib',
     format: ['esm'],
     platform: 'node',
+    target: 'es2024',
+    fixedExtension: false,
+    dts: false,
+    clean: false,
+    deps: { neverBundle: ['electron'] },
+  },
+  {
+    // Command-management worker: prepare-runtime.ts copies this single file to
+    // runtime/cli/command-manager.js and it runs under the bare runtime Node, so the
+    // bundle must not split into a shared chunk that would not be shipped alongside it.
+    entry: { 'command-manager-entry': 'lib/types/command-manager-entry.js' },
+    plugins: [packagedImportsPlugin(workerImports)],
+    outDir: 'lib',
+    format: 'esm' as const,
+    codeSplitting: false,
+    platform: 'node' as const,
     target: 'es2024',
     fixedExtension: false,
     dts: false,

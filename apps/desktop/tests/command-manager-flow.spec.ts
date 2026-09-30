@@ -26,8 +26,9 @@ vi.mock('node:child_process', async (importOriginal) => {
       if (file === 'pkexec') {
         // Exercise pkexec's real stdout/error transport without authorizing an OS mutation.
         if (external.cancelAuthorization) {
-          const error = new Error('Request dismissed') as Error & { code: string }
-          error.code = '126'
+          // Node reports a non-zero execFile exit as a numeric error.code; pkexec cancels with 126.
+          const error = new Error('Request dismissed') as Error & { code: number }
+          error.code = 126
           throw error
         }
         return execute(args[1]!, args.slice(2), options)
@@ -135,7 +136,7 @@ it('keeps confirmation when repairing a command shadowed by another installation
   expect(await f.calls()).toEqual([{ operation: 'inspect' }])
 })
 
-it.skipIf(process.platform !== 'darwin')('keeps a declined worker response through the AppleScript transport', async () => {
+it.skipIf(process.platform === 'win32')('keeps a declined worker response through the elevated transport', async () => {
   const f = await fixture({ failure: 'ESTALE', elevate: true })
   f.show.mockResolvedValue({ response: 0, checkboxChecked: false })
   await f.manager.show()
@@ -144,7 +145,7 @@ it.skipIf(process.platform !== 'darwin')('keeps a declined worker response throu
   expect(f.show.mock.lastCall![0]).toMatchObject({ message: en.cliCommandChanged, technicalDetails: 'worker declined' })
 })
 
-it.skipIf(process.platform !== 'darwin')('returns without an error dialog when administrator authorization is cancelled', async () => {
+it.skipIf(process.platform === 'win32')('returns without an error dialog when administrator authorization is cancelled', async () => {
   const f = await fixture({ elevate: true })
   external.cancelAuthorization = true
   f.show.mockResolvedValue({ response: 0, checkboxChecked: false })
