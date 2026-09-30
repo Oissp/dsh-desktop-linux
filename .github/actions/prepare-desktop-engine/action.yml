@@ -16,7 +16,10 @@ description: Restore, build, and save the cached dsh engine and Electron runtime
 # 主进程 import 直接失败、窗口不出现（0.1.7-rc.1.2 即为此）。
 #
 # 缓存路径必须覆盖 package-target.ts --builder-only 断言的每一份产物（壳 bundle、
-# Electron 运行时、dsh 运行时清单），缺一份命中缓存时就会直接失败。
+# Electron 运行时、dsh 运行时清单，以及壳 workspace 依赖构建出的 vendor/cordis/lib、
+# packages/api/gateway/lib——--builder-only 会用 createRequire.resolve 解析 main.js 的
+# 裸导入），缺一份命中缓存时就会直接失败。即使是非源码的 apps/desktop 改动（如文档）
+# 命中缓存，也是同一份 main.js 的依赖链，故这些依赖 lib 一并缓存。
 
 runs:
   using: composite
@@ -46,6 +49,8 @@ runs:
           apps/desktop/.desktop-build/targets/linux-x64/electron
           apps/desktop/.desktop-build/targets/linux-x64/runtime
           apps/desktop/.desktop-build/targets/linux-x64/dsh
+          vendor/cordis/lib
+          packages/api/gateway/lib
         key: ${{ steps.engine-key.outputs.key }}
 
     - name: Prepare engine + runtime (linux x64)
@@ -62,4 +67,6 @@ runs:
           apps/desktop/.desktop-build/targets/linux-x64/electron
           apps/desktop/.desktop-build/targets/linux-x64/runtime
           apps/desktop/.desktop-build/targets/linux-x64/dsh
+          vendor/cordis/lib
+          packages/api/gateway/lib
         key: ${{ steps.engine-key.outputs.key }}
