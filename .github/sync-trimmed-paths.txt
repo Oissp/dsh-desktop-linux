@@ -282,39 +282,23 @@ apps/desktop/tests/windows-uninstall-smoke.ps1
 apps/desktop/installer/extract-report.h
 apps/desktop/tests/windows-installer-extract-report.cpp
 
-# ── 0.2.0-rc.2 合并新增裁剪：桌面「管理 dsh 命令」功能 ──
-# 该功能在 main.ts 的菜单里被 gate 为 darwin || win32，prepareDesktopCli() 只接受
-# darwin/win32，两个启动器分别是 macOS app bundle 脚本与 Windows .cmd，Linux 上没有任何
-# 代码路径。fork 只保留其中跨平台的部分：login-shell-environment.ts（POSIX 登录 shell
-# 环境读取，Linux 的 .desktop 启动同样适用）与它依赖的 duration-env.ts。
-# 说明：.agents/notes/implemented/feature/2026-09-27-desktop-cli-runtime.* 作为上游的
-# 决策记录保留（与 Windows 安装包等同类笔记一致），其中对 macOS 运行时缺口的说明与
-# 截图的说明仍然成立。
-apps/desktop/cli/dsh
+# ── 0.2.0-rc.2 「管理 dsh 命令」功能：保留跨平台部分，仅裁剪 mac/win 专有文件 ──
+# fork 已同步该功能的跨平台层（command-installation.ts、command-management.ts、
+# command-manager-entry.ts、desktop-host/src/cli.ts、prepare-cli.ts、cli/dsh Linux 启动器、
+# 对应测试与 expected JSON）。Linux 通过 pkexec 提权写入 /usr/local/bin/dsh，
+# 菜单项集成到托盘菜单（打包 Linux 隐藏顶部菜单栏）。
+# 以下仅裁剪 macOS/Windows 专有文件：macOS 的 link-entry.c（linkat helper，Linux 不需要）、
+# Windows 的 dsh.cmd/command-path.ps1/windows-cli-signals.ts（Koffi 控制台信号）。
 apps/desktop/cli/dsh.cmd
 apps/desktop/cli/link-entry.c
-apps/desktop-host/src/cli.ts
 apps/desktop-host/src/windows-cli-signals.ts
 apps/desktop/scripts/command-path.ps1
-apps/desktop/scripts/prepare-cli.ts
 apps/desktop/scripts/prepare-command-link.ts
-apps/desktop/src/command-installation.ts
-apps/desktop/src/command-management.ts
-apps/desktop/src/command-manager-entry.ts
 apps/desktop/tests/cli-launcher.spec.ts
-apps/desktop/tests/command-installation.spec.ts
-apps/desktop/tests/command-management.spec.ts
-apps/desktop/tests/command-manager-flow.spec.ts
 apps/desktop/tests/command-path.spec.ts
 apps/desktop/tests/windows-cli-signals.spec.ts
 apps/desktop/tests/fixtures/cli-console-probe.cpp
 apps/desktop/tests/fixtures/command-path.ps1
-apps/desktop/tests/expected/command-management-darwin-en-US.json
-apps/desktop/tests/expected/command-management-darwin-zh-CN.json
-apps/desktop/tests/expected/command-management-win32-en-US.json
-apps/desktop/tests/expected/command-management-win32-zh-CN.json
-apps/desktop/tests/expected/command-repair-en-US.json
-apps/desktop/tests/expected/command-repair-zh-CN.json
 
 # 同批到达的 macOS entitlements 与上传管线新增文件
 apps/desktop/scripts/node-x64-entitlements.plist

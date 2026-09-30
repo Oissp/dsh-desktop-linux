@@ -719,6 +719,7 @@ describe('desktop main startup', () => {
       expect.objectContaining({ label: en.showWindow }),
       { type: 'separator' },
       expect.objectContaining({ label: en.checkUpdatesMenu }),
+      expect.objectContaining({ label: en.cliCommandMenu }),
       { type: 'separator' },
       expect.objectContaining({ role: 'quit' }),
     ])
