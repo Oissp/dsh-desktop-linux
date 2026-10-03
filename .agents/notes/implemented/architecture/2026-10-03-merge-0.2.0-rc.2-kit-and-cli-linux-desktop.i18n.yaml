@@ -1,0 +1,22 @@
+# Bilingual-pair consistency record for 2026-10-03-merge-0.2.0-rc.2-kit-and-cli-linux-desktop.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-10-03-merge-0.2.0-rc.2-kit-and-cli-linux-desktop.md
+/agent-note-second-0-2-0-rc-2-merge-kit-0-1-5-and-the-restored-cli-payload:
+  en: 7ee260976c97a88c
+  zh: 1a426227f9a93d66
+/agent-note-second-0-2-0-rc-2-merge-kit-0-1-5-and-the-restored-cli-payload/problem:
+  en: 775539b83951a02f
+  zh: 9a5d0bd2f6f5a18c
+/agent-note-second-0-2-0-rc-2-merge-kit-0-1-5-and-the-restored-cli-payload/decision:
+  en: 6e7c2301787eeba0
+  zh: 720e3c2c7cd9d523
+/agent-note-second-0-2-0-rc-2-merge-kit-0-1-5-and-the-restored-cli-payload/alternatives-considered:
+  en: af4e40c115640580
+  zh: 73f9e124d6bf63a0
+/agent-note-second-0-2-0-rc-2-merge-kit-0-1-5-and-the-restored-cli-payload/consequences:
+  en: 637519c899104ea8
+  zh: c56b5cca929cc860
+/agent-note-second-0-2-0-rc-2-merge-kit-0-1-5-and-the-restored-cli-payload/testing:
+  en: 3e9adec5fc2ce9b5
+  zh: 44bebd1e07d6f247

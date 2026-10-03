@@ -4,9 +4,7 @@ Status: implemented
 
 English | [中文](2026-09-30-fork-debian-linux-packaging.zh.md)
 
-> Analyzed: `Oissp/dsh-desktop-linux` (fork, origin) ← `deepseek-ai/deepseek-harness` (upstream)
-> Analysis at: HEAD = `0e52b8e076`, desktop `0.2.0-rc.2.2`, engine `0.2.0-rc.2`
-> Upstream relation: fully synced to `639ed01539` (after the 0.2.0-rc.2 merge)
+> Analyzed: `Oissp/dsh-desktop-linux` (fork, origin) ← `deepseek-ai/deepseek-harness` (upstream). Analysis point: desktop `0.2.0-rc.2.2`, engine `0.2.0-rc.2`, fully synced to the upstream `0.2.0-rc.2` release line.
 
 ## Problem
 
@@ -37,7 +35,7 @@ Key mapping:
 
 ## Trim reasonableness
 
-All 276 trimmed paths are justified as "Linux has no equivalent": macOS signing/notarization, Windows EV signing, the COS upload pipeline, the installed-update delta pipeline, and upstream CI workflows. `primary-runtime-lock.json` is retained exceptionally (read directly by `gen-third-party-notices.ts`, avoiding a fork of the generator).
+All 267 trimmed paths are justified as "Linux has no equivalent": macOS signing/notarization, Windows EV signing, the COS upload pipeline, the installed-update delta pipeline, and upstream CI workflows. `primary-runtime-lock.json` is retained exceptionally (read directly by `gen-third-party-notices.ts`, avoiding a fork of the generator).
 
 The desktop-cli files were originally trimmed in the 0.2.0-rc.2 merge (the mac/win launchers are platform-specific), but the cross-platform `login-shell-environment.ts` was kept; they were then restored and adapted for Linux.
 
@@ -51,7 +49,7 @@ The fork's release pipeline is functionally equivalent to upstream's; only the u
 
 ## Upstream merge process
 
-The fork has completed several upstream merges (0.1.6-alpha.2 / 0.1.7-rc.1 / 0.1.7-rc.2 / 0.2.0-rc.1 / 0.2.0-rc.2); the trim list is the core merge toolatead, and each merge has an Agent Note recording the conflict decisions.
+The fork has completed several upstream merges (0.1.6-alpha.2 / 0.1.7-rc.1 / 0.1.7-rc.2 / 0.2.0-rc.1 / 0.2.0-rc.2); the trim list is the core merge tool, and each merge has an Agent Note recording the conflict decisions.
 
 Improvement directions: automatic trim-list completeness verification (check in `package-deb-test.yml` that trimmed files are absent), a machine-readable baseline for behavior modifications (`sync-forked-paths.txt`), and automatic pairing-hash re-record. The merge runbook lives at `.github/MERGE_UPSTREAM.md` and the Linux packaging guide at `apps/desktop/LINUX_PACKAGING.md`.
 

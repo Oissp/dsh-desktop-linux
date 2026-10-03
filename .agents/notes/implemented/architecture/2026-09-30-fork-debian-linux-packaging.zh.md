@@ -4,9 +4,7 @@ Status: implemented
 
 [English](2026-09-30-fork-debian-linux-packaging.md) | 中文
 
-> 分析对象：`Oissp/dsh-desktop-linux`（fork，origin）← `deepseek-ai/deepseek-harness`（upstream）
-> 分析时点：HEAD = `0e52b8e076`，desktop 版本 `0.2.0-rc.2.2`，引擎版本 `0.2.0-rc.2`
-> 与 upstream/master 关系：已完全同步至 `639ed01539`（合并 0.2.0-rc.2 完成后）
+> 分析对象：`Oissp/dsh-desktop-linux`（fork，origin）← `deepseek-ai/deepseek-harness`（upstream）。分析时点：desktop 版本 `0.2.0-rc.2.2`，引擎版本 `0.2.0-rc.2`，已完全同步至上游 `0.2.0-rc.2` 发布线。
 
 ## Problem
 
@@ -37,7 +35,7 @@ fork 采取「最小侵入、最大复用」策略：不重写上游打包核心
 
 ## 裁剪合理性
 
-276 条裁剪路径全部基于「Linux 无等价物」：macOS 签名/公证、Windows EV 签名、COS 上传管线、installed-update 差量更新、上游 CI workflows 等。`primary-runtime-lock.json` 例外保留（`gen-third-party-notices.ts` 直接读取它，避免 forking 生成器）。
+267 条裁剪路径全部基于「Linux 无等价物」：macOS 签名/公证、Windows EV 签名、COS 上传管线、installed-update 差量更新、上游 CI workflows 等。`primary-runtime-lock.json` 例外保留（`gen-third-party-notices.ts` 直接读取它，避免 forking 生成器）。
 
 desktop-cli 相关文件最初在 0.2.0-rc.2 合并时被裁剪（mac/win 启动器是专有的），但保留了跨平台的 `login-shell-environment.ts`；随后恢复并适配到 Linux。
 

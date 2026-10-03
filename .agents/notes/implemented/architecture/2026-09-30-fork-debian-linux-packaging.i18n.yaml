@@ -3,8 +3,8 @@
 # After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-09-30-fork-debian-linux-packaging.md
 /agent-note-fork-debian-linux-packaging:
-  en: 794f025fc517960d
-  zh: 2be81337cba87fcc
+  en: 33e956a9ef0718bf
+  zh: 2283f3c9b34da8ee
 /agent-note-fork-debian-linux-packaging/problem:
   en: db6cb18fc8cc80f0
   zh: aa7ac5fd6711a487
@@ -15,13 +15,13 @@
   en: bc82d920a9cf423e
   zh: 485e92959c5e19f2
 /agent-note-fork-debian-linux-packaging/trim-reasonableness:
-  en: 75f978f66c3aeabb
-  zh: 0d8c8c6031b55506
+  en: 642cd5a01921e5d4
+  zh: f7dea5fa4561ab86
 /agent-note-fork-debian-linux-packaging/ci-release-pipeline:
   en: 9492b916ed016f83
   zh: 431643028753e18e
 /agent-note-fork-debian-linux-packaging/upstream-merge-process:
-  en: 61688564fe4ff3a1
+  en: 4ac576a1fe8937db
   zh: 0b093d0a00a8f7f8
 /agent-note-fork-debian-linux-packaging/alternatives-considered:
   en: 4048d6022b98cc35
