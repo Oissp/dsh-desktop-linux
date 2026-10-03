@@ -6,7 +6,7 @@ Status: implemented
 
 插件管理和原生恢复遵循[共享 Web 薄壳决策](2026-09-10-desktop-web-wrapper.zh.md)。
 
-[Electron 运行时决策](2026-09-11-desktop-electron-node-runtime.zh.md)替代独立上游 Node 可执行文件的选择；本文其他决策仍然适用。
+Desktop 按[当前运行时参考](../../../../apps/desktop/README.zh.md)使用 Electron 作为 Node 运行时；本文其他决策仍然适用。
 
 ## 问题
 
@@ -18,7 +18,7 @@ DeepSeek Harness 需要一个复用 Web UI 的 Electron 桌面应用。该应用
 
 ## 决策
 
-交付小型 Electron 壳和固定版本 pnpm；[运行时决策](2026-09-11-desktop-electron-node-runtime.zh.md)持有可执行文件选择。[薄壳决策](2026-09-10-desktop-web-wrapper.zh.md)负责 Host 启动与传输：私有 Host 运行共享 Web profile runner，Electron 加载其认证 HTTP URL，子进程 IPC 承载生命周期消息。
+交付小型 Electron 壳和固定版本 pnpm；[运行时参考](../../../../apps/desktop/README.zh.md)持有可执行文件选择。[薄壳决策](2026-09-10-desktop-web-wrapper.zh.md)负责 Host 启动与传输：私有 Host 运行共享 Web profile runner，Electron 加载其认证 HTTP URL，子进程 IPC 承载生命周期消息。
 
 Electron 拥有 `.dsh/profiles/desktop` 保留 profile。[内置运行时决策](2026-09-08-desktop-bundled-runtime-and-external-plugins.zh.md)负责核心资源存储、外部插件依赖、共享包链接和 profile 协调。私有 Desktop Host 保持独立于公共 CLI 包，且不会发布到 npm。
 
@@ -71,7 +71,7 @@ Electron 进程生命周期锁是 Desktop 的权威所有者。profile 准备和
 
 Electron 更新只使用一个 `electron-updater` 发布流和签名 `electron-builder` 产物。该版本就是 Desktop 发布版本；不存在独立 dsh manifest、兼容范围或仅更新 dsh 的操作。前台安装会等待正在进行的后台检查，而不会把检查结果复用成安装结果。更新弹窗下载并安装 Electron 产物，然后重启进入新发布。
 
-[立即显示窗口决策](2026-09-09-desktop-immediate-window-and-direct-start.zh.md)负责本地加载页、直接启动 Host 和主窗口恢复。profile 协调遵循[内置运行时决策](2026-09-08-desktop-bundled-runtime-and-external-plugins.zh.md)。
+[立即显示窗口参考](../../../../apps/desktop/README.zh.md)负责本地加载页、直接启动 Host 和主窗口恢复。profile 协调遵循[内置运行时决策](2026-09-08-desktop-bundled-runtime-and-external-plugins.zh.md)。
 
 打包写入 `app-update.yml`，其 `provider: github` 指向独立发布仓库，并传 `--publish never`，electron-builder 自身不上传任何东西；[发版工作流](../../../../.github/workflows/package-deb.yml) 在校验每个产物与频道元数据之后创建 `app-update.yml` 所指的 `v<version>` GitHub Release，且从不删除历史发布。更新频道只由已安装版本决定：协调器不设置 `updater.channel`，electron-updater 于是从版本号的预发布段推导频道，先请求同名频道文件，失败时回落到 electron-builder 的默认 `latest-linux.yml`。NSIS 把 blockmap 嵌入已签名的可执行文件，macOS ZIP 则使用独立 blockmap；两者都让 electron-updater 在平台支持时只下载变化的数据块，而应用替换与本地 pnpm 包操作仍是两个独立操作。
 
@@ -91,7 +91,7 @@ Windows 打包调用强制设置 `ELECTRON_BUILDER_7Z_FILTER=BCJ`。内置的 7-
 
 本地 Windows 安装测试使用显式的 `--unsigned` 打包调用，并执行相同的构建和运行时准备。它清除证书输入，将产物隔离到 `unsigned-artifacts`，并省略更新器配置和发布完成记录。即使父进程环境请求未签名模式，常规打包命令也会显式选择签名模式。这样既能在没有 EV Token 时诊断安装问题，也能防止本地测试产物通过发布上传校验。
 
-Windows 应用替换遵循[目录安装决策](2026-09-11-windows-directory-installation.zh.md)：使用能返回失败状态的命令行工具解压到目标旁边，再在同卷内改名替换完整目录。安装器在暂存期间保留旧目录，正式替换失败时恢复旧目录。注册信息、快捷方式和签名卸载器仍由 electron-builder 持有。
+Windows 应用替换遵循[目录安装参考](../../../../apps/desktop/README.zh.md)：使用能返回失败状态的命令行工具解压到目标旁边，再在同卷内改名替换完整目录。安装器在暂存期间保留旧目录，正式替换失败时恢复旧目录。注册信息、快捷方式和签名卸载器仍由 electron-builder 持有。
 
 打包应用会忽略开发资源和项目环境变量覆盖。只有未打包的 Electron 进程可以替换 pnpm 入口、dsh 资源 或活跃项目。
 

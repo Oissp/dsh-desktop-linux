@@ -1,0 +1,22 @@
+# Bilingual-pair consistency record for 2026-09-30-desktop-cli-linux-sync.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-09-30-desktop-cli-linux-sync.md
+/agent-note-desktop-cli-linux-sync:
+  en: 7736009732251f18
+  zh: aa678e97e3f09733
+/agent-note-desktop-cli-linux-sync/problem:
+  en: 53035d8ac08e5e6b
+  zh: 860c68f2e3e37f2e
+/agent-note-desktop-cli-linux-sync/decision:
+  en: 4240690d8345ec70
+  zh: bb370b8b2fab637f
+/agent-note-desktop-cli-linux-sync/alternatives-considered:
+  en: af4187811eec8af9
+  zh: b55d40c32298f290
+/agent-note-desktop-cli-linux-sync/consequences:
+  en: 9c67ea772868c721
+  zh: bdd03bf91977b923
+/agent-note-desktop-cli-linux-sync/testing:
+  en: cfd921b50a4af668
+  zh: dcbce980e1ed9a35

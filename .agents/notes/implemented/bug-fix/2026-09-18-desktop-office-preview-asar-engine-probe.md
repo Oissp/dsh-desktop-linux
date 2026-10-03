@@ -12,7 +12,7 @@ The kit itself is not the only file involved. `apps/desktop-host/src/office.ts` 
 
 ## Decision
 
-The fork patches the kit rather than waiting for an upstream release. `patches/@deepseek-ai__libreoffice-kit@0.1.2.patch` rewrites the probe to `Boolean(lstatSync(...))` inside a `try`, treating a falsy stat and a throwing stat as absent. The patch is declared in [pnpm-workspace.yaml](../../../../pnpm-workspace.yaml) under `patchedDependencies`, which is what makes pnpm install the patched copy everywhere in the workspace.
+The fork patches the kit rather than waiting for an upstream release. `patches/@deepseek-ai__libreoffice-kit@0.1.5.patch` rewrites the probe to `Boolean(lstatSync(...))` inside a `try`, treating a falsy stat and a throwing stat as absent. The patch is declared in [pnpm-workspace.yaml](../../../../pnpm-workspace.yaml) under `patchedDependencies`, which is what makes pnpm install the patched copy everywhere in the workspace.
 
 The patch only reaches the packaged application because [prepare-dsh.ts](../../../../apps/desktop/scripts/prepare-dsh.ts) carries it: `applyRuntimePatches` copies the repository's patch file and its `patchedDependencies` entry into the temporary build root before the production install, keyed on the `name@version` pairs that appear in the generated lockfile. Without that step the packaged runtime ships the unpatched package even when the repository declares the patch.
 
@@ -22,7 +22,7 @@ The declaration and the file name both carry the kit version, and pnpm records a
 
 ## Alternatives considered
 
-**Wait for upstream to fix the probe.** Rejected: the defect is still present in kit 0.1.2, and upstream's 0.1.7 Office work routes the authoring skills through a standalone CLI process while leaving the sidebar preview resolving the engine inside the Electron process, so the packaged Linux preview stays broken until the probe itself is fixed.
+**Wait for upstream to fix the probe.** Rejected: the defect is still present in kit 0.1.5, and upstream's 0.1.7 Office work routes the authoring skills through a standalone CLI process while leaving the sidebar preview resolving the engine inside the Electron process, so the packaged Linux preview stays broken until the probe itself is fixed.
 
 **Serve the preview through the standalone CLI, as the skills do.** Rejected: the preview is a Host RPC (`officeToPdf.render`) answered in the Electron process, and the CLI path exists to give model-authored Office work a bounded subprocess. Moving the preview onto it changes the RPC and its cancellation behavior, not just the probe.
 
@@ -38,4 +38,4 @@ The patch can be retired when the kit treats a falsy stat as absent, or when the
 
 ## Testing
 
-`pnpm exec vitest run apps/desktop/tests` covers the packaging gate, including `prepare-dsh.spec.ts`, which pins that only patches whose package is installed are carried, that they are declared in the build workspace, and that a version-drifted patch emits a `::warning::`. `core-package-set.spec.ts` pins that `createRuntimeProjectMetadata` carries every patched package's version into the build-root overrides. `packages/document/office-to-pdf/tests` covers the conversion service. The patch itself is verified by reading the resolved package: the workspace must link `@deepseek-ai+libreoffice-kit@0.1.2_patch_hash=*`, and that copy's `installedPackageExists` must be the `Boolean(...)` form. `pnpm run hygiene` regenerates `THIRD_PARTY_NOTICES.md`, which discloses the patched package.
+`pnpm exec vitest run apps/desktop/tests` covers the packaging gate, including `prepare-dsh.spec.ts`, which pins that only patches whose package is installed are carried, that they are declared in the build workspace, and that a version-drifted patch emits a `::warning::`. `core-package-set.spec.ts` pins that `createRuntimeProjectMetadata` carries every patched package's version into the build-root overrides. `packages/document/office-to-pdf/tests` covers the conversion service. The patch itself is verified by reading the resolved package: the workspace must link `@deepseek-ai+libreoffice-kit@0.1.5_patch_hash=*`, and that copy's `installedPackageExists` must be the `Boolean(...)` form. `pnpm run hygiene` regenerates `THIRD_PARTY_NOTICES.md`, which discloses the patched package.

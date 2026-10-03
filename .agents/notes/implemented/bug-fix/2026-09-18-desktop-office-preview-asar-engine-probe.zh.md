@@ -12,7 +12,7 @@ Status: implemented
 
 ## Decision
 
-fork 给 kit 打补丁，而不是等上游发版。`patches/@deepseek-ai__libreoffice-kit@0.1.2.patch` 把探测改写为在 `try` 中执行 `Boolean(lstatSync(...))`，把假值 stat 与抛出的 stat 都视为不存在。补丁在 [pnpm-workspace.yaml](../../../../pnpm-workspace.yaml) 的 `patchedDependencies` 中声明，这正是让 pnpm 在工作区各处安装已打补丁副本的依据。
+fork 给 kit 打补丁，而不是等上游发版。`patches/@deepseek-ai__libreoffice-kit@0.1.5.patch` 把探测改写为在 `try` 中执行 `Boolean(lstatSync(...))`，把假值 stat 与抛出的 stat 都视为不存在。补丁在 [pnpm-workspace.yaml](../../../../pnpm-workspace.yaml) 的 `patchedDependencies` 中声明，这正是让 pnpm 在工作区各处安装已打补丁副本的依据。
 
 补丁之所以能进入打包产物，是因为 [prepare-dsh.ts](../../../../apps/desktop/scripts/prepare-dsh.ts) 携带了它：`applyRuntimePatches` 在正式安装前把仓库的补丁文件及其 `patchedDependencies` 条目复制进临时构建根，并以生成的 lockfile 中出现的 `name@version` 为键筛选。缺少这一步时，即使仓库声明了补丁，打包运行时仍会带上未打补丁的包。
 
@@ -22,7 +22,7 @@ fork 给 kit 打补丁，而不是等上游发版。`patches/@deepseek-ai__libre
 
 ## Alternatives considered
 
-**等上游修好探测。** 否决：该缺陷在 kit 0.1.2 中依然存在，而上游 0.1.7 的 Office 工作只是把创作技能改走独立 CLI 进程，侧边栏预览仍在 Electron 进程内解析引擎，所以在探测本身被修好之前，打包后的 Linux 预览一直是坏的。
+**等上游修好探测。** 否决：该缺陷在 kit 0.1.5 中依然存在，而上游 0.1.7 的 Office 工作只是把创作技能改走独立 CLI 进程，侧边栏预览仍在 Electron 进程内解析引擎，所以在探测本身被修好之前，打包后的 Linux 预览一直是坏的。
 
 **像技能那样让预览也走独立 CLI。** 否决：预览是在 Electron 进程内应答的 Host RPC（`officeToPdf.render`），而 CLI 路径存在的意义是给模型创作的 Office 工作一个受控子进程。把预览搬到那条路径上改变的是 RPC 及其取消行为，而不只是探测。
 
@@ -38,4 +38,4 @@ fork 给 kit 打补丁，而不是等上游发版。`patches/@deepseek-ai__libre
 
 ## Testing
 
-`pnpm exec vitest run apps/desktop/tests` 覆盖打包门禁，其中 `prepare-dsh.spec.ts` 钉住"只携带已安装包的补丁并在构建工作区中声明它们"，并验证版本漂移的补丁会发出 `::warning::`。`core-package-set.spec.ts` 钉住 `createRuntimeProjectMetadata` 把每个被打补丁包的版本带进构建根 override。`packages/document/office-to-pdf/tests` 覆盖转换服务。补丁本身通过读取解析结果验证：工作区必须链接到 `@deepseek-ai+libreoffice-kit@0.1.2_patch_hash=*`，且该副本的 `installedPackageExists` 必须是 `Boolean(...)` 形式。`pnpm run hygiene` 会重新生成 `THIRD_PARTY_NOTICES.md`，其中披露了被打补丁的包。
+`pnpm exec vitest run apps/desktop/tests` 覆盖打包门禁，其中 `prepare-dsh.spec.ts` 钉住"只携带已安装包的补丁并在构建工作区中声明它们"，并验证版本漂移的补丁会发出 `::warning::`。`core-package-set.spec.ts` 钉住 `createRuntimeProjectMetadata` 把每个被打补丁包的版本带进构建根 override。`packages/document/office-to-pdf/tests` 覆盖转换服务。补丁本身通过读取解析结果验证：工作区必须链接到 `@deepseek-ai+libreoffice-kit@0.1.5_patch_hash=*`，且该副本的 `installedPackageExists` 必须是 `Boolean(...)` 形式。`pnpm run hygiene` 会重新生成 `THIRD_PARTY_NOTICES.md`，其中披露了被打补丁的包。
