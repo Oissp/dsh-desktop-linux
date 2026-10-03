@@ -5,7 +5,10 @@
 
 ## 前置条件
 
-- 已配置 `upstream` remote：`git remote add upstream https://github.com/deepseek-ai/deepseek-harness.git`
+- 本仓库的 remote 命名与直觉相反，先核对 `git remote -v`：
+  - `origin` 是**上游引擎仓库** `deepseek-ai/deepseek-harness`——本流程从它取合并源，`git push origin` 会推到上游。
+  - `dsh-desktop-linux` 是**本 fork** `Oissp/dsh-desktop-linux`——分支和 PR 推到这里。
+  下文按这两个名字书写；若你的克隆用了别的名字，先按此对应关系改名再照做。
 - 工作树干净：`git status` 无未提交改动
 - 已运行 `pnpm install`
 
@@ -23,10 +26,10 @@
 ### 1. 获取上游
 
 ```sh
-git fetch upstream --tags
+git fetch origin --tags
 ```
 
-确认上游最新版本号（查看 `upstream/master` 的 `package.json` version 字段）。
+确认上游最新版本号（查看 `origin/master` 的 `package.json` version 字段）。
 
 ### 2. 创建合并分支
 
@@ -38,7 +41,7 @@ git checkout -b merge/upstream-<version>
 ### 3. 执行合并
 
 ```sh
-git merge upstream/master  # 或特定 tag，如 upstream/dsh-v0.2.0-rc.2
+git merge origin/master  # 或特定 tag，如 origin/dsh-v0.2.0-rc.2
 ```
 
 ### 4. 处理冲突
@@ -104,7 +107,7 @@ scripts/verify-sync-pairing-after-merge.sh
 
 ```sh
 # 5a. 裁剪清单完整性
-scripts/verify-sync-trimmed-paths.sh
+scripts/verify-sync-trimmed-paths.sh  # macOS 见下方说明
 
 # 5b. 双语配对
 scripts/verify-sync-pairing-after-merge.sh
@@ -119,7 +122,10 @@ pnpm run lint
 pnpm run test:docs
 
 # 5f. 桌面测试（package-deb gate）
-pnpm exec vitest run apps/desktop/tests
+pnpm exec vitest run apps/desktop/tests  # macOS 见常见问题
+
+# 5g. 包清单与依赖门禁（本 fork 有已知失败，见常见问题）
+pnpm run hygiene
 ```
 
 如果 `test:docs` 中 `translation pairing` 失败，说明配对哈希未修复——重新运行步骤 4d。
@@ -162,7 +168,7 @@ git commit  # 合并提交
 ### 9. 推送并验证 CI
 
 ```sh
-git push origin merge/upstream-<version>
+git push dsh-desktop-linux merge/upstream-<version>
 ```
 
 创建 PR 到 `main`。CI 会运行 `package-deb-test.yml`（含裁剪清单完整性检查）。
@@ -185,6 +191,31 @@ git push origin merge/upstream-<version>
 - **裁剪清单内文件的 spec**：说明清单内文件未被删除（运行步骤 5a）
 - **CI workflow specs 读 `.github/workflows/ci.yml`**：fork 不携带上游 CI workflow，这是已知失败（参见合并笔记）
 - **其他失败**：检查是否由合并引入
+
+### Q: `scripts/verify-sync-trimmed-paths.sh` 在 macOS 上报 `mapfile: command not found`
+
+脚本用了 bash 4+ 的 `mapfile`，而 macOS 自带 bash 3.2。在 Linux CI 上它正常运行，这是 CI 拥有的信号；本地按脚本逻辑等价地检查即可：
+
+```sh
+grep -vE '^\s*#|^\s*$' .github/sync-trimmed-paths.txt | while IFS= read -r path; do
+  if [ -e "$path" ]; then echo "worktree residue: $path"; fi
+  if git ls-files --cached --error-unmatch -- "$path" >/dev/null 2>&1; then echo "staged residue: $path"; fi
+done
+```
+
+无输出即为通过。
+
+### Q: macOS 上 `apps/desktop/tests/command-installation.spec.ts` 加载失败
+
+该 spec 的 `darwin` 分支会 import 被裁剪的 `apps/desktop/scripts/prepare-command-link.ts`，因此在 macOS 上整个套件加载失败。Linux CI 走非 darwin 分支，正常运行并通过。这是既有失败，不是合并引入。
+
+### Q: `pnpm run hygiene` 的 `vendor rescope` 门禁失败
+
+上游改名前的名称 token 仍散落在 13 个文件里（`docs/subsystems/schedule.md`、`packages/client/ui-agent-preset/**` 等）。这些文件与合并无关，且该门禁在 `main` 上以完全相同的结果失败，属于既有失败。
+
+### Q: `pnpm run hygiene` 的 `constraints` 门禁报「expected a package here」
+
+`packages/<group>/<pkg>/` 下只剩 `lib/` 与 `node_modules/`，是更早同步删除的包留下的本地残留（未被 git 跟踪）。删除这些目录或运行 `pnpm run clean` 后恢复。
 
 ### Q: `test:docs` 的 `translation pairing` 失败
 
