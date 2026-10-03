@@ -169,6 +169,16 @@ apps/desktop/tests/README.i18n.yaml
 .agents/notes/implemented/bug-fix/2026-09-14-windows-lock-release-probe.md
 .agents/notes/implemented/bug-fix/2026-09-14-windows-lock-release-probe.zh.md
 .agents/notes/implemented/bug-fix/2026-09-14-windows-lock-release-probe.i18n.yaml
+
+# 上游归档的同一组 Note（归档迁移把 implemented/ 路径换成 archived/ 路径）：
+# 合并时以「重命名 + fork 侧删除」的形式到达，需按归档路径再次删除。
+# 0.2.0-rc.2 同步新增 cos-upload-transport：描述 COS 上传传输，随该管线一并裁剪。
+.agents/notes/archived/architecture/2026-09-16-desktop-cos-upload-transport.md
+.agents/notes/archived/architecture/2026-09-16-desktop-cos-upload-transport.zh.md
+.agents/notes/archived/architecture/2026-09-16-desktop-cos-upload-transport.i18n.yaml
+.agents/notes/archived/bug-fix/2026-09-14-windows-lock-release-probe.md
+.agents/notes/archived/bug-fix/2026-09-14-windows-lock-release-probe.zh.md
+.agents/notes/archived/bug-fix/2026-09-14-windows-lock-release-probe.i18n.yaml
 apps/desktop/tests/expected/desktop-upload-audit.txt
 apps/desktop/tests/expected/upload-credentials-check.txt
 apps/desktop/tests/fixtures/artifact-update-server.mjs

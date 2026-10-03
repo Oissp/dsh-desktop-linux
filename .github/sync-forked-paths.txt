@@ -43,6 +43,13 @@ apps/desktop/scripts/prepare-cli.ts # 接受 'linux' 平台
 apps/desktop/tsdown.config.ts # 恢复 command-manager-entry.js 入口
 apps/desktop/cli/dsh # Linux 启动器（fork 新增，改二进制名）
 apps/desktop-host/src/cli.ts # 从上游恢复（无改动，已跨平台）
+#
+# 上游若再次把 desktop-host 收窄成只有 lib/index.js，以下四处必须保持双入口，
+# 否则启动器执行的 lib/cli.js 不会被构建或发布（见 2026-10-03 合并 Note）：
+#   apps/desktop-host/tsdown.config.ts        入口 ['index', 'cli']
+#   apps/desktop-host/package.json            files 含 lib/cli.js
+#   apps/desktop/src/core-package-set.ts      DESKTOP_HOST_RUNTIME_FILES 含 lib/cli.js
+#   scripts/check-workspace-constraints.ts    该包的文件表含 lib/cli.js
 
 # ── 桌面 README 双语对 ──
 # fork 保持 README 内容与上游一致以减少合并冲突，只改 pairing hash。
