@@ -314,3 +314,29 @@ apps/desktop/tests/fixtures/command-path.ps1
 apps/desktop/scripts/node-x64-entitlements.plist
 apps/desktop/tests/upload-target.spec.ts
 apps/desktop/tests/expected/latest-installer-uploads.json
+
+# ── 0.2.1-alpha.2 合并新增裁剪：Windows 手动打包 CI 与准备脚本 ──
+# 上游新增 windows-package.yml（手动 Windows 打包 workflow，使用专用 self-hosted Windows runner）
+# 及其准备脚本 prepare-windows-ci.mjs（读取 .env.windows、调用 desktop-package-environment.mjs
+# 验证打包环境）和对应测试。fork 仅 Linux + GitHub Releases，全部裁剪。
+# windows-package-workflow.spec.ts 读取 windows-package.yml 并断言 win-x64 目标路径，
+# fork 不携带该 workflow 且不支持 win-x64 目标，一并裁剪。
+.github/workflows/windows-package.yml
+apps/desktop/scripts/prepare-windows-ci.d.mts
+apps/desktop/scripts/prepare-windows-ci.mjs
+apps/desktop/tests/prepare-windows-ci.spec.ts
+scripts/windows-package-workflow.spec.ts
+
+# ── 0.2.1-alpha.2 合并新增裁剪：上游运行时补丁模块与运行时准备测试 ──
+# 上游重构了运行时补丁逻辑（prepare-runtime-patches.ts + runtime-patch-policy.ts），
+# 将补丁分类为 runtime 和 workspace-only 两组，并新增对应测试。fork 的 prepare-dsh.ts
+# 有自己的 applyRuntimePatches 函数（内联在 prepare-dsh.ts 中），不导入上游模块，
+# 上游模块在 fork 中是孤儿代码。
+# runtime-preparation.spec.ts 测试上游重构后的 prepare-runtime.ts，断言 mac-arm64/mac-x64/
+# win-x64 目标和 primary-runtime/dependencies/pnpm 路径结构；fork 的 prepare-runtime.ts
+# 是 Linux-only 实现，使用 ../../../scripts/primary-runtime/prepare.ts 而非上游的
+# prepare-primary-runtime.ts，测试无法通过，一并裁剪。
+apps/desktop/scripts/prepare-runtime-patches.ts
+apps/desktop/scripts/runtime-patch-policy.ts
+apps/desktop/tests/prepare-runtime-patches.spec.ts
+apps/desktop/tests/runtime-preparation.spec.ts
