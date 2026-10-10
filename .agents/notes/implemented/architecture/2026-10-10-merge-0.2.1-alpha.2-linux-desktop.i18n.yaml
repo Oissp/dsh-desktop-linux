@@ -1,0 +1,22 @@
+# Bilingual-pair consistency record for 2026-10-10-merge-0.2.1-alpha.2-linux-desktop.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-10-10-merge-0.2.1-alpha.2-linux-desktop.md
+/agent-note-0-2-1-alpha-2-merge-desktop-packaging-refactor-plan-mode-and-ui-chat-fixes-arrive:
+  en: 6219729196871625
+  zh: c02e2baa429bba98
+/agent-note-0-2-1-alpha-2-merge-desktop-packaging-refactor-plan-mode-and-ui-chat-fixes-arrive/problem:
+  en: f09e72166f571d61
+  zh: f7c59d2e31edd422
+/agent-note-0-2-1-alpha-2-merge-desktop-packaging-refactor-plan-mode-and-ui-chat-fixes-arrive/decision:
+  en: 7b60b0dc16d3f577
+  zh: 6d6821b6ef8fa1ca
+/agent-note-0-2-1-alpha-2-merge-desktop-packaging-refactor-plan-mode-and-ui-chat-fixes-arrive/alternatives-considered:
+  en: 2f706ab6c7cfefe0
+  zh: d7a569c4c83a72cc
+/agent-note-0-2-1-alpha-2-merge-desktop-packaging-refactor-plan-mode-and-ui-chat-fixes-arrive/consequences:
+  en: 416c9ef7e0426aac
+  zh: 6db45f57c8bc8be6
+/agent-note-0-2-1-alpha-2-merge-desktop-packaging-refactor-plan-mode-and-ui-chat-fixes-arrive/testing:
+  en: 414934746b5693fd
+  zh: af99a6ebc814471f
