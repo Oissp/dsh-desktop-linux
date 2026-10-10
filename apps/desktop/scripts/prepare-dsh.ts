@@ -40,7 +40,7 @@ const PACKAGE_SET_ROOT = BUILD_PATHS.packageSet
 // pnpm 与运行时负载冒烟一律跑在目标 Electron 的 Node 模式（ELECTRON_RUN_AS_NODE）下，
 // 与打包后宿主进程的启动方式一致；--expose-internals 是内置加载器的运行前提。
 const NODE = join(BUILD_PATHS.electron, process.platform === 'win32' ? 'electron.exe' : 'electron')
-const PNPM = join(RUNTIME_ROOT, 'pnpm', 'bin', 'pnpm.mjs')
+const PNPM = join(RUNTIME_ROOT, 'primary-runtime', 'dependencies', 'pnpm', 'bin', 'pnpm.mjs')
 
 // Created on first use so importing this module as a library performs no filesystem work.
 let buildRoot: string | undefined

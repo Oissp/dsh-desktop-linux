@@ -3,27 +3,16 @@
 import { execFileSync } from 'node:child_process'
 import { chmodSync, cpSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
-import { dirname, join } from 'node:path'
+import { join } from 'node:path'
 import { downloadArtifact } from '@electron/get'
 import extractZip from 'extract-zip'
 import { preparePrimaryRuntime, smokePrimaryRuntime } from '../../../scripts/primary-runtime/prepare.ts'
+import { readPrimaryRuntime } from '../../../packages/skill/tool-workspace-dependencies/src/index.ts'
 import { prepareDesktopCli } from './prepare-cli.ts'
 import { resolveDesktopBuildTarget, resolveDesktopTargetBuildPaths } from './desktop-build-paths.mjs'
 
 const BUILD_PATHS = resolveDesktopTargetBuildPaths()
 const RUNTIME_ROOT = BUILD_PATHS.runtime
-
-function preparePnpm(): string {
-  const require = createRequire(import.meta.url)
-  const manifestPath = require.resolve('pnpm')
-  const manifest = JSON.parse(readFileSync(manifestPath, 'utf8')) as { version?: unknown }
-  if (typeof manifest.version !== 'string') throw new Error('desktop runtime: pnpm manifest has no version')
-  const packageDir = dirname(manifestPath)
-  const destination = join(RUNTIME_ROOT, 'pnpm')
-  rmSync(destination, { recursive: true, force: true })
-  cpSync(packageDir, destination, { recursive: true })
-  return manifest.version
-}
 
 async function main(): Promise<void> {
   const target = resolveDesktopBuildTarget()
@@ -40,19 +29,20 @@ async function main(): Promise<void> {
   }).trim()
   rmSync(RUNTIME_ROOT, { recursive: true, force: true })
   mkdirSync(RUNTIME_ROOT, { recursive: true })
-  const pnpmVersion = preparePnpm()
+  const desktopVersion = (JSON.parse(readFileSync(join(import.meta.dirname, '..', 'package.json'), 'utf8')) as { version: string }).version
+  await preparePrimaryRuntime({ target, output: RUNTIME_ROOT, cache: BUILD_PATHS.downloads, version: desktopVersion })
+  smokePrimaryRuntime(join(RUNTIME_ROOT, 'primary-runtime'))
+  const { pnpm } = await readPrimaryRuntime(join(RUNTIME_ROOT, 'primary-runtime'))
+  if (pnpm === undefined) throw new Error('desktop runtime: primary-runtime manifest has no pnpm version')
   cpSync(join(import.meta.dirname, 'node-bin'), join(RUNTIME_ROOT, 'bin'), { recursive: true })
   chmodSync(join(RUNTIME_ROOT, 'bin', 'node'), 0o755)
   writeFileSync(join(RUNTIME_ROOT, 'versions.json'), `${JSON.stringify({
     schemaVersion: 1,
     node: nodeVersion,
-    pnpm: pnpmVersion,
+    pnpm,
   }, undefined, 2)}\n`)
   prepareDesktopCli(join(RUNTIME_ROOT, 'cli'), platform)
   cpSync(join(import.meta.dirname, '..', 'lib', 'command-manager-entry.js'), join(RUNTIME_ROOT, 'cli', 'command-manager.js'))
-  const desktopVersion = (JSON.parse(readFileSync(join(import.meta.dirname, '..', 'package.json'), 'utf8')) as { version: string }).version
-  await preparePrimaryRuntime({ target, output: RUNTIME_ROOT, cache: BUILD_PATHS.downloads, version: desktopVersion })
-  smokePrimaryRuntime(join(RUNTIME_ROOT, 'primary-runtime'))
 }
 
 await main()
