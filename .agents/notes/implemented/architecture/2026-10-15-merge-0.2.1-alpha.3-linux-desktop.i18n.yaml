@@ -1,0 +1,22 @@
+# Bilingual-pair consistency record for 2026-10-15-merge-0.2.1-alpha.3-linux-desktop.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-10-15-merge-0.2.1-alpha.3-linux-desktop.md
+/agent-note-0-2-1-alpha-3-merge-desktop-publication-pipeline-trimmed-update-channels-and-cua-arrive:
+  en: 50a9cf7f0dcf63bf
+  zh: 5ad86c4a2a6046f5
+/agent-note-0-2-1-alpha-3-merge-desktop-publication-pipeline-trimmed-update-channels-and-cua-arrive/problem:
+  en: 1c609ffe24dbf899
+  zh: 2e169af4579d35b1
+/agent-note-0-2-1-alpha-3-merge-desktop-publication-pipeline-trimmed-update-channels-and-cua-arrive/decision:
+  en: d783e4580160d289
+  zh: bf5b2d17905655f0
+/agent-note-0-2-1-alpha-3-merge-desktop-publication-pipeline-trimmed-update-channels-and-cua-arrive/alternatives-considered:
+  en: 13b30f75409b590a
+  zh: 1be8611355df530d
+/agent-note-0-2-1-alpha-3-merge-desktop-publication-pipeline-trimmed-update-channels-and-cua-arrive/consequences:
+  en: 6eda749b305a405c
+  zh: 78d6f8b2ec66b454
+/agent-note-0-2-1-alpha-3-merge-desktop-publication-pipeline-trimmed-update-channels-and-cua-arrive/testing:
+  en: 27c42f1a2b56c809
+  zh: 3e5dd3594c5d3821

@@ -3,7 +3,7 @@ import type { AccountClientMetadata } from '@deepseek-ai/dsh-deepseek-account/ty
 import { DesktopMandatoryUpdatePolicy, desktopPolicyPage, resolveDesktopPolicyConfig,
   type DesktopPolicyIdentity, type DesktopPolicyState } from '../src/mandatory-update-policy.ts'
 
-const identity = { platform: 'win32', arch: 'x64', bundledDshVersion: '0.1.5-rc.1' } as const
+const identity = { platform: 'win32', arch: 'x64', channel: 'nightly', bundledDshVersion: '0.1.5-rc.1' } as const
 const client: AccountClientMetadata = { version: '1.2.3', locale: 'zh-CN', timezoneOffsetSeconds: 28_800 }
 const force = { code: 40005, data: { show_content: { title: '<b>Update</b>', detail: 'Required upgrade' },
   desktop_app_link: 'https://downloads.example.com/desktop?os=win' } }

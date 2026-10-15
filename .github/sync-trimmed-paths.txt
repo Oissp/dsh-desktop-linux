@@ -340,3 +340,93 @@ apps/desktop/scripts/prepare-runtime-patches.ts
 apps/desktop/scripts/runtime-patch-policy.ts
 apps/desktop/tests/prepare-runtime-patches.spec.ts
 apps/desktop/tests/runtime-preparation.spec.ts
+
+# ── 0.2.1-alpha.3 合并新增裁剪：Desktop 发布管线（COS 上传 + 多平台发布）──
+# 上游新增完整的 Desktop 发布管线：desktop-publish.yml（COS 发布 workflow）和
+# macos-package.yml（macOS 手动打包 workflow），以及一组发布脚本与测试。
+# fork 的发版由 package-deb.yml 用 gh release 直接创建 Release，不使用 COS 上传或
+# 多平台发布管线。发布脚本导入已裁剪的 desktop-upload-plan.ts 和 desktop-cos.ts，
+# 在 fork 中是孤儿代码。对应测试导入这些已裁剪模块，无法通过，一并裁剪。
+.github/workflows/desktop-publish.yml
+.github/workflows/macos-package.yml
+apps/desktop/scripts/desktop-ci-version.d.mts
+apps/desktop/scripts/desktop-ci-version.mjs
+apps/desktop/scripts/desktop-publication-failure.ts
+apps/desktop/scripts/desktop-publication-summary.ts
+apps/desktop/scripts/desktop-publish-config.ts
+apps/desktop/scripts/desktop-publish-cos.ts
+apps/desktop/scripts/desktop-publish-record.ts
+apps/desktop/scripts/desktop-publish-route.ts
+apps/desktop/scripts/desktop-publish-tag.ts
+apps/desktop/scripts/desktop-publish.ts
+apps/desktop/scripts/desktop-release-store.ts
+apps/desktop/scripts/desktop-rollback.ts
+apps/desktop/scripts/publish-desktop-ci.ts
+apps/desktop/scripts/read-desktop-app-key.mjs
+apps/desktop/scripts/resolve-desktop-publish-ci.ts
+apps/desktop/scripts/resolve-retained-desktop-publish-ci.ts
+apps/desktop/scripts/retain-desktop-ci.ts
+apps/desktop/scripts/rollback-desktop-channel.ts
+apps/desktop/scripts/verify-retained-desktop.ts
+apps/desktop/tests/desktop-package-selection.spec.ts
+apps/desktop/tests/desktop-publication-failure.spec.ts
+apps/desktop/tests/desktop-publication-preflight.spec.ts
+apps/desktop/tests/desktop-publication-summary.spec.ts
+apps/desktop/tests/desktop-publish-config.spec.ts
+apps/desktop/tests/desktop-publish-cos.spec.ts
+apps/desktop/tests/desktop-publish-record.spec.ts
+apps/desktop/tests/desktop-publish-route.spec.ts
+apps/desktop/tests/desktop-publish-tag.spec.ts
+apps/desktop/tests/desktop-publish.spec.ts
+apps/desktop/tests/desktop-release-store.spec.ts
+apps/desktop/tests/desktop-rollback.spec.ts
+apps/desktop/tests/expected/publication-mac-arm64.md
+apps/desktop/tests/expected/publication-production.md
+apps/desktop/tests/expected/publication-win-x64.md
+apps/desktop/tests/read-desktop-app-key.spec.ts
+apps/desktop/tests/retain-desktop-ci.spec.ts
+apps/desktop/tests/shell-file-selection.spec.ts
+
+# ── 0.2.1-alpha.3 合并新增裁剪：macOS/Windows 打包环境配置与文档 ──
+apps/desktop/config/macos-packaging/macos-signing.env.example
+apps/desktop/config/macos-packaging/production.env.example
+apps/desktop/config/macos-packaging/test.env.example
+apps/desktop/config/windows-packaging/production.env.example
+apps/desktop/config/windows-packaging/test.env.example
+apps/desktop/config/windows-packaging/windows-signing.env.example
+apps/desktop/packaging/README.i18n.yaml
+apps/desktop/packaging/README.md
+apps/desktop/packaging/README.zh.md
+apps/desktop/publishing/README.i18n.yaml
+apps/desktop/publishing/README.md
+apps/desktop/publishing/README.zh.md
+apps/desktop/publishing/ci/README.i18n.yaml
+apps/desktop/publishing/ci/README.md
+apps/desktop/publishing/ci/README.zh.md
+apps/desktop/windows-signing/README.i18n.yaml
+apps/desktop/windows-signing/README.md
+apps/desktop/windows-signing/README.zh.md
+
+# ── 0.2.1-alpha.3 合并新增裁剪：macOS/Windows 打包 CI 脚本与签名缓存 ──
+apps/desktop/scripts/macos-runner-service.sh
+apps/desktop/scripts/macos-signature-cache-directory.d.mts
+apps/desktop/scripts/macos-signature-cache-directory.mjs
+apps/desktop/scripts/prepare-macos-ci.mjs
+apps/desktop/scripts/setup-macos-packaging.mjs
+apps/desktop/scripts/setup-windows-packaging.ps1
+apps/desktop/scripts/start-macos-packaging-runner.sh
+apps/desktop/scripts/start-windows-packaging-runner.ps1
+apps/desktop/scripts/verify-published-windows.ps1
+apps/desktop/tests/macos-disk-image-signature.spec.ts
+apps/desktop/tests/macos-package-preset.spec.ts
+apps/desktop/tests/macos-signature-cache-directory.spec.ts
+apps/desktop/tests/windows-package-preset.spec.ts
+
+# ── 0.2.1-alpha.3 合并后裁剪：SSH helper 独立产物 workflow ──
+# 这两个 workflow 编译并发布一个独立的 SSH helper 可执行文件（pkg 打包的 Node
+# 二进制），属于远程 SSH 执行 provider 的可选独立产物，与 deb/AppImage 桌面
+# 打包无关。fork 的 prepare-dsh.ts/prepare-runtime.ts 不引用它，package-deb.yml
+# 不调用它们，且从 fork 建立至今从未运行过。桌面用户如需 SSH 执行能力，从上游
+# Release 获取 helper 即可，fork 无需再发一份相同的二进制。
+.github/workflows/build-exe-for-ssh-helper.yml
+.github/workflows/publish-ssh-helper.yml
