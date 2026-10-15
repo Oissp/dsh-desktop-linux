@@ -11,7 +11,7 @@
 
 import { readFileSync } from 'node:fs'
 import { dirname, relative, resolve } from 'node:path'
-import { anchorCache, findViolations, markdownLinkSourcePaths } from './verify-md-links.ts'
+import { findViolations, markdownLinkCache, markdownLinkSourcePaths } from './verify-md-links.ts'
 
 const root = resolve(import.meta.dirname, '..')
 
@@ -60,13 +60,13 @@ export function trimmedKey(source: string, violation: Pick<Violation, 'url' | 'r
 
 if (process.argv[1] && import.meta.filename === resolve(process.argv[1])) {
   const files = markdownLinkSourcePaths(root)
-  const anchorsOf = anchorCache()
+  const cache = markdownLinkCache()
   const trimmed = new Set([...trimManifest(TRIMMED_PATHS), ...trimManifest(TRIMMED_SECTIONS)])
   const broken: Violation[] = []
   let ignored = 0
   for (const file of files) {
     const source = resolve(root, file)
-    for (const violation of findViolations(source, anchorsOf, root)) {
+    for (const violation of findViolations(source, cache, root)) {
       if (trimmed.has(trimmedKey(source, violation))) ignored += 1
       else broken.push(violation)
     }
