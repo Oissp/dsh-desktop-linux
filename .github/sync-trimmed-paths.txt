@@ -430,3 +430,16 @@ apps/desktop/tests/windows-package-preset.spec.ts
 # Release 获取 helper 即可，fork 无需再发一份相同的二进制。
 .github/workflows/build-exe-for-ssh-helper.yml
 .github/workflows/publish-ssh-helper.yml
+
+# ── 0.2.1-alpha.4 合并新增裁剪：Windows NSIS 目录替换报告头 ──
+# 上游为 Windows 安装器的「目录替换失败」报告新增了 directory-report.h，
+# 与此前同类新增（extract-report.h、uninstall-data.h）一致裁剪：它属于已裁剪的
+# Windows 目录安装器管线，仅被保留的 Windows 专有源码 window-frame.cpp 引用，
+# Linux 构建从不编译它。
+apps/desktop/installer/directory-report.h
+
+# ── 0.2.1-alpha.4 合并新增裁剪：macOS/Windows 打包源分支校验 spec ──
+# 上游为手动打包 workflow 增加「允许测试打包使用仓库分支」时新增了 desktop-package-source.spec.ts，
+# 它读取已裁剪的 macos-package.yml 与 windows-package.yml 并断言其内联校验脚本，在 fork
+# 中两个夹具都不存在。与 scripts/windows-package-workflow.spec.ts 同类，一并裁剪。
+scripts/desktop-package-source.spec.ts

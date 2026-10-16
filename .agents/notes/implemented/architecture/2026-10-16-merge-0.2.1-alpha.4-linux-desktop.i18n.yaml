@@ -1,0 +1,22 @@
+# Bilingual-pair consistency record for 2026-10-16-merge-0.2.1-alpha.4-linux-desktop.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-10-16-merge-0.2.1-alpha.4-linux-desktop.md
+/agent-note-0-2-1-alpha-4-merge-the-plugin-market-arrives-and-linux-containment-hardens:
+  en: 8bdd8615446a0183
+  zh: cc751f3d9c4a4070
+/agent-note-0-2-1-alpha-4-merge-the-plugin-market-arrives-and-linux-containment-hardens/problem:
+  en: cd6bb610557718f1
+  zh: 156bf085017d3463
+/agent-note-0-2-1-alpha-4-merge-the-plugin-market-arrives-and-linux-containment-hardens/decision:
+  en: 29abbfbcd6c8bc70
+  zh: 7405b3e85900bd6b
+/agent-note-0-2-1-alpha-4-merge-the-plugin-market-arrives-and-linux-containment-hardens/alternatives-considered:
+  en: 2f9b715cc0488eeb
+  zh: f95a8b7309372532
+/agent-note-0-2-1-alpha-4-merge-the-plugin-market-arrives-and-linux-containment-hardens/consequences:
+  en: b5c6fe5736c96fdf
+  zh: 2e74f8fb70c09119
+/agent-note-0-2-1-alpha-4-merge-the-plugin-market-arrives-and-linux-containment-hardens/testing:
+  en: 6c350f3211fae823
+  zh: 9ab0eb93fca703b4
