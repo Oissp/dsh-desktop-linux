@@ -1,0 +1,22 @@
+# Bilingual-pair consistency record for 2026-10-16-merge-0.2.1-alpha.5-linux-desktop.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-10-16-merge-0.2.1-alpha.5-linux-desktop.md
+/agent-note-0-2-1-alpha-5-merge-account-notices-slash-menu-refresh-and-publication-hardening-trimmed:
+  en: f3fd9dca51009ab0
+  zh: 3b3c7d2a5e74fe7f
+/agent-note-0-2-1-alpha-5-merge-account-notices-slash-menu-refresh-and-publication-hardening-trimmed/problem:
+  en: b2250b1b0bb177eb
+  zh: 52356742fb92e9d5
+/agent-note-0-2-1-alpha-5-merge-account-notices-slash-menu-refresh-and-publication-hardening-trimmed/decision:
+  en: cfb2fff71ec82dcb
+  zh: 68feb835247c9595
+/agent-note-0-2-1-alpha-5-merge-account-notices-slash-menu-refresh-and-publication-hardening-trimmed/alternatives-considered:
+  en: 15707820015d5738
+  zh: 530abc7cccaa11bc
+/agent-note-0-2-1-alpha-5-merge-account-notices-slash-menu-refresh-and-publication-hardening-trimmed/consequences:
+  en: f9e859b75b44bf69
+  zh: c9411281ee2378af
+/agent-note-0-2-1-alpha-5-merge-account-notices-slash-menu-refresh-and-publication-hardening-trimmed/testing:
+  en: b390e512d06bf3cb
+  zh: f82f1cb601a26965

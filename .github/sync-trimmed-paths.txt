@@ -443,3 +443,30 @@ apps/desktop/installer/directory-report.h
 # 它读取已裁剪的 macos-package.yml 与 windows-package.yml 并断言其内联校验脚本，在 fork
 # 中两个夹具都不存在。与 scripts/windows-package-workflow.spec.ts 同类，一并裁剪。
 scripts/desktop-package-source.spec.ts
+
+# ── 0.2.1-alpha.5 合并新增裁剪：已裁剪发布管线的新增脚本与夹具 ──
+# 上游为 COS 发布管线新增了「发布前拒绝调试产物」的 preflight 脚本、发布资格诊断模块
+# 及其 spec。三者都是 desktop-publish.yml（已裁剪）的构件：preflight 只被该 workflow
+# 调用，资格模块只被已裁剪的 desktop-publish-route.ts 与 publish-desktop-ci.ts 导入，
+# spec 断言该 workflow 的 preflight 步骤。fork 用 package-deb.yml 直接发 Release，
+# 不经过这条管线。cos-* 与 retained-* 快照夹具只被上面裁剪的 desktop-publish-cos.spec.ts
+# 和 retain-desktop-ci.spec.ts 的 toMatchFileSnapshot 使用，一并裁剪。
+apps/desktop/scripts/desktop-publish-qualification.d.mts
+apps/desktop/scripts/desktop-publish-qualification.mjs
+apps/desktop/scripts/preflight-desktop-publish.d.mts
+apps/desktop/scripts/preflight-desktop-publish.mjs
+apps/desktop/tests/desktop-publish-preflight.spec.ts
+apps/desktop/tests/expected/cos-GetObject-denied.json
+apps/desktop/tests/expected/cos-PutObject-denied.json
+apps/desktop/tests/expected/retained-unnotarized.md
+apps/desktop/tests/expected/retained-unsigned.md
+
+# ── 0.2.1-alpha.5 合并新增裁剪：Windows 打包 runner 的 Task Scheduler 脚本与验收脚本 ──
+# 上游新增 windows-runner-task.ps1 / run-windows-runner-task.ps1，用计划任务在本机
+# Windows 交互会话里托管打包 runner；两者只被已裁剪的 .github/workflows/ci.yml 引用，
+# 随附的 windows-signing/README 说明也在裁剪清单内。apps/desktop/tests/windows-runner-task.ps1
+# 是该功能的 Windows 专用验收脚本（非 vitest spec，需在 Windows 上手动运行），
+# 与已裁剪的 tests/windows-package-preset.spec.ts 同类。
+apps/desktop/scripts/windows-runner-task.ps1
+apps/desktop/scripts/run-windows-runner-task.ps1
+apps/desktop/tests/windows-runner-task.ps1
