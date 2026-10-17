@@ -5,15 +5,6 @@ import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import { afterAll, beforeAll, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { inspectFileCommand, installFileCommand, removeFileCommand } from '../src/command-installation.ts'
-// prepare-command-link.ts compiles the macOS linkat helper; it is only available on macOS
-// and only invoked under process.platform === 'darwin' below. Import it lazily so the test
-// suite loads on Linux without the trimmed macOS-only script.
-type PrepareCommandLink = (destination: string, arch: 'arm64' | 'x64', minimumVersion: string) => void
-// prepare-command-link.ts is trimmed on non-darwin; this branch only runs on macOS.
-// A variable path avoids TS2307 module resolution on platforms where the file is absent.
-const commandLinkPath = '../scripts/prepare-command-link.ts'
-const prepareCommandLink: PrepareCommandLink | undefined = process.platform === 'darwin'
-  ? (await import(commandLinkPath) as { prepareCommandLink: PrepareCommandLink }).prepareCommandLink : undefined
 
 const barrier = vi.hoisted(() => ({
   afterRead: undefined as ((path: unknown) => Promise<void>) | undefined,
@@ -54,10 +45,14 @@ async function fixture() {
   return { root, options: { destination: join(root, 'dsh'), launcher, linkHelper: join(compiled, 'link-entry') } }
 }
 
-describe.skipIf(process.platform === 'win32')('macOS command entry ownership', () => {
+// Linux is the only platform this fork packages: prepare-runtime.ts rejects every target but
+// linux-x64, so the shipped application never sees process.platform === 'darwin'. The source's
+// macOS branch links through the linkat helper that cli/link-entry.c compiles, and those two
+// files are trimmed as macOS-packaging-only. Running this suite off Linux would need a helper
+// this fork never builds, so the suite covers the platform the fork actually ships.
+describe.skipIf(process.platform !== 'linux')('command entry ownership', () => {
   beforeAll(async () => {
     compiled = await mkdtemp(join(tmpdir(), 'dsh-command-control-'))
-    if (process.platform === 'darwin' && prepareCommandLink !== undefined) prepareCommandLink(compiled, process.arch === 'arm64' ? 'arm64' : 'x64', '13.0')
   })
   afterAll(async () => { if (compiled !== undefined) await rm(compiled, { recursive: true, force: true }) })
   it('installs and removes only its own link', async () => {
