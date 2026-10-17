@@ -224,3 +224,21 @@ done
 ### Q: 纯 `.N` 版本 bump 需要重新打包吗
 
 不需要重新准备引擎。`package-deb.yml` 的引擎缓存 key 排除了 `apps/desktop/package.json`，纯版本 bump 命中缓存时用 `--builder-only` 跳过引擎准备，直接跑 electron-builder。
+
+### Q: 缓存占用超过 GitHub 10GB 配额怎么办
+
+先按 ref 清理已合并/已关闭 PR 的残留（这些缓存落在 `refs/pull/<n>/merge` 命名空间，PR 结束后没有任何 run 能读到）：
+
+```sh
+gh api repos/Oissp/dsh-desktop-linux/actions/caches --jq \
+  '.actions_caches[]|select(.ref=="refs/pull/<n>/merge")|.key' \
+  | while read -r k; do
+      gh api -X DELETE "repos/Oissp/dsh-desktop-linux/actions/caches?key=$(printf %s "$k" | jq -sRr @uri)&ref=refs/pull/<n>/merge"
+    done
+```
+
+缓存策略本身有三条约束，改动 workflow 时不要退回旧写法：
+
+- **只有 push 构建写缓存。** `pnpm-cache`、`eb-cache` 与引擎缓存都用 `actions/cache/restore` + 单独的 `actions/cache/save`，save 步骤带 `github.event_name == 'push'` 条件。PR 只恢复不写入——否则每个 PR 都会新增约 1GB 死数据，历史上曾累积到 3.4GB。
+- **pnpm store 的 key 带 ISO 周后缀**（`steps.pnpm-week.outputs.week`）。只用 lockfile 哈希做 key 会在每次依赖变动时新增一份约 810MB 的快照且永不淘汰，5 份就吃掉配额的一半。
+- **引擎缓存只在 push 里 save，且 key 排除 `apps/desktop/package.json`。** 这样纯版本 bump 能命中缓存并走 `--builder-only`；同时避免一次 push 上两个 workflow 并行抢写同一 key（后到的报 `another job may be creating this cache`）。
