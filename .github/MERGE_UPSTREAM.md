@@ -205,9 +205,9 @@ done
 
 无输出即为通过。
 
-### Q: macOS 上 `apps/desktop/tests/command-installation.spec.ts` 加载失败
+### Q: macOS 上 `apps/desktop/tests/command-installation.spec.ts` 被跳过
 
-该 spec 的 `darwin` 分支会 import 被裁剪的 `apps/desktop/scripts/prepare-command-link.ts`，因此在 macOS 上整个套件加载失败。Linux CI 走非 darwin 分支，正常运行并通过。这是既有失败，不是合并引入。
+该 spec 覆盖符号链接命令的安装与移除，现在用 `describe.skipIf(process.platform !== 'linux')` 只在 Linux 运行。原因：`src/command-installation.ts` 的 macOS 分支通过 `linkat` helper 建链，而该 helper 的源码 `apps/desktop/cli/link-entry.c` 与编译脚本 `apps/desktop/scripts/prepare-command-link.ts` 都在裁剪清单内（macOS 打包专用）；fork 的 `prepare-runtime.ts` 又硬性拒绝 `linux-x64` 以外的目标，所以出货应用永远不会走到那个分支。Linux CI 完整运行这 17 个用例。若将来需要覆盖 macOS 行为，先恢复这两个文件并让 `prepare-runtime.ts` 接受 darwin 目标。
 
 ### Q: `pnpm run hygiene` 的 `vendor rescope` 门禁失败
 
