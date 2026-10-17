@@ -1,0 +1,22 @@
+# Bilingual-pair consistency record for 2026-10-17-merge-0.2.1-rc.2-linux-desktop.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-10-17-merge-0.2.1-rc.2-linux-desktop.md
+/agent-note-0-2-1-rc-2-merge-deepseek-search-and-fetch-apis-arrive-with-a-temporary-model-label:
+  en: fb5adc5203d3876c
+  zh: a7fd8c9405901465
+/agent-note-0-2-1-rc-2-merge-deepseek-search-and-fetch-apis-arrive-with-a-temporary-model-label/problem:
+  en: 12a11f5c9f3f1fb9
+  zh: d16349ecb99eaaf2
+/agent-note-0-2-1-rc-2-merge-deepseek-search-and-fetch-apis-arrive-with-a-temporary-model-label/decision:
+  en: d3cf725b097cb9ca
+  zh: bd16eb8b1b7795ae
+/agent-note-0-2-1-rc-2-merge-deepseek-search-and-fetch-apis-arrive-with-a-temporary-model-label/alternatives-considered:
+  en: 9a38c6f23e088d21
+  zh: e065aa10a398239f
+/agent-note-0-2-1-rc-2-merge-deepseek-search-and-fetch-apis-arrive-with-a-temporary-model-label/consequences:
+  en: 360dab71df38336e
+  zh: f2b8308d55a1895a
+/agent-note-0-2-1-rc-2-merge-deepseek-search-and-fetch-apis-arrive-with-a-temporary-model-label/testing:
+  en: c74094b05612afd0
+  zh: 70e7fe9e1948246b
