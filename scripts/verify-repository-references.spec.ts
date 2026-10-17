@@ -161,18 +161,29 @@ describe('maintained repository reference policy', () => {
     expect(scanRepositoryReferences(fixture.root)).toEqual([])
   })
 
-  it('excludes only ignored new files, vendored sources, frozen notes, and deleted files', (test) => {
+  it('excludes only ignored new files, vendored sources, frozen notes, the uv lockfile, and deleted files', (test) => {
     const fixture = repository(test)
     fixture.write('.gitignore', 'ignored.md\ntracked-ignore.md\n')
     fixture.write('ignored.md', fixture.commit)
     fixture.write('vendor/project/file.md', `${fixture.commit}\n${organizationUrl}`)
     fixture.write('.agents/notes/archived/process/frozen.md', `${fixture.commit}\n${organizationUrl}`)
+    fixture.write('python/sdk/uv.lock', `${fixture.commit}\n${organizationUrl}`)
     fixture.write('tracked-ignore.md', fixture.commit)
     fixture.git(['add', '--force', 'tracked-ignore.md'])
     unlinkSync(join(fixture.root, 'tracked.md'))
 
     expect(scanRepositoryReferences(fixture.root)).toEqual([
       { file: 'tracked-ignore.md', line: 1, kind: 'commit-hash' },
+    ])
+  })
+
+  it('keeps a nested uv lockfile and a similarly named file in scope', (test) => {
+    const fixture = repository(test)
+    fixture.write('python/sdk/uv.lock.backup', fixture.commit)
+    fixture.write('python/runtime/uv.lock', fixture.commit)
+    expect(scanRepositoryReferences(fixture.root)).toEqual([
+      { file: 'python/runtime/uv.lock', line: 1, kind: 'commit-hash' },
+      { file: 'python/sdk/uv.lock.backup', line: 1, kind: 'commit-hash' },
     ])
   })
 

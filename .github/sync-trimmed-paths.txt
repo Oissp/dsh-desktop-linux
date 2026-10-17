@@ -470,3 +470,27 @@ apps/desktop/tests/expected/retained-unsigned.md
 apps/desktop/scripts/windows-runner-task.ps1
 apps/desktop/scripts/run-windows-runner-task.ps1
 apps/desktop/tests/windows-runner-task.ps1
+
+# ── 0.2.1-rc.1 合并后清理：Windows NSIS 安装器源码整组裁剪 ──
+# 此前多轮同步只裁剪了该目录里「上游新增」的头文件（uninstall-data.h、extract-report.h、
+# directory-report.h）与 uninstall.nsh，留下 window-frame.cpp、其余 .nsh 与 assets，形成
+# 一个半裁剪的 Windows 安装器源码树：window-frame.cpp 仍 include 已被裁剪的三个头文件。
+# 该目录整组只服务 electron-builder 的 NSIS 目标（Windows），入口是已裁剪的
+# windows-package.yml 与 apps/desktop/scripts/electron-builder-config.mjs 的 nsis 块；
+# fork 的 electron-builder.config.mjs 没有任何 nsis 配置，deb/AppImage 打包从不读取、
+# 编译或复制它。整组裁剪后清单自洽，不再留下悬空 include。
+apps/desktop/installer/assets/brand-2x.png
+apps/desktop/installer/assets/brand-dark-2x.png
+apps/desktop/installer/assets/brand-dark.png
+apps/desktop/installer/assets/brand.png
+apps/desktop/installer/assets/uninstaller-sidebar.png
+apps/desktop/installer/drawing.nsh
+apps/desktop/installer/extract-progress.h
+apps/desktop/installer/extract.h
+apps/desktop/installer/lifecycle.nsh
+apps/desktop/installer/pages.nsh
+apps/desktop/installer/path.nsh
+apps/desktop/installer/progress.h
+apps/desktop/installer/strings.nsh
+apps/desktop/installer/theme.nsh
+apps/desktop/installer/window-frame.cpp
