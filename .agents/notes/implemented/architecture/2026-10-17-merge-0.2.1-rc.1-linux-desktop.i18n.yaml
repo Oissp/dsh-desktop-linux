@@ -1,0 +1,22 @@
+# Bilingual-pair consistency record for 2026-10-17-merge-0.2.1-rc.1-linux-desktop.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-10-17-merge-0.2.1-rc.1-linux-desktop.md
+/agent-note-0-2-1-rc-1-merge-engine-release-and-vendor-4-0-5-graduate-no-fork-conflict:
+  en: 1b0509ceb83b7c0b
+  zh: 797144600c070aea
+/agent-note-0-2-1-rc-1-merge-engine-release-and-vendor-4-0-5-graduate-no-fork-conflict/problem:
+  en: 949eedd488b7f1eb
+  zh: f29f5dccc8ee32c3
+/agent-note-0-2-1-rc-1-merge-engine-release-and-vendor-4-0-5-graduate-no-fork-conflict/decision:
+  en: 26ab9d3992b37a86
+  zh: 672fe060443d119b
+/agent-note-0-2-1-rc-1-merge-engine-release-and-vendor-4-0-5-graduate-no-fork-conflict/alternatives-considered:
+  en: f8e5968bc8a12b30
+  zh: bae908573c201a57
+/agent-note-0-2-1-rc-1-merge-engine-release-and-vendor-4-0-5-graduate-no-fork-conflict/consequences:
+  en: 6d146b03af6918a0
+  zh: 2d9ec17dbd956a24
+/agent-note-0-2-1-rc-1-merge-engine-release-and-vendor-4-0-5-graduate-no-fork-conflict/testing:
+  en: f05fde32d84c7f65
+  zh: 3ffae2d79c9ed4c3
