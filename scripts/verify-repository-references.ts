@@ -13,6 +13,11 @@ const organizationUrl = new RegExp(`\\bgithub\\.com/${organization}(?![a-z0-9-])
 const kitRepositoryUrl = new RegExp(`\\bgithub\\.com/${organization}/libreoffice-kit(?:\\.git)?(?=/|[^a-zA-Z0-9_.-]|$)`, 'g')
 const commitCandidate = /(?<![a-z0-9])[\da-f]{7,40}(?![a-z0-9])/gi
 const excludedPrefixes = ['vendor/', '.agents/notes/archived/']
+// uv records each wheel's byte size as a bare decimal integer. A lockfile is generated from
+// package metadata, so a numeric size field is never an authored commit reference; such a value
+// can resolve to a unique commit prefix in a full clone whose history contains the colliding
+// object. A shallow clone hides the collision, so this exception keeps local and CI verdicts equal.
+const excludedFiles = ['python/sdk/uv.lock']
 const gitOutputLimit = 64 * 1024 * 1024
 // One 41-byte line per object; 1.2 million objects produce about 49 MiB.
 const objectListingLimit = 1024 * 1024 * 1024
@@ -28,7 +33,7 @@ export interface RepositoryReference {
 }
 
 function isMaintained(file: string): boolean {
-  return !excludedPrefixes.some(prefix => file.startsWith(prefix))
+  return !excludedFiles.includes(file) && !excludedPrefixes.some(prefix => file.startsWith(prefix))
 }
 
 /**
