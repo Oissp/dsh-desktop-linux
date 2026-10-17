@@ -73,16 +73,36 @@ jobs:
         id: pnpm-store
         run: echo "dir=$(pnpm store path)" >> "$GITHUB_OUTPUT"
 
+      - name: Resolve cache rotation week
+        id: pnpm-week
+        run: echo "week=$(date -u +%G-W%V)" >> "$GITHUB_OUTPUT"
+
       - name: Cache pnpm store
-        uses: actions/cache@v6
+        id: pnpm-cache
+        uses: actions/cache/restore@v6
         with:
           path: ${{ steps.pnpm-store.outputs.dir }}
-          key: ${{ runner.os }}-pnpm-${{ hashFiles('pnpm-lock.yaml') }}
+          # 只用 lockfile 哈希做 key，会在每次依赖变动时新增一份约 810MB 的 store 快照
+          # 且永不淘汰：5 份就吃掉 10GB 配额的一半。加上按 ISO 周滚动的后缀后，旧快照
+          # 不再被新 run 命中、随配额淘汰，同时 restore-keys 仍按前缀复用最近的 store。
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('pnpm-lock.yaml') }}-${{ steps.pnpm-week.outputs.week }}
           restore-keys: |
+            ${{ runner.os }}-pnpm-${{ hashFiles('pnpm-lock.yaml') }}-
             ${{ runner.os }}-pnpm-
 
+      # 只在 push 构建里写入。PR 的缓存落在 refs/pull/<n>/merge 命名空间，PR 合并或
+      # 关闭后没有任何 run 能读到它，每次 PR 白白新增约 1GB 死数据（曾累积到 3.4GB）。
+      # PR 从 main 的缓存恢复即可，写入只由 main 的 push 负责。
+      - name: Save pnpm store
+        if: github.event_name == 'push' && steps.pnpm-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v6
+        with:
+          path: ${{ steps.pnpm-store.outputs.dir }}
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('pnpm-lock.yaml') }}-${{ steps.pnpm-week.outputs.week }}
+
       - name: Cache electron & electron-builder binaries
-        uses: actions/cache@v6
+        id: eb-cache
+        uses: actions/cache/restore@v6
         with:
           path: |
             ~/.cache/electron
@@ -90,6 +110,18 @@ jobs:
           key: ${{ runner.os }}-eb-${{ hashFiles('apps/desktop/electron-builder.config.mjs') }}
           restore-keys: |
             ${{ runner.os }}-eb-
+
+      # 只在 push 构建里写入。PR 的缓存落在 refs/pull/<n>/merge 命名空间，PR 合并或
+      # 关闭后没有任何 run 能读到它，每次 PR 白白新增约 1GB 死数据（曾累积到 3.4GB）。
+      # PR 从 main 的缓存恢复即可，写入只由 main 的 push 负责。
+      - name: Save electron & electron-builder binaries
+        if: github.event_name == 'push' && steps.eb-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v6
+        with:
+          path: |
+            ~/.cache/electron
+            ~/.cache/electron-builder
+          key: ${{ runner.os }}-eb-${{ hashFiles('apps/desktop/electron-builder.config.mjs') }}
 
       - name: Install build prerequisites
         run: |

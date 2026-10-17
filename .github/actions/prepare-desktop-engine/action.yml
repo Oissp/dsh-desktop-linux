@@ -58,8 +58,13 @@ runs:
       shell: bash
       run: pnpm run prepare:desktop:linux:x64
 
+    # Save only from a push build. Branches share one cache namespace but the same key
+    # lives independently per ref, so a pull-request build that saved its own copy could
+    # never hit the push build's entry — it only multiplied the 331 MB copy. PR builds
+    # restore from the main ref and never write, which also removes the save race two
+    # workflows on one push used to lose ("another job may be creating this cache").
     - name: Save engine build cache
-      if: steps.engine-cache.outputs.cache-hit != 'true'
+      if: steps.engine-cache.outputs.cache-hit != 'true' && github.event_name == 'push'
       uses: actions/cache/save@v6
       with:
         path: |
