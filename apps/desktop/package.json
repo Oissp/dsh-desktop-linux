@@ -59,7 +59,7 @@
     "sharp": "0.35.5",
     "tar": "^7.5.0",
     "typescript": "^6.0.3",
-    "vite": "^6.4.3",
+    "vite": "^6.4.4",
     "@deepseek-ai/dsh-client-ui-theme": "workspace:*",
     "@deepseek-ai/dsh-client-shortcuts": "workspace:*",
     "@deepseek-ai/dsh-atomic-write": "workspace:*",
