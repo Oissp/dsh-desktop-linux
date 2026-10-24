@@ -494,3 +494,80 @@ apps/desktop/installer/progress.h
 apps/desktop/installer/strings.nsh
 apps/desktop/installer/theme.nsh
 apps/desktop/installer/window-frame.cpp
+
+# ── 0.2.1-rc.3 合并新增裁剪：Dependabot 配置 ──
+# 上游的 .github/dependabot.yml 在 fork 建立时随上游 CI workflow 一并删除，
+# 但当时没有留下清单条目。它推送的 npm 依赖更新 PR 会直接冲突于 fork 锁定的
+# libreoffice-kit 补丁版本与 Linux-only 打包依赖集。归入裁剪清单以阻止上游把它
+# 再次带回。
+.github/dependabot.yml
+
+# ── 0.2.1-rc.3 合并新增裁剪：上游新增的两个 PR workflow ──
+# 上游把原生 Windows 作业从 ci.yml 拆成 ci-windows.yml、Python 作业拆成 ci-python.yml。
+# fork 只运行 package-deb.yml 与 package-deb-test.yml（ci.yml 早已在裁剪清单内），
+# 这两个新 workflow 同样无法承载：ci-windows.yml 解析并执行本清单内已裁剪的
+# windows-runner-task.ps1 / start-windows-packaging-runner.ps1 / windows-runner-network.ps1
+# 等脚本，ci-python.yml 的 python-runtime 作业 uses 已裁剪的
+# build-exe-for-python-sdk.yml，在 fork 里是无效引用。
+.github/workflows/ci-python.yml
+.github/workflows/ci-windows.yml
+
+# ── 0.2.1-rc.3 合并新增裁剪：Windows 签名并发实验与 token 身份校验 ──
+# 上游新增「签名并发」实验（2026-10-22，PR #6675）：token 公钥身份校验、
+# corpus 准备、受限调度器与操作者实验入口。这组代码全部构建在 fork 早已裁剪的
+# Windows 签名管线上——windows-token-identity.ts 导入已裁剪的 windows-sign.mjs，
+# helpers/windows-signing-corpus.ts 与两个 spec 导入已裁剪的
+# windows-runtime-signature.mjs，windows-signing-concurrency.perf.ts 还导入已裁剪的
+# packaging-run.mjs / windows-signing-stage.mjs / windows-signing-state.mjs /
+# windows-timestamp.mjs / desktop-package-environment.mjs。fork 用 GitHub Releases
+# 发版、从不运行 Windows 签名实验，删除后清单自洽。
+# 保留 apps/desktop/tests/windows-signing-experiment.spec.ts 及其 helper：那是纯 Node
+# 的受限调度单元测试，不依赖任何已裁剪模块，在 Linux 上正常通过。
+apps/desktop/scripts/windows-token-identity.ts
+apps/desktop/scripts/windows-token-public-key.cs
+apps/desktop/scripts/windows-token-public-key.ps1
+apps/desktop/tests/fixtures/windows-token-public-key-fake.cs
+apps/desktop/tests/helpers/windows-signing-corpus.ts
+apps/desktop/tests/windows-runtime-code.spec.ts
+apps/desktop/tests/windows-signing-concurrency.perf.ts
+apps/desktop/tests/windows-signing-concurrency.spec.ts
+apps/desktop/tests/windows-signing-corpus.spec.ts
+apps/desktop/tests/windows-token-identity.spec.ts
+
+# ── 0.2.1-rc.3 合并新增裁剪：Windows 打包 runner 网络监管与优先级验收脚本 ──
+# 上游新增一组 PowerShell/C# 脚本维护自托管 Windows 打包 runner 的网络监管、
+# 无控制台启动器与进程优先级继承，只有已裁剪的 ci-windows.yml 与已裁剪的
+# windows-signing/README 引用它们。与此前裁剪的 windows-runner-task.ps1 同类：
+# fork 在 Linux runner 上构建 deb/AppImage，从不运行它们。tests/ 下的四个 .ps1
+# 是这组脚本的 Windows 验收驱动（非 vitest spec，需在 Windows 上手动运行）。
+apps/desktop/scripts/run-windows-runner-network-process.ps1
+apps/desktop/scripts/windows-packaging-priority.ps1
+apps/desktop/scripts/windows-runner-launcher.cs
+apps/desktop/scripts/windows-runner-network.ps1
+apps/desktop/tests/windows-packaging-priority.ps1
+apps/desktop/tests/windows-runner-launcher.ps1
+apps/desktop/tests/windows-runner-network-process.ps1
+apps/desktop/tests/windows-runner-network.ps1
+
+# ── 0.2.1-rc.3 合并新增裁剪：Windows 打包工作区与安装器渲染验收 ──
+# windows-build-workspace.mjs 为 Windows 打包 workflow 创建 run 专属 checkout，
+# 唯一调用方是已裁剪的 windows-package.yml；scripts/windows-build-workspace.spec.ts
+# 是它的 spec，二者一并裁剪。windows-installer-render.cpp 只被已裁剪的
+# prepare-windows-installer.ps1 当作 NSIS 进度窗口渲染源编译（该管线整组见
+# 0.2.1-rc.1 分组），在 fork 里是孤儿文件。
+apps/desktop/scripts/windows-build-workspace.d.mts
+apps/desktop/scripts/windows-build-workspace.mjs
+apps/desktop/tests/windows-installer-render.cpp
+scripts/windows-build-workspace.spec.ts
+
+# ── 0.2.1-rc.3 合并新增裁剪：未签名本地打包与发布预检 ──
+# 上游新增 --unsigned 本地构建路径：pack-local-packages.ts 为未签名包暂存
+# 本地品牌 tarball，preflight-desktop-publish-local.mjs 在 desktop-publish.yml
+# 的自托管作业里校验发布配置。fork 的 package-target.ts 已裁剪掉 --unsigned
+# 选项、固定走 build:official + release:pack，且 desktop-publish.yml 在裁剪清单内，
+# 两个脚本在 fork 中没有任何调用方；随附 spec 是唯一的引用者，一并裁剪。
+apps/desktop/scripts/pack-local-packages.ts
+apps/desktop/scripts/preflight-desktop-publish-local.d.mts
+apps/desktop/scripts/preflight-desktop-publish-local.mjs
+apps/desktop/tests/desktop-publish-local-preflight.spec.ts
+apps/desktop/tests/pack-local-packages.spec.ts

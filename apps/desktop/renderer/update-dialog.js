@@ -28,7 +28,6 @@ function render(state) {
   responding = false
   view = state
   document.documentElement.lang = state.locale
-  document.body.dataset.surface = state.surface
   document.title = state.title
   document.getElementById('title').textContent = state.message
   document.getElementById('detail').textContent = state.detail
@@ -51,29 +50,6 @@ function render(state) {
   document.getElementById('dialog').scrollTop = 0
   document.body.classList.add('visible')
   document.getElementById('dialog').focus()
-  installCardFit(state)
-}
-// 卡片窗口不跟内容走，短文案会在下方留出一片裸露的白底；量出布局后的实际
-// 高度交给主进程定尺寸。覆盖层本身铺满父窗口，主进程会忽略这个请求。
-// 用 scrollHeight 而不是 getBoundingClientRect().height：main 设了 overflow:auto
-// 和 max-height，getBoundingClientRect 返回的是被 max-height 截断后的高度而非内容
-// 高度，短提示被截断后窗口不会收缩、滚动条不消失。
-let fitted = false
-function installCardFit(state) {
-  if (fitted || state.surface !== 'window') return
-  fitted = true
-  const report = () => {
-    const main = document.getElementById('dialog')
-    if (main.hidden) return
-    void api.resize(Math.ceil(main.scrollHeight)).catch(() => {})
-  }
-  report()
-  if (typeof ResizeObserver === 'function') {
-    const observer = new ResizeObserver(report)
-    observer.observe(document.getElementById('dialog'))
-    window.addEventListener('pagehide', () => { observer.disconnect() }, { once: true })
-  }
-  document.getElementById('technical-details').addEventListener('toggle', report)
 }
 let received = false
 const unsubscribe = api.subscribe(state => { received = true; render(state) })

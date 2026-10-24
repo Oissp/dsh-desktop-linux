@@ -1,0 +1,22 @@
+# Bilingual-pair consistency record for 2026-10-24-merge-0.2.1-rc.3-linux-desktop.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-10-24-merge-0.2.1-rc.3-linux-desktop.md
+/agent-note-0-2-1-rc-3-merge-a-faulty-conflict-resolution-is-repaired-not-merged-forward:
+  en: 43c3a91105df7bcf
+  zh: 3618200df4153edd
+/agent-note-0-2-1-rc-3-merge-a-faulty-conflict-resolution-is-repaired-not-merged-forward/problem:
+  en: 6849c5495162dbfb
+  zh: aa6ec8f468745d40
+/agent-note-0-2-1-rc-3-merge-a-faulty-conflict-resolution-is-repaired-not-merged-forward/decision:
+  en: 68d6edcc2e7d2553
+  zh: 6bf05aa6de5d262e
+/agent-note-0-2-1-rc-3-merge-a-faulty-conflict-resolution-is-repaired-not-merged-forward/alternatives-considered:
+  en: c9889a7fb8cfc29b
+  zh: 11a3bec78201e13b
+/agent-note-0-2-1-rc-3-merge-a-faulty-conflict-resolution-is-repaired-not-merged-forward/consequences:
+  en: 156d9d2ab4921444
+  zh: 2f39936ecc133b86
+/agent-note-0-2-1-rc-3-merge-a-faulty-conflict-resolution-is-repaired-not-merged-forward/testing:
+  en: 681ca35fe8beaf91
+  zh: 1c3d0c94510c5ae8

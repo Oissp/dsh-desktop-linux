@@ -25,20 +25,16 @@ function page(name: string) {
 it.each(['en', 'zh-CN'])('keeps ordinary diagnostics folded, text-only, and keyboard-accessible: %s', async (language) => {
   const p = page('update-dialog')
   const locale = resolveDesktopLocale(language)
-  const state: UpdateDialogView = { revision: 1, locale: locale.id, surface: 'overlay', title: locale.messages.updateFailedTitle,
+  const state: UpdateDialogView = { revision: 1, locale: locale.id, title: locale.messages.updateFailedTitle,
     message: locale.messages.updateStopFailed, detail: '', buttons: [locale.messages.updateAcknowledge], cancelId: 0,
     closeLabel: locale.messages.updateClose, technicalDetailsLabel: locale.messages.updateTechnicalDetails,
     technicalDetails: '<img src=x onerror="window.compromised=true">\nexit 0; shutdown acknowledged false' }
   const respond = vi.fn(async () => {})
   let publish!: (view: UpdateDialogView | null) => void
-  const resize = vi.fn(async () => {})
-  const api: UpdateDialogApi = { status: async () => state, respond, resize,
-    subscribe: (listener) => { publish = listener; return () => {} } }
+  const api: UpdateDialogApi = { status: async () => state, respond, subscribe: (listener) => { publish = listener; return () => {} } }
   Object.defineProperty(p.dom.window, 'dshUpdateDialog', { value: api })
   p.run()
   await expect.poll(() => p.element('dialog').hidden).toBe(false)
-  // 该属性决定 update-dialog.css 是否铺遮罩；丢失它会让卡片窗口重新被涂成灰色。
-  expect(p.document.body.dataset.surface).toBe('overlay')
   const disclosure = p.element('technical-details') as HTMLDetailsElement
   expect(disclosure.hidden).toBe(false)
   expect(disclosure.open).toBe(false)
@@ -60,8 +56,6 @@ it.each(['en', 'zh-CN'])('keeps ordinary diagnostics folded, text-only, and keyb
   expect(respond).not.toHaveBeenCalled()
   p.document.dispatchEvent(new p.dom.window.KeyboardEvent('keydown', { key: 'Escape', cancelable: true }))
   expect(respond).toHaveBeenCalledWith(1, 0)
-  // 覆盖层铺满父窗口，量高度没有意义；只有卡片才需要主进程重新定尺寸。
-  expect(resize).not.toHaveBeenCalled()
   const backdrop = p.document.body
   const dialog = p.element('dialog')
   dialog.scrollTop = 170
@@ -81,36 +75,10 @@ it.each(['en', 'zh-CN'])('keeps ordinary diagnostics folded, text-only, and keyb
   expect(backdrop.classList.contains('visible')).toBe(false)
 })
 
-it('paints the close glyph from the text color so a dark card keeps it visible', () => {
-  const p = page('update-dialog')
-  const glyph = p.element('close').querySelector('svg')
-  expect(glyph).not.toBeNull()
-  const paths = [...glyph!.querySelectorAll('path')]
-  expect(paths.length).toBeGreaterThan(0)
-  // 作为 <img> 引入的图标带固定深色填充，深色卡片上会变成一枚看不见的叉。
-  for (const path of paths) expect(path.getAttribute('fill')).toBe('currentColor')
-})
-
-it('reports its content height on the card surface so the window fits the prompt', async () => {
-  const p = page('update-dialog')
-  const locale = resolveDesktopLocale('zh-CN')
-  const state: UpdateDialogView = { revision: 1, locale: locale.id, surface: 'window', title: locale.messages.updateTitle,
-    message: locale.messages.updateAvailable, detail: '', buttons: [locale.messages.updateDownload], cancelId: 1,
-    closeLabel: locale.messages.updateClose, technicalDetailsLabel: '', technicalDetails: '' }
-  const resize = vi.fn(async (_height: number) => {})
-  const api: UpdateDialogApi = { status: async () => state, respond: vi.fn(async () => {}), resize, subscribe: () => () => {} }
-  Object.defineProperty(p.dom.window, 'dshUpdateDialog', { value: api })
-  p.run()
-  await expect.poll(() => p.element('dialog').hidden).toBe(false)
-  // 固定 320 高的卡片会在短文案下方留出一片裸白底，因此文档量出自己的高度回报主进程。
-  await expect.poll(() => resize.mock.calls.length).toBeGreaterThan(0)
-  expect(resize.mock.calls[0]![0]).toBeTypeOf('number')
-})
-
 it('keeps mandatory diagnostics expandable without clearing the block or authorizing installation', async () => {
   const p = page('mandatory-update')
   const locale = resolveDesktopLocale('zh-CN')
-  const initial: MandatoryUpdateView = { locale, surface: 'window', deferred: false, policy: { blocking: true, checking: false },
+  const initial: MandatoryUpdateView = { locale, deferred: false, policy: { blocking: true, checking: false },
     update: { phase: 'error', failedOperation: 'install', preparationFailure: 'stop-failed', version: '0.1.6-nightly.1',
       message: 'different shell locale', technicalDetails: 'exit 0; shutdown acknowledged false' } }
   const action = vi.fn(async () => {})
@@ -121,7 +89,6 @@ it('keeps mandatory diagnostics expandable without clearing the block or authori
   Object.defineProperty(p.dom.window, 'dshMandatoryUpdate', { value: api })
   p.run()
   await expect.poll(() => p.element('error').textContent).toBe(locale.messages.updateStopFailed)
-  expect(p.document.body.dataset.surface).toBe('window')
   const disclosure = p.element('technical-details') as HTMLDetailsElement
   expect(disclosure.open).toBe(false)
   expect(disclosure.hidden).toBe(false)
@@ -162,7 +129,7 @@ it('keeps mandatory diagnostics expandable without clearing the block or authori
 
 function mandatoryPage(update: MandatoryUpdateView['update']) {
   const p = page('mandatory-update')
-  const initial: MandatoryUpdateView = { locale: resolveDesktopLocale('zh'), surface: 'window', deferred: false,
+  const initial: MandatoryUpdateView = { locale: resolveDesktopLocale('zh'), deferred: false,
     policy: { blocking: true, checking: false, title: '需要更新', page: 'https://downloads.example.com/desktop' }, update }
   const action = vi.fn(async () => {})
   let publish!: (view: MandatoryUpdateView) => void
@@ -252,7 +219,7 @@ it('renders server markup literally in a dedicated safety case', async () => {
 it.each(['en', 'zh-CN'])('records mandatory update guidance and actions across its states: %s', async (language) => {
   const p = page('mandatory-update')
   const locale = resolveDesktopLocale(language)
-  const base: MandatoryUpdateView = { locale, surface: 'window', deferred: false, policy: { blocking: true, checking: false,
+  const base: MandatoryUpdateView = { locale, deferred: false, policy: { blocking: true, checking: false,
     page: 'https://example.invalid/download' }, update: { phase: 'available', version: '0.1.7-alpha.2' } }
   let publish!: (view: MandatoryUpdateView) => void
   const api: MandatoryUpdateApi = { status: async () => base, action: async () => {},
@@ -275,4 +242,20 @@ it.each(['en', 'zh-CN'])('records mandatory update guidance and actions across i
       .map(id => [id, p.element(id).textContent]))
   })
   await expect(JSON.stringify(snapshots, null, 2) + '\n').toMatchFileSnapshot(`./expected/update-guidance-${language}.json`)
+})
+
+it.each(['en', 'zh-CN'])('shows fullscreen recovery guidance directly in the mandatory update page: %s', async (language) => {
+  const p = page('mandatory-update')
+  const locale = resolveDesktopLocale(language)
+  const state: MandatoryUpdateView = { locale, deferred: false, policy: { blocking: true, checking: false },
+    update: { phase: 'error', failedOperation: 'install', preparationFailure: 'fullscreen-timeout',
+      version: '0.1.6-nightly.1', message: 'different shell locale' } }
+  const action = vi.fn(async () => {})
+  Object.defineProperty(p.dom.window, 'dshMandatoryUpdate', { value: {
+    status: async () => state, action, subscribe: () => () => {},
+  } satisfies MandatoryUpdateApi })
+  p.run()
+  await expect.poll(() => p.element('error').textContent).toBe(locale.messages.updateFullscreenTimeout)
+  expect((p.element('technical-details') as HTMLDetailsElement).open).toBe(false)
+  expect(action).not.toHaveBeenCalled()
 })
