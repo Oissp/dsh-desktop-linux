@@ -1,20 +1,16 @@
 /** Main-owned update confirmations; closing or replacing a dialog never grants installation permission. */
 import { ipcMain, type BrowserWindow, type IpcMainInvokeEvent, type MessageBoxOptions, type MessageBoxReturnValue } from 'electron'
 import type { DesktopLocale } from './locale.ts'
-import type { DesktopUpdateOverlays } from './update-overlay.ts'
-import { desktopDialogSurface, fitDialogCard, type DesktopDialogSurface } from './update-overlay.ts'
+import type { DesktopUpdateOverlays, DesktopUpdateOverlay } from './update-overlay.ts'
 
 /** Channels available only to the isolated update-dialog document. */
-export const UPDATE_DIALOG_IPC = { status: 'dsh-update-dialog:status', changed: 'dsh-update-dialog:changed', respond: 'dsh-update-dialog:respond',
-  resize: 'dsh-update-dialog:resize' } as const
+export const UPDATE_DIALOG_IPC = { status: 'dsh-update-dialog:status', changed: 'dsh-update-dialog:changed', respond: 'dsh-update-dialog:respond' } as const
 
 /** Text and choices supplied by the main process, never by product documents. */
 export interface UpdateDialogView {
   /** Identifies the displayed choices; a response from an older prompt is rejected. */
   readonly revision: number
   readonly locale: string
-  /** Which surface hosts this document, so the document drops the sheet scrim on an opaque card. */
-  readonly surface: DesktopDialogSurface
   readonly title: string
   readonly message: string
   readonly detail: string
@@ -30,12 +26,10 @@ export interface UpdateDialogOptions extends MessageBoxOptions {
   readonly technicalDetails?: string
 }
 
-/** The document can select only a displayed response index and report its own content height. */
+/** The document can select only a displayed response index. */
 export interface UpdateDialogApi {
   status(): Promise<UpdateDialogView | null>
   respond(revision: number, index: number): Promise<void>
-  /** Ask the card surface to fit this measured document height; ignored on the sheet. */
-  resize(height: number): Promise<void>
   subscribe(listener: (view: UpdateDialogView | null) => void): () => void
 }
 
@@ -46,26 +40,28 @@ const page = 'dsh-app://shell/update-dialog.html'
 export class DesktopUpdateDialog {
   private disposed = false
   private revision = 0
-  private window: BrowserWindow | undefined
+  private view: DesktopUpdateOverlay | undefined
   private parent: BrowserWindow | undefined
   private closing: ReturnType<typeof setTimeout> | undefined
-  private active: { window: BrowserWindow; view: UpdateDialogView; finish: (index: number, retain?: boolean) => void } | undefined
+  private active: { view: UpdateDialogView; finish: (index: number, retain?: boolean) => void } | undefined
 
   /** Focus the current explanation or confirmation without replacing it or granting permission. */
-  focus(): void { this.active?.window.focus() }
+  focus(): void {
+    if (this.active === undefined || this.parent?.isDestroyed() !== false) return
+    this.parent.focus()
+    this.view?.webContents.focus()
+  }
 
   /** Whether a shell prompt is awaiting a response. */
   get isOpen(): boolean { return this.active !== undefined }
 
   /**
    * @param preload - Bundled isolated preload.
-   * @param locale - Shell-owned copy or a reader of the current UI language.
-   * @param overlays - Application-owned overlay creation and input tracking.
-   * @param platform - Platform that hosts the modal, selecting its surface.
+   * @param locale - Reader of the current UI language; read per prompt so a Language change reaches the next one.
+   * @param overlays - Application-owned view creation and input tracking.
    */
-  constructor(private readonly preload: string, private readonly locale: DesktopLocale | (() => DesktopLocale),
-    private readonly overlays: Pick<DesktopUpdateOverlays, 'createPrompt'>,
-    private readonly platform: NodeJS.Platform = process.platform) {
+  constructor(private readonly preload: string, private readonly locale: () => DesktopLocale,
+    private readonly overlays: Pick<DesktopUpdateOverlays, 'create'>) {
     ipcMain.handle(UPDATE_DIALOG_IPC.status, (event) => { this.owned(event); return this.active?.view ?? null })
     ipcMain.handle(UPDATE_DIALOG_IPC.respond, (event, revision: unknown, index: unknown) => {
       this.owned(event)
@@ -77,15 +73,6 @@ export class DesktopUpdateDialog {
       }
       active.finish(index)
     })
-    ipcMain.handle(UPDATE_DIALOG_IPC.resize, (event, height: unknown) => {
-      this.owned(event)
-      const window = this.window
-      if (window === undefined) return
-      if (typeof height !== 'number' || !Number.isFinite(height) || height <= 0) {
-        throw new Error('desktop update: invalid dialog height')
-      }
-      fitDialogCard(window, height, this.platform)
-    })
   }
 
   /**
@@ -94,7 +81,7 @@ export class DesktopUpdateDialog {
    * @returns A displayed response, or cancellation on replacement, abort, close, or load failure; backdrop dismissal fades independently.
    */
   show(parent: BrowserWindow, options: UpdateDialogOptions): Promise<MessageBoxReturnValue> {
-    const locale = typeof this.locale === 'function' ? this.locale() : this.locale
+    const locale = this.locale()
     const buttons = options.buttons ?? [locale.messages.updateAcknowledge]
     const cancelId = options.cancelId ?? buttons.length - 1
     if (this.disposed || options.signal?.aborted === true || parent.isDestroyed()) {
@@ -104,12 +91,11 @@ export class DesktopUpdateDialog {
     this.active?.finish(this.active.view.cancelId, true)
     clearTimeout(this.closing)
     this.closing = undefined
-    const existing = this.window
-    const window = existing ?? this.overlays.createPrompt(parent, this.preload, options.title ?? locale.messages.updateTitle, this.platform)
-    this.window = window
+    const existing = this.view
+    const surface = existing ?? this.overlays.create(parent, this.preload)
+    this.view = surface
     this.parent = parent
-    const view: UpdateDialogView = { revision: ++this.revision, locale: locale.id, surface: desktopDialogSurface(this.platform),
-      title: options.title ?? '', message: options.message,
+    const view: UpdateDialogView = { revision: ++this.revision, locale: locale.id, title: options.title ?? '', message: options.message,
       detail: options.detail ?? '', buttons, cancelId, closeLabel: locale.messages.updateClose,
       technicalDetails: options.technicalDetails ?? '', technicalDetailsLabel: locale.messages.updateTechnicalDetails }
     return new Promise((resolve) => {
@@ -118,20 +104,23 @@ export class DesktopUpdateDialog {
         if (this.active?.view !== view) return
         this.active = undefined
         options.signal?.removeEventListener('abort', abort)
-        if (!retain && !window.isDestroyed()) {
-          window.webContents.send(UPDATE_DIALOG_IPC.changed, null)
+        if (!retain && !surface.webContents.isDestroyed()) {
+          surface.webContents.send(UPDATE_DIALOG_IPC.changed, null)
           this.closing = setTimeout(() => { this.close() }, 150)
         }
         resolve({ response, checkboxChecked: false })
       }
-      this.active = { window, view, finish }
+      this.active = { view, finish }
       options.signal?.addEventListener('abort', abort, { once: true })
-      if (existing !== undefined) { window.webContents.send(UPDATE_DIALOG_IPC.changed, view); return }
-      const failed = (): void => { if (this.window === window) { this.cancel(); this.close() } }
-      window.once('closed', failed)
-      window.webContents.on('will-navigate', (event, url) => { if (url !== page) event.preventDefault() })
-      window.webContents.once('render-process-gone', failed)
-      void window.loadURL(page).catch(failed)
+      if (existing !== undefined) { surface.webContents.send(UPDATE_DIALOG_IPC.changed, view); return }
+      const failed = (): void => { if (this.view === surface) { this.cancel(); this.close() } }
+      surface.webContents.once('destroyed', failed)
+      surface.webContents.once('render-process-gone', failed)
+      surface.webContents.once('preload-error', failed)
+      surface.webContents.on('will-navigate', (event, url) => { if (url !== page) event.preventDefault() })
+      surface.webContents.on('will-redirect', (event) => { event.preventDefault() })
+      surface.webContents.setWindowOpenHandler(() => ({ action: 'deny' }))
+      void surface.loadURL(page).catch(failed)
     })
   }
 
@@ -146,26 +135,21 @@ export class DesktopUpdateDialog {
     this.close()
     ipcMain.removeHandler(UPDATE_DIALOG_IPC.status)
     ipcMain.removeHandler(UPDATE_DIALOG_IPC.respond)
-    ipcMain.removeHandler(UPDATE_DIALOG_IPC.resize)
   }
 
   private close(): void {
     clearTimeout(this.closing)
     this.closing = undefined
-    const window = this.window
-    this.window = undefined
+    const surface = this.view
+    this.view = undefined
     this.parent = undefined
-    if (window !== undefined && !window.isDestroyed()) {
-      // Release Windows modality before destruction so another application cannot become active.
-      if (process.platform === 'win32' && window.isVisible()) window.hide()
-      window.destroy()
-    }
+    surface?.destroy()
   }
 
   private owned(event: IpcMainInvokeEvent): void {
-    const window = this.window
-    if (window === undefined || event.sender !== window.webContents
-      || event.senderFrame !== window.webContents.mainFrame || event.senderFrame.url !== page) {
+    const surface = this.view
+    if (surface === undefined || event.sender !== surface.webContents
+      || event.senderFrame !== surface.webContents.mainFrame || event.senderFrame.url !== page) {
       throw new Error('desktop update: rejected unowned dialog renderer')
     }
   }

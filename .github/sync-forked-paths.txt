@@ -64,3 +64,24 @@ README.zh.md # 同上
 
 # ── 打包配置 ──
 apps/desktop/package.json # version 跟随引擎 + .N 后缀；scripts 只有 linux:x64 目标；无 koffi devDependency
+
+# ── 更新提示的显示期语言读取 ──
+# fork 的托盘菜单可以在不重开窗口的情况下切换界面语言，因此更新提示在显示时
+# 读取当前语言，而不是在构造时捕获一个 DesktopLocale 值：
+#   update-dialog.ts:            构造函数只接受 () => DesktopLocale，show() 内求值
+#   mandatory-update-window.ts:  同一显示期读取方式
+# 对应 spec 跟着改。dialog-resolver 在采用上游 WebContentsView 设计时重新应用了这处改动。
+apps/desktop/src/update-dialog.ts # 构造函数只接受 locale getter，show() 内求值
+apps/desktop/src/mandatory-update-window.ts # 显示期读取当前语言
+apps/desktop/tests/update-dialog.spec.ts # 跟随构造函数签名
+apps/desktop/tests/mandatory-update-window.spec.ts # 跟随显示期语言读取
+
+# ── 合并后与上游不同的其它 fork 修改 ──
+# 补记此前合并已存在、但未列入基线的 fork 改动，便于下次同步识别冲突。
+packages/ptc-runtime/ptc-runtime-node/tsdown.config.ts # deps.alwaysBundle 取代已弃用的 noExternal
+# 包集合选择按“载荷目标”取参，而不是取 fork 唯一构建目标 desktopTargetPlatform 的返回值：
+# fork 把 SUPPORTED_TARGETS 收窄成 linux-x64 后，该返回值类型变成字面量 'linux'/'x64'，
+# 上游新增的 Windows/macOS 目标用例无法通过类型检查。选择逻辑本身与平台无关，因此
+# 改为显式 DesktopPackageTarget，让平台过滤仍可被测试覆盖。
+apps/desktop/scripts/prepare-package-set.ts # 载荷目标用显式 DesktopPackageTarget，不绑定 fork 构建目标
+apps/desktop/tests/prepare-package-set.spec.ts # 保留 Windows/macOS 目标用例

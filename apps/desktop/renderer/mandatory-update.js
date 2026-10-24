@@ -11,7 +11,6 @@ function render(view) {
   if (!view.policy.blocking) return
   const wasConfirming = current?.confirmation !== undefined
   current = view
-  document.body.dataset.surface = view.surface
   const { locale: { id, messages }, policy, update, confirmation, navigation } = view
   const confirming = confirmation !== undefined
   const failed = update.phase === 'error'
@@ -22,6 +21,7 @@ function render(view) {
     'stop-failed': messages.updateStopFailed,
     'tasks-changed': messages.updateTasksChanged,
     'tasks-unavailable': messages.updateTasksUnavailable,
+    'fullscreen-timeout': messages.updateFullscreenTimeout,
   }
   const fallback = failed || update.phase === 'idle' || view.error !== undefined
   let title = policy.title ?? messages.mandatoryTitle

@@ -2,24 +2,24 @@
 # section, a hash of its English and Chinese blocks outside code blocks and generated regions.
 # After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/bug-fix/2026-09-19-linux-shell-prompt-opaque-card.md
-/agent-note-shell-prompt-documents-are-served-and-linux-uses-an-opaque-card:
-  en: c6e75e0b1373b5c8
-  zh: 977c28de58f77f7c
-/agent-note-shell-prompt-documents-are-served-and-linux-uses-an-opaque-card/problem:
-  en: fa3fc8db08b6d1d7
-  zh: 853a141fa4aae2cb
-/agent-note-shell-prompt-documents-are-served-and-linux-uses-an-opaque-card/decision:
-  en: 3b9a7bd80731ce27
-  zh: bac73bf0e58d1ce2
-/agent-note-shell-prompt-documents-are-served-and-linux-uses-an-opaque-card/alternatives-considered:
-  en: 6dea11cb346d78d3
-  zh: 6dd513d856126314
-/agent-note-shell-prompt-documents-are-served-and-linux-uses-an-opaque-card/consequences:
-  en: f26c97335c29b729
-  zh: fa082f7c2f74f9ac
-/agent-note-shell-prompt-documents-are-served-and-linux-uses-an-opaque-card/testing:
-  en: 6b04123a57f90b00
-  zh: d9b26e741e48506b
-/agent-note-shell-prompt-documents-are-served-and-linux-uses-an-opaque-card/related:
-  en: f36e2914a2bcf40e
-  zh: 43f729f19ce38e88
+/agent-note-shell-prompt-documents-are-served-inside-the-product-window:
+  en: 6fa2d4945f5d8cb3
+  zh: 60abef6746b20906
+/agent-note-shell-prompt-documents-are-served-inside-the-product-window/problem:
+  en: 8ea68acf9374acfb
+  zh: 87b75b4b56ae720b
+/agent-note-shell-prompt-documents-are-served-inside-the-product-window/decision:
+  en: 198d206a4feb67ce
+  zh: 9cd94d2f3ee5635d
+/agent-note-shell-prompt-documents-are-served-inside-the-product-window/alternatives-considered:
+  en: 42164f18710a0d01
+  zh: 0a64816eb6d6102f
+/agent-note-shell-prompt-documents-are-served-inside-the-product-window/consequences:
+  en: 4fcf63a8cb973d50
+  zh: f7f83964e4fe1dcb
+/agent-note-shell-prompt-documents-are-served-inside-the-product-window/testing:
+  en: 104bb0333e5d2eab
+  zh: fad3f27dd251f640
+/agent-note-shell-prompt-documents-are-served-inside-the-product-window/related:
+  en: 778df7a1a822335f
+  zh: b2fd4d87a079c59d
