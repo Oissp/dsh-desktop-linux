@@ -14,15 +14,23 @@ name: Package (Debian deb + AppImage)
 #   - 手动 workflow_dispatch（可强制重建当前版本）
 #
 # 幂等：发布仓库中 v<version> release 已存在则跳过发布，避免重复发版。
-# 并发：同一 ref 同时只允许一个打包 run，且不取消进行中的——避免产物被中途杀掉导致残缺。
-# 引擎缓存：build:official + release:pack + prepare:* 的产物只依赖引擎源码（不含壳版本号），
-# 纯 .N 版本 bump 完全不变。把它们缓存起来（key 用 git 只哈希已跟踪源码、排除
-# apps/desktop/package.json），命中时用 package-target.ts --builder-only 跳过准备、直接跑 electron-builder。
+# 并发：与 package-deb-test.yml 共用一个 concurrency group，同一 ref 只允许一个打包 run 且不取消
+# 进行中的——既避免产物被中途杀掉导致残缺，也让同步类 push 的第二个 run 命中第一个的引擎缓存。
+# 引擎缓存：key 由 prepare 消费的全部已跟踪源码的 git blob 哈希算出（见
+# .github/actions/prepare-desktop-engine），其中包含 apps/desktop/package.json —— prepare 既把
+# 壳版本写进 runtime.json，又是唯一构建壳 workspace 依赖 lib/ 的步骤，版本 bump 必须让缓存失效；
+# 因此纯 .N 版本 bump 会重新 prepare，而不是命中缓存。命中缓存时 package-target.ts --builder-only
+# 直接跑 electron-builder。
 
 on:
   push:
     branches: [main]
-    paths: ['package.json', 'apps/desktop/**']
+    # 文档不参与打包；只改文档时不值得跑一遍发版（发布本身幂等，但仍是 15 分钟空跑）。
+    paths:
+      - 'package.json'
+      - 'apps/desktop/**'
+      - '!apps/desktop/docs/**'
+      - '!apps/desktop/**/*.md'
   workflow_dispatch:
     inputs:
       force:
@@ -36,14 +44,19 @@ on:
 permissions:
   contents: read
 
+# 与 package-deb-test.yml 共用同一个 group：上游同步这类 push 同时命中两条 workflow 的路径，
+# 并行时两边都会 miss 引擎缓存、各建一遍，后到的 run 还会抢写同一个 key（曾在 40638071606 /
+# 40638071630 上观测到 "another job may be creating this cache"）。同 group 串行后，后跑的 run
+# 直接命中先跑者保存的缓存。发版 run 永不取消；PR 上按 ref 分组并允许取消。
 concurrency:
-  group: package-deb-${{ github.ref }}
-  cancel-in-progress: false
+  group: package-${{ github.event_name == 'push' && 'main' || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
+  # 依赖树用 pnpm 默认的 isolated linker。需要 hoisted 时必须写 PNPM_CONFIG_NODE_LINKER：
+  # pnpm 只读 pnpm_config_* / PNPM_CONFIG_* 前缀，PNPM_NODE_LINKER 会被静默忽略。
   # 打包必需的反向 DNS 应用 ID。可在仓库 Secret 覆盖（DSH_DESKTOP_APP_ID）。
   DSH_DESKTOP_APP_ID: ${{ secrets.DSH_DESKTOP_APP_ID || 'com.deepseek.harness.desktop' }}
-  PNPM_NODE_LINKER: hoisted
 
 jobs:
   package:
@@ -51,24 +64,24 @@ jobs:
     # 固定 24.04：ubuntu-latest 将自 2026-10-19 起迁移到 Ubuntu 26（runner-images#14748），
     # 打包宿主的 apt 依赖集与 electron-builder 行为先在受控版本上验证，再手动跟进升级。
     runs-on: ubuntu-24.04
+    timeout-minutes: 60
     outputs:
       version: ${{ steps.version.outputs.version }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
           fetch-tags: true
 
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@v7
         with:
-          node-version: 22
+          # 根 engines 要求 >=24.9.0；corepack 也不再随 Node 25 提供。
+          node-version: 24
           package-manager-cache: false
 
-      - name: Enable Corepack & pnpm
-        run: |
-          corepack enable
-          corepack prepare pnpm@11.7.0 --activate
-          pnpm --version
+      # 版本取自根 package.json 的 packageManager 字段，避免与 corepack 的 prepare 版本脱节。
+      - name: Install pnpm
+        uses: pnpm/action-setup@v6
 
       - name: Resolve pnpm store path
         id: pnpm-store
@@ -224,16 +237,17 @@ jobs:
     needs: package
     if: ${{ !cancelled() && needs.package.result == 'success' }}
     runs-on: ubuntu-24.04
+    timeout-minutes: 20
     env:
       RELEASE_REPO: Oissp/dsh-desktop-linux-release
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
           fetch-tags: true
 
       - name: Download artifacts
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: release-assets
           path: release-assets

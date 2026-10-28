@@ -5,14 +5,13 @@ name: Package test (deb only)
 # 发版仍由 package-deb.yml 负责。
 #
 # push 只监听引擎源码路径，与 package-deb.yml 的触发路径（package.json、apps/desktop/**）
-# 互补且不相交：壳改动只跑发版 workflow（它本身包含同样的测试与产物校验，冒烟是冗余的），
-# 引擎改动只跑本冒烟，docs-only 提交两者都不跑。避免同一次 push 双 workflow 并行各建一遍
-# 引擎 —— 两者同时启动，共享的引擎缓存对并行 run 必然双 miss。一次 push 同时触及两边
-# 路径时两者都会跑，属于少数情况。PR 上不做路径过滤：PR 不会触发发版 workflow，
-# 本冒烟是 PR 唯一的打包验证。
+# 互补：壳改动只跑发版 workflow（它本身包含同样的测试与产物校验，冒烟是冗余的），引擎改动只跑
+# 本冒烟，docs-only 提交两者都不跑。上游同步会同时触及两边路径，因此两条 workflow 共用一个
+# concurrency group 串行执行：并行时双方必然同时 miss 引擎缓存、各建一遍引擎，后到的 run 还会
+# 抢写同一个 key。PR 上不做路径过滤：PR 不会触发发版 workflow，本冒烟是 PR 唯一的打包验证。
 #
-# 两个 workflow 共用 ./.github/actions/prepare-desktop-engine，因此共享同一份引擎缓存：
-# 引擎源码不变时（如纯版本 bump），后跑的 run 直接命中。
+# 两个 workflow 共用 ./.github/actions/prepare-desktop-engine，因此共享同一份引擎缓存；key 覆盖
+# prepare 消费的全部已跟踪源码（含 apps/desktop/package.json），串行后后跑的 run 直接命中。
 
 on:
   push:
@@ -38,16 +37,19 @@ on:
 permissions:
   contents: read
 
-# 冒烟可以随时取消：新提交进来时旧的构建没有保留价值。
+# 与 package-deb.yml 共用同一个 group：上游同步这类 push 同时命中两条 workflow 的路径，并行时
+# 两边都会 miss 引擎缓存、各建一遍，后到的 run 还会抢写同一个 key。同 group 串行后，后跑的 run
+# 直接命中先跑者保存的缓存。PR 上按 ref 分组并允许取消（新提交顶掉旧 run）；push 上排队不取消。
 concurrency:
-  group: package-deb-test-${{ github.ref }}
-  cancel-in-progress: true
+  group: package-${{ github.event_name == 'push' && 'main' || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
+  # 依赖树用 pnpm 默认的 isolated linker。需要 hoisted 时必须写 PNPM_CONFIG_NODE_LINKER：
+  # pnpm 只读 pnpm_config_* / PNPM_CONFIG_* 前缀，PNPM_NODE_LINKER 会被静默忽略。
   DSH_DESKTOP_APP_ID: ${{ secrets.DSH_DESKTOP_APP_ID || 'com.deepseek.harness.desktop' }}
   # 只构建 .deb。AppImage 是发版用的 electron-updater 负载，冒烟不需要。
   DSH_DESKTOP_LINUX_FORMATS: deb
-  PNPM_NODE_LINKER: hoisted
 
 jobs:
   deb:
@@ -55,19 +57,19 @@ jobs:
     # 固定 24.04：ubuntu-latest 将自 2026-10-19 起迁移到 Ubuntu 26（runner-images#14748），
     # 打包宿主的 apt 依赖集与 electron-builder 行为先在受控版本上验证，再手动跟进升级。
     runs-on: ubuntu-24.04
+    timeout-minutes: 45
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@v7
         with:
-          node-version: 22
+          # 根 engines 要求 >=24.9.0；corepack 也不再随 Node 25 提供。
+          node-version: 24
           package-manager-cache: false
 
-      - name: Enable Corepack & pnpm
-        run: |
-          corepack enable
-          corepack prepare pnpm@11.7.0 --activate
-          pnpm --version
+      # 版本取自根 package.json 的 packageManager 字段，避免与 corepack 的 prepare 版本脱节。
+      - name: Install pnpm
+        uses: pnpm/action-setup@v6
 
       - name: Resolve pnpm store path
         id: pnpm-store
