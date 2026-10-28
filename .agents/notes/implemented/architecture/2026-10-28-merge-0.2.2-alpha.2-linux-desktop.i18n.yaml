@@ -1,0 +1,22 @@
+# Bilingual-pair consistency record for 2026-10-28-merge-0.2.2-alpha.2-linux-desktop.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-10-28-merge-0.2.2-alpha.2-linux-desktop.md
+/agent-note-0-2-2-alpha-2-merge-the-fork-keeps-its-shell-while-adopting-upstream-s-diagnostics-work:
+  en: bb3532e0153a3f2c
+  zh: d5f165a42574ee76
+/agent-note-0-2-2-alpha-2-merge-the-fork-keeps-its-shell-while-adopting-upstream-s-diagnostics-work/problem:
+  en: 20eeb618e7d74dfe
+  zh: 2682e9d28b76a3ec
+/agent-note-0-2-2-alpha-2-merge-the-fork-keeps-its-shell-while-adopting-upstream-s-diagnostics-work/decision:
+  en: 0d782a1c4a27b3ef
+  zh: 37271e86c93830ac
+/agent-note-0-2-2-alpha-2-merge-the-fork-keeps-its-shell-while-adopting-upstream-s-diagnostics-work/alternatives-considered:
+  en: 402b3fc11a207db6
+  zh: 8bc25ea5d2b5075d
+/agent-note-0-2-2-alpha-2-merge-the-fork-keeps-its-shell-while-adopting-upstream-s-diagnostics-work/consequences:
+  en: 55f239c4824e2e3f
+  zh: 5b8332e862248aee
+/agent-note-0-2-2-alpha-2-merge-the-fork-keeps-its-shell-while-adopting-upstream-s-diagnostics-work/testing:
+  en: 0f2f43decf4c8b39
+  zh: fd0f1be670108b7f
