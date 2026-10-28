@@ -15,6 +15,11 @@ description: Restore, build, and save the cached dsh engine and Electron runtime
 # 版本 bump 命中缓存就会跳过该步骤，产物缺少 node_modules/@deepseek-ai/*/lib，
 # 主进程 import 直接失败、窗口不出现（0.1.7-rc.1.2 即为此）。
 #
+# 测试文件不进入产物：库编译只取各包的 src 与入口 bundle，release:pack 的 files 字段也不含
+# 测试。因此 key 排除 **/*.spec.ts、**/*.spec.tsx 与 **/tests/**，改测试（含 scripts/** 下的
+# spec）仍能命中缓存。代价是：仅改测试的提交命中缓存时不会顺带执行 build:official 的聚合检查，
+# 测试文件的类型错误改由 typecheck 门禁发现。
+#
 # 缓存路径必须覆盖 package-target.ts --builder-only 断言的每一份产物（壳 bundle、
 # Electron 运行时、dsh 运行时清单，以及壳 workspace 依赖构建出的 vendor/cordis/lib、
 # packages/api/gateway/lib——--builder-only 会用 createRequire.resolve 解析 main.js 的
@@ -36,6 +41,7 @@ runs:
           'apps/desktop/src/**' 'apps/desktop/renderer/**' \
           'apps/desktop/scripts/**' apps/desktop/electron-builder.config.mjs \
           apps/desktop/tsdown.config.ts apps/desktop/tsconfig.json \
+          ':(exclude)**/*.spec.ts' ':(exclude)**/*.spec.tsx' ':(exclude)**/tests/**' \
           | git hash-object --stdin-paths \
           | git hash-object --stdin)
         echo "key=${{ runner.os }}-dsh-engine-$KEY" >> "$GITHUB_OUTPUT"
