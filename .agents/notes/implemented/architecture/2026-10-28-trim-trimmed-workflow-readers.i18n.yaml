@@ -1,0 +1,19 @@
+# Bilingual-pair consistency record for 2026-10-28-trim-trimmed-workflow-readers.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-10-28-trim-trimmed-workflow-readers.md
+/agent-note-trim-the-specs-that-read-trimmed-packaging-workflows:
+  en: bd5b89487e0caff1
+  zh: 6e8998ccc05e7d3a
+/agent-note-trim-the-specs-that-read-trimmed-packaging-workflows/problem:
+  en: 59a26e04d2f116c3
+  zh: 086e71b20c2fd7e9
+/agent-note-trim-the-specs-that-read-trimmed-packaging-workflows/decision:
+  en: 0298b82a8d7525bf
+  zh: 94761fb721e02bb4
+/agent-note-trim-the-specs-that-read-trimmed-packaging-workflows/alternatives-considered:
+  en: 00819d1fdd4628a5
+  zh: 5d1b9646f4dddc9d
+/agent-note-trim-the-specs-that-read-trimmed-packaging-workflows/consequences:
+  en: 380d69d0aa30a6e0
+  zh: 17c94517620eb3c1

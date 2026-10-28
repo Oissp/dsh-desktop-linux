@@ -592,3 +592,12 @@ apps/desktop/scripts/desktop-publish-targets.ts
 apps/desktop/tests/desktop-edgeone.spec.ts
 apps/desktop/tests/purge-command.spec.ts
 scripts/desktop-package-forms.spec.ts
+
+# ── 复核修正：读取已裁剪 workflow 的 spec 一并裁剪 ──
+# scripts/macos-package-workflow.spec.ts 读取 macos-package.yml 与 macos-intel-package.yml，
+# scripts/desktop-publish-workflow.spec.ts 读取 desktop-publish.yml；三个 workflow 都在本清单内，
+# 两个 spec 因此在导入阶段就抛 ENOENT，无论上游内容如何都无法加载，而 CI 只运行 apps/desktop/tests。
+# alpha.4 / alpha.5 曾为将来采纳 macOS 打包与发布管线而保留它们；该保留决定由
+# .agents/notes/implemented/architecture/2026-10-28-trim-trimmed-workflow-readers.md 推翻。
+scripts/desktop-publish-workflow.spec.ts
+scripts/macos-package-workflow.spec.ts
