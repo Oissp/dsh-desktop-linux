@@ -41,7 +41,7 @@ permissions:
 # 两边都会 miss 引擎缓存、各建一遍，后到的 run 还会抢写同一个 key。同 group 串行后，后跑的 run
 # 直接命中先跑者保存的缓存。PR 上按 ref 分组并允许取消（新提交顶掉旧 run）；push 上排队不取消。
 concurrency:
-  group: package-${{ github.event_name == 'push' && 'main' || github.ref }}
+  group: package-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
