@@ -76,6 +76,11 @@ apps/desktop/src/mandatory-update-window.ts # 显示期读取当前语言
 apps/desktop/tests/update-dialog.spec.ts # 跟随构造函数签名
 apps/desktop/tests/mandatory-update-window.spec.ts # 跟随显示期语言读取
 
+# ── 策略测试登录窗口的显示期语言读取 ──
+# 与更新提示同理：登录窗口标题在窗口创建时读取当前界面语言，而不是接受一个捕获的 DesktopLocale。
+apps/desktop/src/policy-test-auth.ts # 构造函数只接受 locale getter，窗口打开时求值
+apps/desktop/tests/policy-test-auth.spec.ts # 跟随构造函数签名
+
 # ── 合并后与上游不同的其它 fork 修改 ──
 # 补记此前合并已存在、但未列入基线的 fork 改动，便于下次同步识别冲突。
 packages/ptc-runtime/ptc-runtime-node/tsdown.config.ts # deps.alwaysBundle 取代已弃用的 noExternal
