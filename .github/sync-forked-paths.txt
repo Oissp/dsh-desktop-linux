@@ -85,3 +85,9 @@ packages/ptc-runtime/ptc-runtime-node/tsdown.config.ts # deps.alwaysBundle 取�
 # 改为显式 DesktopPackageTarget，让平台过滤仍可被测试覆盖。
 apps/desktop/scripts/prepare-package-set.ts # 载荷目标用显式 DesktopPackageTarget，不绑定 fork 构建目标
 apps/desktop/tests/prepare-package-set.spec.ts # 保留 Windows/macOS 目标用例
+
+# ── 诊断文档 ──
+# fork 裁剪了 apps/desktop/tests/README 双语对（installed-update/mac/win 管线的一部分），
+# 配对检查因此无法把两个语言侧折叠成同一语义目标。中文页的“本地验证”链接改为指向
+# ../../tests/README.md，与英文页一致；该目标在两种语言里都被裁剪，链接由裁剪清单豁免。
+apps/desktop/docs/diagnostics/README.zh.md # 本地验证链接指向 ../../tests/README.md，与英文页一致

@@ -4,7 +4,7 @@
   "description": "Electron desktop shell for a bundled dsh runtime and external plugins",
   "author": "Oissp <19642615+Oissp@users.noreply.github.com>",
   "homepage": "https://github.com/Oissp/dsh-desktop-linux",
-  "version": "0.2.1-rc.3",
+  "version": "0.2.2-alpha.2",
   "private": true,
   "license": "MIT",
   "type": "module",
@@ -55,8 +55,6 @@
     "pnpm": "11.28.5",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "@types/react": "~18.3.1",
-    "@types/react-dom": "~18.3.0",
     "sharp": "0.35.5",
     "tar": "^7.5.0",
     "typescript": "^6.0.3",
@@ -65,6 +63,8 @@
     "@deepseek-ai/dsh-client-shortcuts": "workspace:*",
     "@deepseek-ai/dsh-atomic-write": "workspace:*",
     "@deepseek-ai/dsh-client-product-analytics": "workspace:*",
+    "@deepseek-ai/dsh-plugin-manager": "workspace:*",
+    "zod": "4.4.3",
     "@deepseek-ai/dsh-util-file-drag": "workspace:*"
   }
 }

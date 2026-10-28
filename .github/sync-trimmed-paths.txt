@@ -571,3 +571,24 @@ apps/desktop/scripts/preflight-desktop-publish-local.d.mts
 apps/desktop/scripts/preflight-desktop-publish-local.mjs
 apps/desktop/tests/desktop-publish-local-preflight.spec.ts
 apps/desktop/tests/pack-local-packages.spec.ts
+
+# ── 0.2.2-alpha.2 合并新增裁剪：上游 PR 合并策略检查、macOS Intel 打包与 EdgeOne 发布 ──
+# 三个 pr-check-*.yml 是上游 master 分支的 pull_request_target 合并策略检查：调用上游组织的
+# deepseek-harness/deepseek-harness-check action 并读取 MERGE_POLICY_* 仓库变量。fork 的默认
+# 分支是 main，既不配置这些变量也不引用该 action，workflow 永不触发。
+# macos-intel-package.yml 是 macOS Intel 手动打包 workflow，与已裁剪的 macos-package.yml 同类；
+# 同批到达的 scripts/desktop-package-forms.spec.ts 读取这三个已裁剪的打包 workflow，一并裁剪。
+# desktop-edgeone.ts 是腾讯云 EdgeOne 发布与安装包清理管线（依赖 tencentcloud-sdk-nodejs-teo），
+# desktop-publish-targets.ts 是上游多平台发布路由表，唯一调用方是已裁剪的 desktop-publish*.mjs；
+# 二者在 fork 中没有任何调用方，随附 spec 是唯一引用者。purge-command.spec.ts 断言 fork 已裁剪的
+# purge:latest 脚本链与 upload-target.ts，无法通过。因此 apps/desktop/package.json 去掉
+# tencentcloud-sdk-nodejs-teo 依赖。
+.github/workflows/macos-intel-package.yml
+.github/workflows/pr-check-after-approve.yml
+.github/workflows/pr-check-on-base-branch.yml
+.github/workflows/pr-check-on-head-branch.yml
+apps/desktop/scripts/desktop-edgeone.ts
+apps/desktop/scripts/desktop-publish-targets.ts
+apps/desktop/tests/desktop-edgeone.spec.ts
+apps/desktop/tests/purge-command.spec.ts
+scripts/desktop-package-forms.spec.ts
