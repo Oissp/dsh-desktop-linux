@@ -49,7 +49,7 @@ permissions:
 # 40638071630 上观测到 "another job may be creating this cache"）。同 group 串行后，后跑的 run
 # 直接命中先跑者保存的缓存。发版 run 永不取消；PR 上按 ref 分组并允许取消。
 concurrency:
-  group: package-${{ github.event_name == 'push' && 'main' || github.ref }}
+  group: package-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:

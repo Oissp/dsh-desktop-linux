@@ -242,4 +242,4 @@ gh api repos/Oissp/dsh-desktop-linux/actions/caches --jq \
 - **只有 push 构建写缓存。** `pnpm-cache`、`eb-cache` 与引擎缓存都用 `actions/cache/restore` + 单独的 `actions/cache/save`，save 步骤带 `github.event_name == 'push'` 条件。PR 只恢复不写入——否则每个 PR 都会新增约 1GB 死数据，历史上曾累积到 3.4GB。
 - **pnpm store 的 key 带 ISO 周后缀**（`steps.pnpm-week.outputs.week`）。只用 lockfile 哈希做 key 会在每次依赖变动时新增一份约 810MB 的快照且永不淘汰，5 份就吃掉配额的一半。
 - **引擎缓存只在 push 里 save，key 由 prepare 消费的全部已跟踪源码哈希（含 `apps/desktop/package.json`）。** 版本 bump 因此会重新 prepare，而不是命中缓存走 `--builder-only`：prepare 既把壳版本写进 `runtime.json`，又是唯一构建壳 workspace 依赖 `lib/` 的步骤，跳过它会产出一个缺依赖的主进程（0.1.7-rc.1.2 即为此）。
-- **两条 workflow 共用一个 concurrency group**（`package-${{ github.event_name == 'push' && 'main' || github.ref }}`），避免上游同步这类同时命中双方路径的 push 并行各建一遍引擎、后到的 run 抢写同一 key（报 `another job may be creating this cache`）。push 上排队不取消，PR 上按 ref 分组并允许取消。
+- **两条 workflow 共用一个 concurrency group**（`package-${{ github.ref }}`：push 与 `workflow_dispatch` 在 main 上都落到 `package-refs/heads/main`，PR 上按各自的 ref 分组），避免上游同步这类同时命中双方路径的 push 并行各建一遍引擎、后到的 run 抢写同一 key（报 `another job may be creating this cache`）。push 上排队不取消，PR 上按 ref 分组并允许取消。
