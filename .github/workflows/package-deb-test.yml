@@ -92,16 +92,6 @@ jobs:
             ${{ runner.os }}-pnpm-${{ hashFiles('pnpm-lock.yaml') }}-
             ${{ runner.os }}-pnpm-
 
-      # 只在 push 构建里写入。PR 的缓存落在 refs/pull/<n>/merge 命名空间，PR 合并或
-      # 关闭后没有任何 run 能读到它，每次 PR 白白新增约 1GB 死数据（曾累积到 3.4GB）。
-      # PR 从 main 的缓存恢复即可，写入只由 main 的 push 负责。
-      - name: Save pnpm store
-        if: github.event_name == 'push' && steps.pnpm-cache.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v6
-        with:
-          path: ${{ steps.pnpm-store.outputs.dir }}
-          key: ${{ runner.os }}-pnpm-${{ hashFiles('pnpm-lock.yaml') }}-${{ steps.pnpm-week.outputs.week }}
-
       - name: Cache electron & electron-builder binaries
         id: eb-cache
         uses: actions/cache/restore@v6
@@ -112,18 +102,6 @@ jobs:
           key: ${{ runner.os }}-eb-${{ hashFiles('apps/desktop/electron-builder.config.mjs') }}
           restore-keys: |
             ${{ runner.os }}-eb-
-
-      # 只在 push 构建里写入。PR 的缓存落在 refs/pull/<n>/merge 命名空间，PR 合并或
-      # 关闭后没有任何 run 能读到它，每次 PR 白白新增约 1GB 死数据（曾累积到 3.4GB）。
-      # PR 从 main 的缓存恢复即可，写入只由 main 的 push 负责。
-      - name: Save electron & electron-builder binaries
-        if: github.event_name == 'push' && steps.eb-cache.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v6
-        with:
-          path: |
-            ~/.cache/electron
-            ~/.cache/electron-builder
-          key: ${{ runner.os }}-eb-${{ hashFiles('apps/desktop/electron-builder.config.mjs') }}
 
       - name: Install build prerequisites
         run: |
@@ -140,6 +118,20 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      # 只在 push 构建里写入。PR 的缓存落在 refs/pull/<n>/merge 命名空间，PR 合并或
+      # 关闭后没有任何 run 能读到它，每次 PR 白白新增约 1GB 死数据（曾累积到 3.4GB）。
+      # PR 从 main 的缓存恢复即可，写入只由 main 的 push 负责。
+      #
+      # 保存必须排在 pnpm install 之后：未命中时 install 之前的 store 是空的，提前保存会把
+      # 空目录写进当周 key，下一个 run 精确命中它、cache-hit 为 true 又跳过保存，于是整周
+      # 都退化成全量下载（0.2.2-alpha.2 合并后的 main run 因此多花了 11 分钟）。
+      - name: Save pnpm store
+        if: github.event_name == 'push' && steps.pnpm-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v6
+        with:
+          path: ${{ steps.pnpm-store.outputs.dir }}
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('pnpm-lock.yaml') }}-${{ steps.pnpm-week.outputs.week }}
 
       # 合并上游后，被裁剪的文件可能被上游重新带回（合并不冲突就会直接进入代码树）。
       # 在测试前验证裁剪清单完整性，确保 mac/win 专有脚本不会进入 fork 代码树。
@@ -158,6 +150,18 @@ jobs:
           # 先摘掉它，避免任何凭据进入产物。
           unset GITHUB_TOKEN
           pnpm run package:desktop:linux:x64:builder
+
+      # 只在 push 构建里写入（PR 的缓存落在 refs/pull/<n>/merge 命名空间，合并后无人能读）。
+      # 保存排在打包之后：electron-builder 要到打包时才下载并写入这些缓存，提前保存同样会把
+      # 空目录写进 key，之后的 run 命中空缓存就不再写入。
+      - name: Save electron & electron-builder binaries
+        if: github.event_name == 'push' && steps.eb-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v6
+        with:
+          path: |
+            ~/.cache/electron
+            ~/.cache/electron-builder
+          key: ${{ runner.os }}-eb-${{ hashFiles('apps/desktop/electron-builder.config.mjs') }}
 
       - name: Verify .deb
         run: |
