@@ -20,6 +20,10 @@ description: Restore, build, and save the cached dsh engine and Electron runtime
 # spec）仍能命中缓存。代价是：仅改测试的提交命中缓存时不会顺带执行 build:official 的聚合检查，
 # 测试文件的类型错误改由 typecheck 门禁发现。
 #
+# 输入不止源码：prepare-runtime 把 apps/desktop/cli/dsh 拷进被缓存的 runtime/cli/bin/，
+# tsc 按 apps/desktop/tsconfig.{host,client}.json 产出被缓存的 lib/，本 action 自己定义
+# 缓存路径与 prepare 命令。三者都在 pathspec 内，因此改它们（含本文件的注释）会让缓存失效。
+#
 # 缓存路径必须覆盖 package-target.ts --builder-only 断言的每一份产物（壳 bundle、
 # Electron 运行时、dsh 运行时清单，以及壳 workspace 依赖构建出的 vendor/cordis/lib、
 # packages/api/gateway/lib——--builder-only 会用 createRequire.resolve 解析 main.js 的
@@ -40,7 +44,8 @@ runs:
           'apps/desktop/package.json' \
           'apps/desktop/src/**' 'apps/desktop/renderer/**' \
           'apps/desktop/scripts/**' apps/desktop/electron-builder.config.mjs \
-          apps/desktop/tsdown.config.ts apps/desktop/tsconfig.json \
+          apps/desktop/tsdown.config.ts 'apps/desktop/tsconfig*.json' \
+          'apps/desktop/cli/**' '.github/actions/prepare-desktop-engine/**' \
           ':(exclude)**/*.spec.ts' ':(exclude)**/*.spec.tsx' ':(exclude)**/tests/**' \
           | git hash-object --stdin-paths \
           | git hash-object --stdin)

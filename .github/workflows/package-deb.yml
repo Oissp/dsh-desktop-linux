@@ -14,9 +14,9 @@ name: Package (Debian deb + AppImage)
 #   - 手动 workflow_dispatch（可强制重建当前版本）
 #
 # 幂等：发布仓库中 v<version> release 已存在则跳过发布，避免重复发版。
-# 并发：与 package-deb-test.yml 共用一个 concurrency group，同一 ref 只允许一个打包 run 且不取消
-# 进行中的——既避免产物被中途杀掉导致残缺，也让同步类 push 的第二个 run 命中第一个的引擎缓存。
-# 引擎缓存：key 由 prepare 消费的全部已跟踪源码的 git blob 哈希算出（见
+# 并发：与 package-deb-test.yml 共用一个 concurrency group，同一 ref 同时只有一个 run 在跑、一个在排队
+# ——既避免产物被中途杀掉导致残缺，也让同步类 push 的第二个 run 命中第一个的引擎缓存。
+# 引擎缓存：key 由 prepare 读取的全部已跟踪输入的 git blob 哈希算出（见
 # .github/actions/prepare-desktop-engine），其中包含 apps/desktop/package.json —— prepare 既把
 # 壳版本写进 runtime.json，又是唯一构建壳 workspace 依赖 lib/ 的步骤，版本 bump 必须让缓存失效；
 # 因此纯 .N 版本 bump 会重新 prepare，而不是命中缓存。命中缓存时 package-target.ts --builder-only
@@ -31,6 +31,7 @@ on:
       - 'apps/desktop/**'
       - '!apps/desktop/docs/**'
       - '!apps/desktop/**/*.md'
+      - '!apps/desktop/**/*.i18n.yaml'
   workflow_dispatch:
     inputs:
       force:
@@ -47,7 +48,9 @@ permissions:
 # 与 package-deb-test.yml 共用同一个 group：上游同步这类 push 同时命中两条 workflow 的路径，
 # 并行时两边都会 miss 引擎缓存、各建一遍，后到的 run 还会抢写同一个 key（曾在 40638071606 /
 # 40638071630 上观测到 "another job may be creating this cache"）。同 group 串行后，后跑的 run
-# 直接命中先跑者保存的缓存。发版 run 永不取消；PR 上按 ref 分组并允许取消。
+# 直接命中先跑者保存的缓存。cancel-in-progress 只在 PR 上为 true：进行中的发版 run 不会被取消，
+# 但每个 group 只能留一个 pending run，排队中的 run 会被后入队的 run 顶替——发版因此可能被跳过，
+# 由下一次触及发版路径的 push 或手动 workflow_dispatch 补发。
 concurrency:
   group: package-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}

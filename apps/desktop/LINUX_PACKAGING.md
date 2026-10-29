@@ -81,11 +81,11 @@ DSH_DESKTOP_LINUX_FORMATS=AppImage pnpm run package:desktop:linux:x64:builder
 
 ### 发版 workflow: `package-deb.yml`
 
-- **触发**：push 到 `main` 且 `package.json` 或 `apps/desktop/**` 变更
+- **触发**：push 到 `main` 且 `package.json` 或 `apps/desktop/**` 变更（`apps/desktop/docs/**`、`apps/desktop/**/*.md` 与 `apps/desktop/**/*.i18n.yaml` 除外）
 - **产物**：deb + AppImage + `latest-linux.yml`
 - **发布**：发到 `Oissp/dsh-desktop-linux-release` 的 `v<version>` Release
 - **幂等**：release 已存在则跳过
-- **引擎缓存**：`git ls-files` 哈希已跟踪源码作为 key，命中时跳过引擎准备
+- **引擎缓存**：`git ls-files` 哈希 prepare 读取的已跟踪输入作为 key，命中时跳过引擎准备。输入含 `apps/desktop/package.json`（壳版本写进 `runtime.json`）、`apps/desktop/cli/**`、`apps/desktop/tsconfig*.json` 与 composite action 自身，排除 `**/*.spec.ts`、`**/*.spec.tsx` 与 `**/tests/**`；版本 bump 因此必定重新 prepare
 
 ### 冒烟 workflow: `package-deb-test.yml`
 
@@ -93,7 +93,7 @@ DSH_DESKTOP_LINUX_FORMATS=AppImage pnpm run package:desktop:linux:x64:builder
 - **产物**：仅 deb
 - **不发布**
 
-两个 workflow 共用 `.github/actions/prepare-desktop-engine` composite action，共享引擎缓存。
+两个 workflow 共用 `.github/actions/prepare-desktop-engine` composite action，共享引擎缓存，也共用 `concurrency` group `package-${{ github.ref }}`：同一 ref 同时只有一个 run 在跑，后跑的 run 直接命中先跑者保存的缓存。
 
 ## 产物验证
 
