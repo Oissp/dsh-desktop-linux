@@ -601,3 +601,20 @@ scripts/desktop-package-forms.spec.ts
 # .agents/notes/implemented/architecture/2026-10-28-trim-trimmed-workflow-readers.md 推翻。
 scripts/desktop-publish-workflow.spec.ts
 scripts/macos-package-workflow.spec.ts
+
+# ── 2026-10-30 合并新增裁剪：macOS CUA helper 打包 workflow 与发布模板 ──
+# cua-helper-package.yml 在专用 self-hosted macOS runner 上签名并公证 Computer Use helper，
+# 由已裁剪的 release-publish.yml 以 workflow_call 调用；fork 不运行 macOS 打包，裁剪该 workflow。
+# 四个 publishing 模板只被 desktop-publish-templates.spec.ts 读取，而该 spec 导入已裁剪的
+# desktop-publish-config.ts；模板与 spec 一起裁剪。
+.github/workflows/cua-helper-package.yml
+apps/desktop/config/publishing/macos/production.json.example
+apps/desktop/config/publishing/macos/test.json.example
+apps/desktop/config/publishing/windows/production.json.example
+apps/desktop/config/publishing/windows/test.json.example
+apps/desktop/tests/desktop-publish-templates.spec.ts
+# package.ts 是 cua-helper 的 macOS 打包入口，导入 fork 已裁剪的 macOS 签名/公证脚本
+# （desktop-package-environment、macos-signing-keychain、notarize-macos 等），在 fork 中无法
+# 通过类型检查。cua-helper 的其余模块（payload、verify-tarball、select-artifact、stage、smoke）
+# 不依赖那些脚本，保留它们供 scripts/release/publish.ts 与测试使用。
+scripts/cua-helper/package.ts

@@ -1,0 +1,22 @@
+# Bilingual-pair consistency record for 2026-10-30-merge-0.2.2-alpha.2-linux-desktop.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-10-30-merge-0.2.2-alpha.2-linux-desktop.md
+/agent-note-0-2-2-alpha-2-post-release-sync-the-fork-adopts-upstream-s-file-actions-and-keeps-its-linux-menu:
+  en: dec96313039bc1ce
+  zh: 1fa02cbe6f733a53
+/agent-note-0-2-2-alpha-2-post-release-sync-the-fork-adopts-upstream-s-file-actions-and-keeps-its-linux-menu/problem:
+  en: cf2d7debdfd0adf4
+  zh: 20195ea94fc6ef82
+/agent-note-0-2-2-alpha-2-post-release-sync-the-fork-adopts-upstream-s-file-actions-and-keeps-its-linux-menu/decision:
+  en: 9f66a26e3cb1dc82
+  zh: 4db4b175a94260a7
+/agent-note-0-2-2-alpha-2-post-release-sync-the-fork-adopts-upstream-s-file-actions-and-keeps-its-linux-menu/alternatives-considered:
+  en: bd4c53b5499dc7ea
+  zh: 8b60f8dba24db429
+/agent-note-0-2-2-alpha-2-post-release-sync-the-fork-adopts-upstream-s-file-actions-and-keeps-its-linux-menu/consequences:
+  en: 463f6db1a63e636d
+  zh: 3d25c96e61973be0
+/agent-note-0-2-2-alpha-2-post-release-sync-the-fork-adopts-upstream-s-file-actions-and-keeps-its-linux-menu/testing:
+  en: 4383c8d848c18d03
+  zh: d2f6c6af4955f4b8
