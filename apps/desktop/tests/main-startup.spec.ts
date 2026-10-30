@@ -565,7 +565,7 @@ describe('desktop main startup', () => {
     if (platform === 'linux' && packaged) {
       // 打包的 Linux 隐藏应用菜单，托盘菜单镜像入口（含 desktop-cli 命令项）。
       expect(harness.menu.setApplicationMenu).toHaveBeenCalledWith(null)
-      const trayItems = (): MenuItemConstructorOptions[] => harness.menu.mock.lastCall![0] as MenuItemConstructorOptions[]
+      const trayItems = (): MenuItemConstructorOptions[] => harness.menu.mock.lastCall![0]
       const trayLabels = (items: MenuItemConstructorOptions[]): Array<string | undefined> =>
         items.map(item => item.role === 'quit' ? 'quit' : item.label ?? item.type)
       expect(trayLabels(trayItems())).toEqual([
