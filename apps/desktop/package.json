@@ -65,6 +65,7 @@
     "@deepseek-ai/dsh-client-product-analytics": "workspace:*",
     "@deepseek-ai/dsh-plugin-manager": "workspace:*",
     "zod": "4.4.3",
-    "@deepseek-ai/dsh-util-file-drag": "workspace:*"
+    "@deepseek-ai/dsh-util-file-drag": "workspace:*",
+    "@deepseek-ai/dsh-client-ui-file-actions": "workspace:*"
   }
 }

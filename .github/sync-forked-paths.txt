@@ -18,6 +18,11 @@ apps/desktop/electron-builder.config.d.mts # 镜像 .mjs 的 Linux-only 接口�
 # fork 的 main.ts 新增了 Linux 托盘、外观图标切换、打包时隐藏菜单栏；
 # desktop-cli 集成已同步（commandManager + 托盘菜单项 + idle()），菜单项只在托盘菜单显示。
 apps/desktop/src/main.ts # Linux 托盘 + 外观图标 + Menu.setApplicationMenu(null) + desktop-cli 托盘集成
+# 应用菜单不显示 desktop-cli 的“管理 dsh 命令…”项——fork 把它留在 Linux 托盘菜单里，
+# 因此主进程菜单测试与 macOS 菜单快照都不含该项（上游在同位置显示它）。
+apps/desktop/tests/main-startup.spec.ts # 菜单用例：无 cliCommand 项，保留上游的开发者工具项
+apps/desktop/tests/expected/application-menu-en-US.json # 同上
+apps/desktop/tests/expected/application-menu-zh-CN.json # 同上
 
 # ── 本地化 ──
 # fork 恢复了 cliCommand* 消息（desktop-cli 已同步），并新增了 showWindow/quitMenu（Linux 托盘）。
@@ -96,3 +101,9 @@ apps/desktop/tests/prepare-package-set.spec.ts # 保留 Windows/macOS 目标用�
 # 配对检查因此无法把两个语言侧折叠成同一语义目标。中文页的“本地验证”链接改为指向
 # ../../tests/README.md，与英文页一致；该目标在两种语言里都被裁剪，链接由裁剪清单豁免。
 apps/desktop/docs/diagnostics/README.zh.md # 本地验证链接指向 ../../tests/README.md，与英文页一致
+
+# ── CUA helper 原生 README ──
+# 上游让中英文两侧分别链接各自语言的 apps/desktop/packaging/README（该文件在 fork 中被裁剪），
+# 配对检查因此无法把两个语言侧折叠成同一语义目标。中文页改为链接英文目标，与英文页一致；
+# 该目标在两种语言里都被裁剪，链接由裁剪清单豁免。
+packages/experimental/cua-macos/native/README.zh.md # macOS 打包配置链接指向英文目标
