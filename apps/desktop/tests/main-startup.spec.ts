@@ -558,14 +558,36 @@ describe('desktop main startup', () => {
     vi.stubGlobal('process', { ...process, platform })
     harness.app.isPackaged = packaged
     vi.spyOn(harness.app, 'getPreferredSystemLanguages').mockReturnValue([locale])
+    // 打包的 Linux 托盘语言以系统 locale 为兜底（语言控制器读取 app.getLocale）。
+    vi.spyOn(harness.app, 'getLocale').mockReturnValue(locale === 'en' ? 'en-US' : locale)
     await readyForUpdate()
     const messages = locale === 'en' ? en : zh
+    if (platform === 'linux' && packaged) {
+      // 打包的 Linux 隐藏应用菜单，托盘菜单镜像入口（含 desktop-cli 命令项）。
+      expect(harness.menu.setApplicationMenu).toHaveBeenCalledWith(null)
+      const trayItems = (): MenuItemConstructorOptions[] => harness.menu.mock.lastCall![0] as MenuItemConstructorOptions[]
+      const trayLabels = (items: MenuItemConstructorOptions[]): Array<string | undefined> =>
+        items.map(item => item.role === 'quit' ? 'quit' : item.label ?? item.type)
+      expect(trayLabels(trayItems())).toEqual([
+        messages.showWindow, 'separator', messages.checkUpdatesMenu, messages.cliCommandMenu, 'separator', 'quit',
+      ])
+      const sender = harness.windows[0]!.webContents
+      const nextLocale = locale === 'en' ? 'zh' : 'en'
+      harness.ipcOn.mock.calls.find(([channel]) => channel === DESKTOP_IPC.localeChanged)![1](
+        { sender, senderFrame: sender.mainFrame }, nextLocale,
+      )
+      const next = nextLocale === 'en' ? en : zh
+      expect(trayLabels(trayItems())).toEqual([
+        next.showWindow, 'separator', next.checkUpdatesMenu, next.cliCommandMenu, 'separator', 'quit',
+      ])
+      expect(harness.windows[0]!.options).toMatchObject({ webPreferences: { devTools: true } })
+      return
+    }
     const menu = applicationMenuItems()
     const visible = menu.filter(item => item.visible !== false)
     expect(visible.map(item => item.role === 'quit' ? 'quit' : item.label ?? item.type)).toEqual([
-      messages.aboutMenu, 'separator', messages.checkUpdatesMenu,
-      ...platform === 'linux' ? [] : [messages.cliCommandMenu],
-      'separator', ...packaged ? [] : [messages.reloadPageMenu, messages.restartAppHostMenu],
+      messages.aboutMenu, 'separator', messages.checkUpdatesMenu, 'separator',
+      ...packaged ? [] : [messages.reloadPageMenu, messages.restartAppHostMenu],
       messages.toggleDevToolsMenu, 'separator',
       ...platform === 'darwin' ? [messages.hideApplication, messages.hideOtherApplications, messages.showAllApplications, 'separator'] : [],
       'quit',

@@ -613,3 +613,8 @@ apps/desktop/config/publishing/macos/test.json.example
 apps/desktop/config/publishing/windows/production.json.example
 apps/desktop/config/publishing/windows/test.json.example
 apps/desktop/tests/desktop-publish-templates.spec.ts
+# package.ts 是 cua-helper 的 macOS 打包入口，导入 fork 已裁剪的 macOS 签名/公证脚本
+# （desktop-package-environment、macos-signing-keychain、notarize-macos 等），在 fork 中无法
+# 通过类型检查。cua-helper 的其余模块（payload、verify-tarball、select-artifact、stage、smoke）
+# 不依赖那些脚本，保留它们供 scripts/release/publish.ts 与测试使用。
+scripts/cua-helper/package.ts
