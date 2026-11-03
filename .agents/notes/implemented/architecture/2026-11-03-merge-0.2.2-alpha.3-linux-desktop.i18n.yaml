@@ -1,0 +1,22 @@
+# Bilingual-pair consistency record for 2026-11-03-merge-0.2.2-alpha.3-linux-desktop.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-11-03-merge-0.2.2-alpha.3-linux-desktop.md
+/agent-note-0-2-2-alpha-3-upstream-sync-the-fork-takes-upstream-s-update-configuration-surfaces-and-keeps-its-single-feed-updater:
+  en: a3705509cfd67ee8
+  zh: 6a684c7db8eb85f6
+/agent-note-0-2-2-alpha-3-upstream-sync-the-fork-takes-upstream-s-update-configuration-surfaces-and-keeps-its-single-feed-updater/problem:
+  en: c5eb3f060e3ec1b6
+  zh: ba55640fb4216187
+/agent-note-0-2-2-alpha-3-upstream-sync-the-fork-takes-upstream-s-update-configuration-surfaces-and-keeps-its-single-feed-updater/decision:
+  en: 411b3e558a59948b
+  zh: 9641be621a2d1d77
+/agent-note-0-2-2-alpha-3-upstream-sync-the-fork-takes-upstream-s-update-configuration-surfaces-and-keeps-its-single-feed-updater/alternatives-considered:
+  en: 12fc301b749dc714
+  zh: 92f3546527110087
+/agent-note-0-2-2-alpha-3-upstream-sync-the-fork-takes-upstream-s-update-configuration-surfaces-and-keeps-its-single-feed-updater/consequences:
+  en: f45bcc8416292b23
+  zh: cee576d5f4265c8b
+/agent-note-0-2-2-alpha-3-upstream-sync-the-fork-takes-upstream-s-update-configuration-surfaces-and-keeps-its-single-feed-updater/testing:
+  en: 9f0ac18735a5d5fe
+  zh: 4da449b6a506a206

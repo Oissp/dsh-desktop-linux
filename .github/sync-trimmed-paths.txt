@@ -618,3 +618,15 @@ apps/desktop/tests/desktop-publish-templates.spec.ts
 # 通过类型检查。cua-helper 的其余模块（payload、verify-tarball、select-artifact、stage、smoke）
 # 不依赖那些脚本，保留它们供 scripts/release/publish.ts 与测试使用。
 scripts/cua-helper/package.ts
+
+# ── 0.2.2-alpha.3 合并新增裁剪：win/mac 渠道资格脚本与 cua-helper 打包 spec ──
+# 上游新增的渠道资格脚本只在 Windows/macOS 运行（test-update-channels.mjs 直接拒绝其它平台），
+# 读取 tests/updates/electron-updater 的平台版本记录；fork 只发布 Linux，也不运行该资格流程，
+# 一并不带该目录（含描述安装更新资格流程的双语 README）。
+apps/desktop/scripts/test-update-channels.mjs
+apps/desktop/tests/updates/electron-updater/
+# cua-helper/package.spec.ts 导入已裁剪的 scripts/cua-helper/package.ts，导入阶段即失败。
+scripts/cua-helper/package.spec.ts
+# 上游的 channel.ts 只服务于多 feed 发布（钉住 updater.channel 并按渠道拒绝预发布）；fork 的单一
+# feed 只有预发布，协调器用 configureUpdateFeed 统一接受预发布且不钉频道，该模块没有调用者。
+apps/desktop/src/updates/electron-updater/channel.ts
