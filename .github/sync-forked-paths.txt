@@ -60,7 +60,7 @@ apps/desktop-host/src/cli.ts # 从上游恢复（无改动，已跨平台）
 # fork 保持 README 内容与上游一致以减少合并冲突，只改 pairing hash。
 # 合并时如果上游编辑了 README，需要手动 re-record pairing hash。
 apps/desktop/README.md # pairing hash 与 fork 侧一致（内容跟随上游）
-apps/desktop/README.zh.md # 同上；两处链接指向 fork authored path 而非上游 trimmed path
+apps/desktop/README.zh.md # 同上；链接指向 fork authored path；Electron updater 链接与英文页同指被裁剪目录（由裁剪清单豁免）
 apps/desktop/README.i18n.yaml # pairing hash 记录
 
 # ── 根 README ──
