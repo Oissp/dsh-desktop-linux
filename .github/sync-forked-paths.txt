@@ -47,7 +47,7 @@ apps/desktop/src/command-manager-entry.ts # darwin||linux 合并分支
 apps/desktop/scripts/prepare-cli.ts # 接受 'linux' 平台
 apps/desktop/tsdown.config.ts # 恢复 command-manager-entry.js 入口
 apps/desktop/cli/dsh # Linux 启动器（fork 新增，改二进制名）
-apps/desktop-host/src/cli.ts # 从上游恢复（无改动，已跨平台）
+apps/desktop-host/src/cli.ts # Windows 分支用变量路径动态导入 windows-cli-signals.ts（该文件非 Windows 被裁剪，静态导入报 TS2307）
 #
 # 上游若再次把 desktop-host 收窄成只有 lib/index.js，以下四处必须保持双入口，
 # 否则启动器执行的 lib/cli.js 不会被构建或发布（见 2026-10-03 合并 Note）：
@@ -60,7 +60,7 @@ apps/desktop-host/src/cli.ts # 从上游恢复（无改动，已跨平台）
 # fork 保持 README 内容与上游一致以减少合并冲突，只改 pairing hash。
 # 合并时如果上游编辑了 README，需要手动 re-record pairing hash。
 apps/desktop/README.md # pairing hash 与 fork 侧一致（内容跟随上游）
-apps/desktop/README.zh.md # 同上；链接指向 fork authored path；Electron updater 链接与英文页同指被裁剪目录（由裁剪清单豁免）
+apps/desktop/README.zh.md # 同上；链接指向 fork authored path；Electron updater 段落改为纯文本（目标目录被裁剪，apps/** 不在链接门禁扫描内）
 apps/desktop/README.i18n.yaml # pairing hash 记录
 
 # ── 根 README ──
@@ -107,3 +107,18 @@ apps/desktop/docs/diagnostics/README.zh.md # 本地验证链接指向 ../../test
 # 配对检查因此无法把两个语言侧折叠成同一语义目标。中文页改为链接英文目标，与英文页一致；
 # 该目标在两种语言里都被裁剪，链接由裁剪清单豁免。
 packages/experimental/cua-macos/native/README.zh.md # macOS 打包配置链接指向英文目标
+
+# ── 0.2.2-alpha.3 合并补录 ──
+# 本次合并在 fork 修改基线上补充/修正的条目；锁文件与自动生成的基线数据不在此列。
+apps/desktop-host/package.json # 移除 koffi（fork 的 Linux 运行时不需要原生模块）
+apps/desktop/tests/update-coordinator.spec.ts # 单一 feed：两渠道都接受预发布，断言不钉 updater.channel
+apps/desktop/tests/mandatory-update-policy.spec.ts # 新增 DesktopPolicyIdentity 校验用例（含 macOS arm64）
+apps/desktop/tests/welcome-flow.e2e.ts # 打包目标用 linux-x64
+apps/desktop/tests/welcome-startup.spec.ts # nativeTheme mock 补充 on/removeListener（托盘语言控制器订阅）
+docs/development.md # CI 说明改为 fork 的 package-deb*.yml 与手工合并上游发布
+docs/development.zh.md # 同上
+package.json # 删除 mac/win 打包脚本，只保留 Linux 目标
+packages/experimental/browser-use-stagehand-native/tsdown.config.ts # inlineDynamicImports → outputOptions.codeSplitting: false
+packages/experimental/inspector/tsdown.config.ts # 同上
+packages/experimental/webworker-runtime/tsdown.config.ts # noExternal → deps.alwaysBundle；codeSplitting: false
+packages/skill/skill-office/tests/skill-office.spec.ts # libreoffice-kit 版本从已安装 manifest 读取，不写死 0.1.5

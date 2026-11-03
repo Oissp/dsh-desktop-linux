@@ -308,7 +308,7 @@ The shared settings storage distinguishes missing files, read failures, malforme
 
 Once installation eligibility is revoked, obsolete-file removal failures do not block switching. They are flushed to `update-cleanup.jsonl` in Electron’s logs directory with the time, operation, path and filesystem error; inability to write that log falls back to stderr. Later download failures are reported independently and are not attributed to an earlier cleanup warning. Structured filesystem errors distinguish insufficient space, denied writes and busy files; the error dialog retains the current error code and supplied file paths in its details. Errors without structured evidence keep the generic download-failure guidance.
 
-Updater adapter compatibility and platform version records are documented in [Electron updater compatibility](tests/updates/electron-updater/README.md).
+Updater adapter compatibility and platform version records live in the upstream Electron updater guide under `tests/updates/electron-updater/`, which this Linux fork does not carry.
 
 <a id="mandatory-update-policy"></a>
 

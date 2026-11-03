@@ -14,18 +14,19 @@ import { discardDesktopUpdate } from './updates/electron-updater/discard.ts'
 const { autoUpdater } = electronUpdater
 
 /**
- * Apply the fork's single-feed channel policy: one `latest-linux.yml` serves every release, so the
- * selected channel only decides whether prereleases are accepted.
+ * Apply the fork's single-feed policy: one `latest-linux.yml` serves every release, and every
+ * release this fork publishes is a prerelease, so both Settings channels accept prereleases and
+ * the selection stays presentation-only. Rejecting prereleases on `stable` would strand that
+ * selection on an empty feed and fail every check.
  * @param updater - Updater whose prior operations have settled.
- * @param channel - Selected distribution channel.
  */
-function selectFeedChannel(updater: AppUpdater, channel: DesktopUpdateChannel): void {
+function configureUpdateFeed(updater: AppUpdater): void {
   // 不设置 updater.channel：GitHub provider 里 updater.channel 优先于版本号自带的预发布标签。
   // 本 fork 的 release tag 是 v<desktop version>（如 v0.2.2-alpha.2.1），一旦把 channel 钉成
   // 'nightly' 或 'stable'，shouldFetchVersion 与 isNextPreRelease 都不成立，tag 保持 null，检查
   // 更新直接抛 ERR_UPDATER_NO_PUBLISHED_VERSIONS。留空则由版本号的 'alpha' 段解析出 tag，频道
-  // 元数据回落到 electron-builder 的默认名 latest-linux.yml；渠道只控制是否接受预发布。
-  updater.allowPrerelease = channel === 'nightly'
+  // 元数据回落到 electron-builder 的默认名 latest-linux.yml。
+  updater.allowPrerelease = true
   // Selecting a channel can enable downgrade in electron-updater.
   updater.allowDowngrade = false
 }
@@ -94,7 +95,7 @@ export class DesktopUpdateCoordinator {
     }
     this.updater.autoDownload = false
     this.updater.autoInstallOnAppQuit = false
-    selectFeedChannel(this.updater, channel)
+    configureUpdateFeed(this.updater)
     this.updater.on('download-progress', this.onProgress)
     this.updater.on('update-downloaded', this.onDownloaded)
     this.updater.on('error', this.onError)
@@ -152,7 +153,7 @@ export class DesktopUpdateCoordinator {
         throw error
       }
       this.channel = channel
-      selectFeedChannel(this.updater, channel)
+      configureUpdateFeed(this.updater)
       this.configurationError = undefined
       this.setState({ phase: 'checking' })
       const result = await this.doCheck()
@@ -292,7 +293,6 @@ export class DesktopUpdateCoordinator {
       this.cancellation = result.cancellationToken
       const version = result.updateInfo.version
       if (valid(version) === null) throw new Error('desktop update: feed version is invalid')
-      if (this.channel === 'stable' && version.includes('-')) throw new Error('desktop update: stable feed contains a prerelease')
       this.release = result.isUpdateAvailable && gt(version, this.currentVersion())
         ? { kind: 'checked', version } : { kind: 'none' }
       return this.setState(this.candidate === undefined ? { phase: 'idle' } : { phase: 'available', version })

@@ -627,3 +627,6 @@ apps/desktop/scripts/test-update-channels.mjs
 apps/desktop/tests/updates/electron-updater/
 # cua-helper/package.spec.ts 导入已裁剪的 scripts/cua-helper/package.ts，导入阶段即失败。
 scripts/cua-helper/package.spec.ts
+# 上游的 channel.ts 只服务于多 feed 发布（钉住 updater.channel 并按渠道拒绝预发布）；fork 的单一
+# feed 只有预发布，协调器用 configureUpdateFeed 统一接受预发布且不钉频道，该模块没有调用者。
+apps/desktop/src/updates/electron-updater/channel.ts

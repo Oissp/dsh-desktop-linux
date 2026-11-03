@@ -308,7 +308,7 @@ UI 切换期间，选择器显示待应用选项和加载指示；失败时恢�
 
 撤销安装资格后，旧文件删除失败不阻止渠道切换。失败时间、操作、路径及文件系统错误会刷新写入 Electron 日志目录的 `update-cleanup.jsonl`；日志本身无法写入时回退到标准错误输出。后续下载失败独立报告，不归因于之前的清理警告。有结构化文件系统错误时，区分空间不足、无法写入和文件占用；错误弹窗详情保留当次错误码及已提供的文件路径。没有结构化依据时保留通用下载失败提示。
 
-更新适配层兼容性和平台版本记录见 [Electron updater 兼容性](tests/updates/electron-updater/README.md)。
+更新适配层兼容性和平台版本记录在上游 Electron updater 指南（`tests/updates/electron-updater/`）中，本 Linux fork 不携带该文档。
 
 <a id="mandatory-update-policy"></a>
 

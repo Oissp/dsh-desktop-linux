@@ -247,7 +247,7 @@ it.each([new DesktopUpdatePreparationError('stop-failed', 'private diagnostic'),
 })
 
 
-it('keeps the nightly channel on prereleases and rejects them on stable without pinning a feed', async () => {
+it('accepts prereleases on both channels without pinning a feed', async () => {
   const nightly = fixture('nightly', '1.0.0')
   expect(nightly.updater.channel).toBeUndefined()
   expect(nightly.updater.allowPrerelease).toBe(true)
@@ -255,9 +255,9 @@ it('keeps the nightly channel on prereleases and rejects them on stable without 
   expect(nightly.updater.channel).toBeUndefined()
   const stable = fixture('stable', '1.0.0')
   expect(stable.updater.channel).toBeUndefined()
-  expect(stable.updater.allowPrerelease).toBe(false)
+  expect(stable.updater.allowPrerelease).toBe(true)
   expect(stable.updater.allowDowngrade).toBe(false)
-  expect((await stable.coordinator.check()).phase).toBe('error')
+  expect((await stable.coordinator.check()).phase).toBe('available')
   expect(stable.downloadUpdate).not.toHaveBeenCalled()
 })
 
