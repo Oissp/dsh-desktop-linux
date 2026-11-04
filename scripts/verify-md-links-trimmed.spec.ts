@@ -1,6 +1,6 @@
 import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { trimManifest, trimmedKey } from './verify-md-links-trimmed.ts'
+import { forkMarkdownSourcePaths, trimManifest, trimmedKey } from './verify-md-links-trimmed.ts'
 
 const root = resolve(import.meta.dirname, '..')
 /** A note two directories below the repository root, where upstream writes these links. */
@@ -27,6 +27,16 @@ describe('verify-md-links-trimmed (fork 裁剪链接门禁)', () => {
 
   it('keeps the raw text of a malformed escape, which matches no manifest entry', () => {
     expect(trimmedKey(note, { url: '../../../../docs/%zz.md', reason: 'target' }, root)).toBe('docs/%zz.md')
+  })
+
+  it('adds authored Desktop docs to the upstream corpus without scanning Web expected fixtures', () => {
+    const files = forkMarkdownSourcePaths(root)
+    expect(files).toContain('apps/desktop/README.md')
+    expect(files).toContain('apps/desktop/README.zh.md')
+    expect(files).toContain('apps/desktop/LINUX_PACKAGING.md')
+    expect(files).toContain('apps/desktop/docs/diagnostics/README.zh.md')
+    expect(files).toContain('apps/desktop/tests/signing-concurrency/README.md')
+    expect(files).not.toContain('apps/web/tests/expected/web-runtime-context/file-reference-prompt.expected.md')
   })
 
   it('reads manifests as data lines only', () => {

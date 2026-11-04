@@ -1,0 +1,40 @@
+name: Fork sync baseline
+
+# 每个 PR 和 main push 检查一次：fork 相对上游 merge base 修改过的文件，必须出现在
+# .github/sync-forked-paths.txt。漏记的文件在上游合并时可能被静默带回上游实现。
+# 检查脚本只使用 Node 标准库，不需要安装依赖；上游以完整历史拉取，以便计算 merge base。
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: fork-sync-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  baseline:
+    name: Verify fork-modified files are baselined
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          package-manager-cache: false
+
+      - name: Fetch upstream master
+        run: git fetch --no-tags https://github.com/deepseek-ai/deepseek-harness.git master:refs/remotes/upstream/master
+
+      - name: Verify sync-forked-paths baseline
+        run: node scripts/verify-sync-forked-paths.ts --base upstream/master

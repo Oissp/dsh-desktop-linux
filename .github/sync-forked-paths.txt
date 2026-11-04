@@ -31,6 +31,12 @@ apps/desktop/src/locale.ts # 恢复 cliCommand*；新增 showWindow/quitMenu
 # ── 更新协调器 ──
 # fork 不设置 updater.channel，让版本号 prerelease 标签自决频道，回落到 latest-linux.yml。
 apps/desktop/src/update-coordinator.ts # 不设置 updater.channel（参见 2026-09-19-desktop-update-channel-derivation.md）
+# fork 只发布一个 Linux feed；preload 标记渠道不可切换，共享 Settings UI 因而不注册选择器。
+apps/desktop/src/preload-app.ts # channels.selectable=false：保留状态/错误恢复，隐藏单一 feed 的选择器
+apps/desktop/tests/preload-app.spec.ts # 断言 channels.selectable=false 且保留 scoped 更新状态
+packages/client/ui-settings-general/src/types.ts # DesktopChannelBridge 新增可选 selectable 标记
+packages/client/ui-settings-general/src/client/index.ts # selectable=false 时注册恢复 toast，但不注册渠道行
+packages/client/ui-settings-general/tests/apply.client.spec.ts # 单一 feed 下隐藏行、保留 toast 与订阅清理的用例
 
 # ── 运行时准备 ──
 # fork 的 prepare-runtime.ts 恢复了 CLI 准备步骤（prepareDesktopCli + command-manager-entry.js 复制），
@@ -60,12 +66,10 @@ apps/desktop-host/src/cli.ts # Windows 分支用变量路径动态导入 windows
 # fork 保持 README 内容与上游一致以减少合并冲突，只改 pairing hash。
 # 合并时如果上游编辑了 README，需要手动 re-record pairing hash。
 apps/desktop/README.md # pairing hash 与 fork 侧一致（内容跟随上游）
-apps/desktop/README.zh.md # 同上；链接指向 fork authored path；Electron updater 段落改为纯文本（目标目录被裁剪，apps/** 不在链接门禁扫描内）
+apps/desktop/README.zh.md # 同上；链接指向 fork authored path；Electron updater 段落改为纯文本（目标目录被裁剪，链接门禁已覆盖 apps/desktop）
 apps/desktop/README.i18n.yaml # pairing hash 记录
 
 # ── 根 README ──
-README.md # Discord 链接改为 fork 社区
-README.zh.md # 同上
 
 # ── 打包配置 ──
 apps/desktop/package.json # version 跟随引擎 + .N 后缀；scripts 只有 linux:x64 目标；无 koffi devDependency
@@ -98,9 +102,9 @@ apps/desktop/tests/prepare-package-set.spec.ts # 保留 Windows/macOS 目标用�
 
 # ── 诊断文档 ──
 # fork 裁剪了 apps/desktop/tests/README 双语对（installed-update/mac/win 管线的一部分），
-# 配对检查因此无法把两个语言侧折叠成同一语义目标。中文页的“本地验证”链接改为指向
-# ../../tests/README.md，与英文页一致；该目标在两种语言里都被裁剪，链接由裁剪清单豁免。
-apps/desktop/docs/diagnostics/README.zh.md # 本地验证链接指向 ../../tests/README.md，与英文页一致
+# 两侧的“本地验证”链接因此改为纯文本，并注明上游文件不在本 fork 中。
+apps/desktop/docs/diagnostics/README.md # 本地验证链接改为纯文本，说明上游 tests/README 未随包提供
+apps/desktop/docs/diagnostics/README.zh.md # 同上
 
 # ── CUA helper 原生 README ──
 # 上游让中英文两侧分别链接各自语言的 apps/desktop/packaging/README（该文件在 fork 中被裁剪），
@@ -122,3 +126,33 @@ packages/experimental/browser-use-stagehand-native/tsdown.config.ts # inlineDyna
 packages/experimental/inspector/tsdown.config.ts # 同上
 packages/experimental/webworker-runtime/tsdown.config.ts # noExternal → deps.alwaysBundle；codeSplitting: false
 packages/skill/skill-office/tests/skill-office.spec.ts # libreoffice-kit 版本从已安装 manifest 读取，不写死 0.1.5
+
+# ── 同步基线补录（审计） ──
+# 以下文件在 0.2.2-alpha.3 合并后仍与上游不同，但此前未列入基线。只补录需要
+# 合并决策的行为/构建文件；pnpm-lock.yaml、*.i18n.yaml、no-unknown-casts.baseline.json
+# 等生成数据，以及仅改裁剪链接的 Notes/README，仍按生成/文档流程处理。
+apps/desktop/scripts/prepare-dsh.ts # Linux 运行时准备重写：Electron RunAsNode、prepare-dsh 包集合、原生指纹补丁、smoke/verify
+apps/desktop/scripts/dev.ts # 开发启动不再调用上游的 preparePrimaryRuntime（primary-runtime 已裁剪）
+apps/desktop/scripts/development-project.ts # target 类型收窄为 DesktopBuildTargetName（linux-x64）
+apps/desktop/scripts/desktop-build-paths.d.mts # DesktopBuildTargetName = 'linux-x64'；去掉 mac/win 目标类型
+apps/desktop/src/project-manager.ts # 从 pnpm-workspace.yaml 读取 patchedDependencies，写入运行时 workspace overrides
+apps/desktop/src/preload-theme.ts # 只有 macOS 转发 nativeTheme；Linux 由 DesktopAppearanceController 接管
+apps/desktop/src/update-attention.ts # 构造函数只接受 locale getter，通知显示期求值
+apps/desktop/tests/command-installation.spec.ts # 只在 Linux 运行；移除 macOS linkat helper 的准备步骤
+apps/desktop/tests/command-manager-flow.spec.ts # pkexec 提权/取消路径的 mock 与断言
+apps/desktop/tests/core-package-set.spec.ts # patchedDependencies 版本 pin 的运行时 workspace 用例
+apps/desktop/tests/desktop-build-paths.spec.ts # 只覆盖 linux-x64 的目标目录布局
+apps/desktop/tests/development-project.spec.ts # 目标改为 linux-x64，断言 linux/x64 描述符
+apps/desktop/tests/package-target.spec.ts # builder-only 的运行时闭包与 shell import 断言
+apps/desktop/tests/preload-theme.client.spec.ts # Linux/Windows 不发送 nativeThemeSet，只有 macOS 发送
+apps/desktop/tests/update-attention.spec.ts # 跟随 locale getter 构造函数
+apps/web/vite.config.ts # 桌面 Web 构建的 chunkSizeWarningLimit=800
+benchmarks/tsdown.config.ts # 新增 client-bundle-composition worker 构建入口
+scripts/libreoffice-packages.d.mts # officeAsarUnpackPatterns 的公开类型
+scripts/libreoffice-packages.mjs # 按 Office 完整闭包生成 asarUnpack 模式
+scripts/rescope-vendor.ts # fork 快照/测试文件的 vendor rescope 例外
+scripts/verify-repository-references.spec.ts # python/sdk/uv.lock 的引用扫描豁免用例
+scripts/verify-repository-references.ts # 排除 python/sdk/uv.lock 的生成数字
+THIRD_PARTY_NOTICES.md # 移除 COS/notarize、补录 libreoffice-kit 补丁
+pnpm-workspace.yaml # libreoffice-kit 补丁 pin + verifyDepsBeforeRun
+tsdown.config.ts # 注释-only：保留 fork 的裁剪说明，不改变构建入口

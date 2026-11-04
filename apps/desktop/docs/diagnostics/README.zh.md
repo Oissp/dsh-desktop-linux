@@ -73,4 +73,4 @@ Worker 在有界记录之间处理取消消息；已经发出的文件打开、�
 
 基本报告独立可用。同时只运行一个收集器；并发报告保留基本内容，不追加辅助部分。终止请求被拒绝时，必须观察到退出才能释放该名额。“获取诊断报告”可能在追加完成前定位基本文件。完成标记仅表示收集结束，不表示捕获了全部操作；排队字节数和遗漏计数说明缺失材料。
 
-故障构造与验收步骤见[本地验证](../../tests/README.md#verification-diagnostics)；应用概览与开发入口见 [Desktop README](../../README.zh.md)。
+故障构造与验收步骤见上游 `apps/desktop/tests/README.md`（本 Linux fork 未保留该文件）；应用概览与开发入口见 [Desktop README](../../README.zh.md)。

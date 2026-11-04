@@ -59,6 +59,12 @@ export type DesktopChannelChangeResult =
 
 /** UI choices persist in the shell configuration, independently of Host settings. */
 export interface DesktopChannelBridge {
+  /**
+   * Whether this shell can switch to a different feed. Omitted means the selector
+   * remains available for compatibility; `false` keeps persistence and error
+   * recovery while hiding a selector that cannot change the feed.
+   */
+  readonly selectable?: boolean
   /** @returns Current shell selection and application status, without reading disk again. */
   get(): Promise<DesktopChannelState>
   /**

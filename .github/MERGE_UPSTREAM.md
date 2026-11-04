@@ -5,10 +5,10 @@
 
 ## 前置条件
 
-- 本仓库的 remote 命名与直觉相反，先核对 `git remote -v`：
-  - `origin` 是**上游引擎仓库** `deepseek-ai/deepseek-harness`——本流程从它取合并源，`git push origin` 会推到上游。
-  - `dsh-desktop-linux` 是**本 fork** `Oissp/dsh-desktop-linux`——分支和 PR 推到这里。
-  下文按这两个名字书写；若你的克隆用了别的名字，先按此对应关系改名再照做。
+- 先核对 `git remote -v`，本文按以下命名书写：
+  - `upstream` 是**上游引擎仓库** `deepseek-ai/deepseek-harness`——本流程从它取合并源。
+  - `origin` 是**本 fork** `Oissp/dsh-desktop-linux`——分支和 PR 推到这里。
+  若你的克隆用了别的名字，先按此对应关系改名再照做。
 - 工作树干净：`git status` 无未提交改动
 - 已运行 `pnpm install`
 
@@ -26,10 +26,10 @@
 ### 1. 获取上游
 
 ```sh
-git fetch origin --tags
+git fetch upstream --tags
 ```
 
-确认上游最新版本号（查看 `origin/master` 的 `package.json` version 字段）。
+确认上游最新版本号（查看 `upstream/master` 的 `package.json` version 字段）。
 
 ### 2. 创建合并分支
 
@@ -41,7 +41,7 @@ git checkout -b merge/upstream-<version>
 ### 3. 执行合并
 
 ```sh
-git merge origin/master  # 或特定 tag，如 origin/dsh-v0.2.0-rc.2
+git merge upstream/master  # 或特定 tag，如 upstream/dsh-v0.2.0-rc.2
 ```
 
 ### 4. 处理冲突
@@ -106,25 +106,28 @@ scripts/verify-sync-pairing-after-merge.sh
 ### 5. 合并后验证
 
 ```sh
-# 5a. 裁剪清单完整性
-scripts/verify-sync-trimmed-paths.sh  # macOS 见下方说明
+# 5a. 裁剪清单完整性（--stale 同时确认条目仍存在于已拉取的上游树）
+scripts/verify-sync-trimmed-paths.sh --stale upstream/master  # macOS 见下方说明
 
-# 5b. 双语配对
+# 5b. fork 修改基线完整性（与 fork-sync-check.yml 同款）
+node scripts/verify-sync-forked-paths.ts --base upstream/master
+
+# 5c. 双语配对
 scripts/verify-sync-pairing-after-merge.sh
 
-# 5c. 类型检查
+# 5d. 类型检查
 pnpm run typecheck
 
-# 5d. Lint
+# 5e. Lint
 pnpm run lint
 
-# 5e. 文档检查（含 markdown links、translation pairing）
+# 5f. 文档检查（含 markdown links、translation pairing）
 pnpm run test:docs
 
-# 5f. 桌面测试（package-deb gate）
+# 5g. 桌面测试（package-deb gate）
 pnpm exec vitest run apps/desktop/tests  # macOS 见常见问题
 
-# 5g. 包清单与依赖门禁（本 fork 有已知失败，见常见问题）
+# 5h. 包清单与依赖门禁（本 fork 有已知失败，见常见问题）
 pnpm run hygiene
 ```
 
@@ -168,10 +171,10 @@ git commit  # 合并提交
 ### 9. 推送并验证 CI
 
 ```sh
-git push dsh-desktop-linux merge/upstream-<version>
+git push origin merge/upstream-<version>
 ```
 
-创建 PR 到 `main`。CI 会运行 `package-deb-test.yml`（含裁剪清单完整性检查）。
+创建 PR 到 `main`。CI 会运行 `package-deb-test.yml`（含裁剪清单完整性检查）与 `fork-sync-check.yml`（fork 修改基线完整性检查）。
 
 合并 PR 后，`package-deb.yml` 会自动构建 deb + AppImage 并发布到 `Oissp/dsh-desktop-linux-release`。
 
@@ -237,10 +240,11 @@ gh api repos/Oissp/dsh-desktop-linux/actions/caches --jq \
     done
 ```
 
-缓存策略本身有五条约束，改动 workflow 时不要退回旧写法：
+缓存策略本身有六条约束，改动 workflow 时不要退回旧写法：
 
 - **只有 push 构建写缓存。** `pnpm-cache`、`eb-cache` 与引擎缓存都用 `actions/cache/restore` + 单独的 `actions/cache/save`，save 步骤带 `github.event_name == 'push'` 条件。PR 只恢复不写入——否则每个 PR 都会新增约 1GB 死数据，历史上曾累积到 3.4GB。
 - **save 步骤排在写缓存的步骤之后。** pnpm store 的 save 在 `pnpm install` 之后，electron 二进制的 save 在打包之后。未命中时这些目录在对应步骤之前是空的，提前 save 会把空目录写进当周 key；下一个 run 精确命中它、`cache-hit` 为 true 又跳过保存，整周都退化成全量下载（0.2.2-alpha.2 合并后的 main run 因此多花了 11 分钟）。
 - **pnpm store 的 key 带 ISO 周后缀**（`steps.pnpm-week.outputs.week`）。只用 lockfile 哈希做 key 会在每次依赖变动时新增一份约 810MB 的快照且永不淘汰，5 份就吃掉配额的一半。
 - **引擎缓存只在 push 里 save，key 由 prepare 读取的全部已跟踪输入哈希（含 `apps/desktop/package.json`、`apps/desktop/cli/**`、`apps/desktop/tsconfig*.json` 与 composite action 自身），并排除 `**/*.spec.ts`、`**/*.spec.tsx` 与 `**/tests/**`。** 测试文件不进产物，排除后只改测试的提交也能命中缓存，代价是那类提交命中时不会顺带执行 `build:official` 的聚合检查。版本 bump 因此会重新 prepare，而不是命中缓存走 `--builder-only`：prepare 既把壳版本写进 `runtime.json`，又是唯一构建壳 workspace 依赖 `lib/` 的步骤，跳过它会产出一个缺依赖的主进程（0.1.7-rc.1.2 即为此）。
-- **两条 workflow 共用一个 concurrency group**（`package-${{ github.ref }}`：push 与 `workflow_dispatch` 在 main 上都落到 `package-refs/heads/main`，PR 上按各自的 ref 分组），避免上游同步这类同时命中双方路径的 push 并行各建一遍引擎、后到的 run 抢写同一 key（报 `another job may be creating this cache`）。`cancel-in-progress` 只在 PR 上为 true：进行中的 run 不会被取消，但每个 group 只保留一个 pending run，排队中的 run 被后入队的 run 顶替（发版 run 因此可能被跳过，由下一次触及发版路径的 push 或手动 `workflow_dispatch` 补发）。
+- **运行时下载归档单独缓存。** `apps/desktop/.desktop-build/downloads` 以 `pnpm-lock.yaml` 与 `scripts/primary-runtime/lock.json` 的哈希为 key，源码变更导致引擎缓存失效时仍复用 Electron/Node/Python/pnpm/wheel 归档；这些归档只随依赖锁变化，不能塞进引擎 key。
+- **发版与测试使用独立的 concurrency group**（`package-release-${{ github.ref }}` / `package-test-${{ github.ref }}`）：测试 run 的排队和取消不再占用发版队列。上游同步同时命中两条 workflow 时会并行准备一次引擎；两者使用相同内容 key，缓存写入失败不影响 job，最多产生一份重复构建。发版 run 从不取消，但同一发版 group 仍只保留一个 pending run，连续 push 时旧版本可能被更新版本顶替；需要保留每个版本时手动 `workflow_dispatch`。

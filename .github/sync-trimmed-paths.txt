@@ -82,7 +82,6 @@ apps/desktop/scripts/macos-app-update-config.mjs
 apps/desktop/scripts/macos-signing-keychain.d.mts
 apps/desktop/scripts/macos-signing-keychain.mjs
 apps/desktop/scripts/node-bin/node.cmd
-apps/desktop/scripts/node-entitlements.plist
 apps/desktop/scripts/package-installed-update.ts
 apps/desktop/scripts/packaging-run.d.mts
 apps/desktop/scripts/packaging-run.mjs
@@ -96,7 +95,6 @@ apps/desktop/scripts/prepare-windows-installer.ps1
 apps/desktop/scripts/publish-installed-update.ts
 apps/desktop/scripts/sign-primary-runtime.ts
 apps/desktop/scripts/smoke-installer-directories.ps1
-apps/desktop/scripts/smoke-primary-runtime.py
 apps/desktop/scripts/test-host-updates.ts
 apps/desktop/scripts/test-local-updater.mjs
 apps/desktop/scripts/test-signed-updates.mjs
@@ -166,9 +164,6 @@ apps/desktop/tests/README.i18n.yaml
 .agents/notes/implemented/testing/2026-09-10-desktop-local-updater-qualification.md
 .agents/notes/implemented/testing/2026-09-10-desktop-local-updater-qualification.zh.md
 .agents/notes/implemented/testing/2026-09-10-desktop-local-updater-qualification.i18n.yaml
-.agents/notes/implemented/bug-fix/2026-09-14-windows-lock-release-probe.md
-.agents/notes/implemented/bug-fix/2026-09-14-windows-lock-release-probe.zh.md
-.agents/notes/implemented/bug-fix/2026-09-14-windows-lock-release-probe.i18n.yaml
 
 # 上游归档的同一组 Note（归档迁移把 implemented/ 路径换成 archived/ 路径）：
 # 合并时以「重命名 + fork 侧删除」的形式到达，需按归档路径再次删除。
@@ -184,7 +179,6 @@ apps/desktop/tests/expected/upload-credentials-check.txt
 apps/desktop/tests/fixtures/artifact-update-server.mjs
 apps/desktop/tests/fixtures/host-update-control.mjs
 apps/desktop/tests/fixtures/host-update-qualification.mjs
-apps/desktop/tests/fixtures/installer-cleanup-smoke.nsi
 apps/desktop/tests/fixtures/installer-directory-smoke.nsi
 apps/desktop/tests/fixtures/installer-write-failure-smoke.nsi
 apps/desktop/tests/fixtures/installed-update-network.ps1
@@ -491,7 +485,6 @@ apps/desktop/installer/lifecycle.nsh
 apps/desktop/installer/pages.nsh
 apps/desktop/installer/path.nsh
 apps/desktop/installer/progress.h
-apps/desktop/installer/strings.nsh
 apps/desktop/installer/theme.nsh
 apps/desktop/installer/window-frame.cpp
 
@@ -549,16 +542,10 @@ apps/desktop/tests/windows-runner-launcher.ps1
 apps/desktop/tests/windows-runner-network-process.ps1
 apps/desktop/tests/windows-runner-network.ps1
 
-# ── 0.2.1-rc.3 合并新增裁剪：Windows 打包工作区与安装器渲染验收 ──
-# windows-build-workspace.mjs 为 Windows 打包 workflow 创建 run 专属 checkout，
-# 唯一调用方是已裁剪的 windows-package.yml；scripts/windows-build-workspace.spec.ts
-# 是它的 spec，二者一并裁剪。windows-installer-render.cpp 只被已裁剪的
-# prepare-windows-installer.ps1 当作 NSIS 进度窗口渲染源编译（该管线整组见
-# 0.2.1-rc.1 分组），在 fork 里是孤儿文件。
-apps/desktop/scripts/windows-build-workspace.d.mts
-apps/desktop/scripts/windows-build-workspace.mjs
+# ── 0.2.1-rc.3 合并新增裁剪：安装器渲染验收 ──
+# windows-installer-render.cpp 只被已裁剪的 prepare-windows-installer.ps1
+# 当作 NSIS 进度窗口渲染源编译（该管线整组见 0.2.1-rc.1 分组），在 fork 里是孤儿文件。
 apps/desktop/tests/windows-installer-render.cpp
-scripts/windows-build-workspace.spec.ts
 
 # ── 0.2.1-rc.3 合并新增裁剪：未签名本地打包与发布预检 ──
 # 上游新增 --unsigned 本地构建路径：pack-local-packages.ts 为未签名包暂存
