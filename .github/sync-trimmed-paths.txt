@@ -617,3 +617,21 @@ scripts/cua-helper/package.spec.ts
 # 上游的 channel.ts 只服务于多 feed 发布（钉住 updater.channel 并按渠道拒绝预发布）；fork 的单一
 # feed 只有预发布，协调器用 configureUpdateFeed 统一接受预发布且不钉频道，该模块没有调用者。
 apps/desktop/src/updates/electron-updater/channel.ts
+
+# ── 0.2.2-rc.1 合并新增裁剪：网站安装器与 CI 归档发布脚本 ──
+# 上游把 Desktop 的网站安装器、COS 上传、EdgeOne 清理与 CI 产物归档拆成独立脚本组；这些脚本
+# 导入 fork 已裁剪的 desktop-publish-*、desktop-release-store、desktop-ci-version、
+# electron-builder-config 等模块（见 0.2.1-alpha.3 与 0.2.2-alpha.2 分组），在 fork 中无法通过
+# 类型检查。desktop-channel-version.spec.ts 只覆盖已裁剪的 desktop-ci-version.mjs 与上游的
+# electron-builder-config.mjs，其余 spec 是这些脚本的唯一引用者，一并裁剪。
+apps/desktop/scripts/archive-desktop-ci.ts
+apps/desktop/scripts/desktop-purge-recovery.ts
+apps/desktop/scripts/desktop-website-installer.ts
+apps/desktop/scripts/publish-website-ci.ts
+apps/desktop/tests/desktop-channel-version.spec.ts
+apps/desktop/tests/desktop-purge-recovery.spec.ts
+apps/desktop/tests/desktop-website-installer.spec.ts
+apps/desktop/tests/publish-website-ci.spec.ts
+# cua-helper/build-inputs.spec.ts 导入已裁剪的 desktop-package-environment.mjs；
+# build-inputs.ts 本身不依赖它，仍被保留的 cua-helper 模块使用。
+scripts/cua-helper/build-inputs.spec.ts
