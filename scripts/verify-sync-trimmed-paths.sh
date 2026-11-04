@@ -5,10 +5,11 @@
 # 本脚本在合并提交前或 CI 中运行，确保清单内路径全部被删除。
 #
 # 用法：
-#   scripts/verify-sync-trimmed-paths.sh           # 检查工作树
-#   scripts/verify-sync-trimmed-paths.sh --staged  # 检查 Git 暂存区（合并提交前）
+#   scripts/verify-sync-trimmed-paths.sh                  # 检查工作树
+#   scripts/verify-sync-trimmed-paths.sh --staged         # 检查 Git 暂存区（合并提交前）
+#   scripts/verify-sync-trimmed-paths.sh --stale <ref>    # 同时确认条目仍存在于上游树
 #
-# 退出码：0 = 全部删除，1 = 有残留
+# 退出码：0 = 全部删除（且 --stale 时无陈腐条目），1 = 有残留或陈腐条目
 
 set -euo pipefail
 
@@ -22,8 +23,15 @@ if [ ! -f "$TRIM_LIST" ]; then
 fi
 
 STAGED=false
+STALE_REF=""
 if [ "${1:-}" = "--staged" ]; then
   STAGED=true
+elif [ "${1:-}" = "--stale" ]; then
+  STALE_REF="${2:-upstream/master}"
+  if ! git -C "$REPO_ROOT" rev-parse --verify --quiet "$STALE_REF" >/dev/null; then
+    echo "::error::--stale 需要可解析的上游引用（例如 upstream/master）: $STALE_REF" >&2
+    exit 1
+  fi
 fi
 
 # 读取裁剪清单：跳过注释行和空行
@@ -35,6 +43,7 @@ if [ ${#PATHS[@]} -eq 0 ]; then
 fi
 
 VIOLATIONS=()
+STALE=()
 for entry in "${PATHS[@]}"; do
   # 去除首尾空白
   path="${entry#"${entry%%[![:space:]]*}"}"
@@ -52,6 +61,10 @@ for entry in "${PATHS[@]}"; do
       VIOLATIONS+=("$path")
     fi
   fi
+
+  if [ -n "$STALE_REF" ] && ! git -C "$REPO_ROOT" cat-file -e "$STALE_REF:$path" 2>/dev/null; then
+    STALE+=("$path")
+  fi
 done
 
 if [ ${#VIOLATIONS[@]} -gt 0 ]; then
@@ -64,4 +77,15 @@ if [ ${#VIOLATIONS[@]} -gt 0 ]; then
   exit 1
 fi
 
-echo "裁剪清单完整性检查通过：${#PATHS[@]} 条路径全部不存在于工作树。"
+if [ ${#STALE[@]} -gt 0 ]; then
+  echo "::error::裁剪清单包含上游已不存在的陈腐条目（$STALE_REF）："
+  for v in "${STALE[@]}"; do
+    echo "  $v"
+  done
+  echo ""
+  echo "请从 .github/sync-trimmed-paths.txt 中移除这些条目。"
+  exit 1
+fi
+
+if $STAGED; then LOCATION="暂存区"; else LOCATION="工作树"; fi
+echo "裁剪清单完整性检查通过：${#PATHS[@]} 条路径全部不存在于${LOCATION}${STALE_REF:+，且上游树中均存在}。"

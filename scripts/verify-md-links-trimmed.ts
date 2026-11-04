@@ -12,6 +12,7 @@
 import { readFileSync } from 'node:fs'
 import { dirname, relative, resolve } from 'node:path'
 import { findViolations, markdownLinkCache, markdownLinkSourcePaths } from './verify-md-links.ts'
+import { isArchivedAgentNotePath, uniqueRepoFiles } from './repo-files.ts'
 
 const root = resolve(import.meta.dirname, '..')
 
@@ -19,8 +20,24 @@ const root = resolve(import.meta.dirname, '..')
 const TRIMMED_PATHS = '.github/sync-trimmed-paths.txt'
 /** Sections removed from upstream files this fork keeps. */
 const TRIMMED_SECTIONS = '.github/md-links-trimmed-sections.txt'
+/**
+ * Fork-authored Markdown the upstream gate does not scan. Upstream's patterns
+ * stop at `packages/**`, so Desktop shell docs would otherwise escape the link
+ * check even though this fork edits their links.
+ */
+const FORK_DESKTOP_PATTERNS = ['apps/desktop/**/*.md']
 
 type Violation = ReturnType<typeof findViolations>[number]
+
+/**
+ * Discover Desktop shell Markdown the upstream gate omits.
+ * @param scanRoot - absolute repository root; pass the same root to findViolations.
+ * @returns forward-slash source paths relative to scanRoot.
+ */
+export function forkMarkdownSourcePaths(scanRoot: string = root): string[] {
+  return uniqueRepoFiles(scanRoot, FORK_DESKTOP_PATTERNS, isArchivedAgentNotePath)
+    .map(file => relative(scanRoot, file.abs).replaceAll('\\', '/'))
+}
 
 /**
  * Read a trim manifest as its data lines.
@@ -59,7 +76,7 @@ export function trimmedKey(source: string, violation: Pick<Violation, 'url' | 'r
 }
 
 if (process.argv[1] && import.meta.filename === resolve(process.argv[1])) {
-  const files = markdownLinkSourcePaths(root)
+  const files = [...new Set([...markdownLinkSourcePaths(root), ...forkMarkdownSourcePaths(root)])]
   const cache = markdownLinkCache()
   const trimmed = new Set([...trimManifest(TRIMMED_PATHS), ...trimManifest(TRIMMED_SECTIONS)])
   const broken: Violation[] = []

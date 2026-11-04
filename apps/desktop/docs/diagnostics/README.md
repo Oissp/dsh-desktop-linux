@@ -73,4 +73,4 @@ Worker messages interrupt collection between bounded records; an in-flight file 
 
 The basic report remains available independently. Only one collector runs at a time; concurrent reports keep their basic content without an auxiliary section. A rejected termination request does not release that slot until exit is observed. Get diagnostic report can reveal the basic file before the append finishes. The completion marker confirms only that collection ended, not that all operations were captured; queued bytes and omission counters describe missing material.
 
-See [local verification](../../tests/README.md#verification-diagnostics) for fault setup and acceptance steps, and the [Desktop README](../../README.md) for the application overview and development entry points.
+See the upstream `apps/desktop/tests/README.md` (not shipped in this Linux fork) for fault setup and acceptance steps, and the [Desktop README](../../README.md) for the application overview and development entry points.

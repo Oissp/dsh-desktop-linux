@@ -242,6 +242,23 @@ describe('ui-settings-general apply', () => {
     expect(c.ctx.slots.entries('shell.overlay').some(entry => entry.options.id === 'desktop-channel-toast')).toBe(false)
   })
 
+  it('keeps the recovery toast while hiding an unavailable channel selector', async ({ mock, start }) => {
+    const unsubscribe = vi.fn()
+    const state = { channel: 'nightly', packagedChannel: 'nightly', changing: false } as const
+    const channels: DesktopChannelBridge = { selectable: false, get: async () => state,
+      set: async () => ({ kind: 'unchanged' as const, state }), subscribe: () => unsubscribe }
+    vi.stubGlobal('dshDesktop', { protocolVersion: 1, updates: { channels,
+      status: async () => ({ phase: 'idle' }), open: async () => {}, subscribe: () => () => {} } })
+    onTestFinished(() => { vi.unstubAllGlobals() })
+    const { c } = await client(mock, start)
+    expect(c.ctx.slots.entries('settings.general.item').some(row => row.options.id === 'desktop-update-channel')).toBe(false)
+    expect(c.ctx.slots.entries('shell.overlay').some(entry => entry.options.id === 'desktop-channel-toast')).toBe(true)
+    await c.unload(SELF)
+    await c.flush()
+    expect(unsubscribe).toHaveBeenCalledOnce()
+    expect(c.ctx.slots.entries('shell.overlay').some(entry => entry.options.id === 'desktop-channel-toast')).toBe(false)
+  })
+
   it('the nav label thunk follows the active locale without re-registration', async ({ mock, start }) => {
     const { c, settings } = await client(mock, start)
     const english = localeView('en', 1)

@@ -5,14 +5,11 @@ name: Package test (deb only)
 # 发版仍由 package-deb.yml 负责。
 #
 # push 只监听引擎源码路径，与 package-deb.yml 的触发路径（package.json、apps/desktop/**）
-# 互补：壳改动只跑发版 workflow（它本身包含同样的测试与产物校验，冒烟是冗余的），引擎改动只跑
-# 本冒烟，docs-only 提交两者都不跑。上游同步会同时触及两边路径，因此两条 workflow 共用一个
-# concurrency group 串行执行：并行时双方必然同时 miss 引擎缓存、各建一遍引擎，后到的 run 还会
-# 抢写同一个 key。PR 上不做路径过滤：PR 不会触发发版 workflow，本冒烟是 PR 唯一的打包验证。
-#
-# 两个 workflow 共用 ./.github/actions/prepare-desktop-engine，因此共享同一份引擎缓存；key 覆盖
-# prepare 读取的全部已跟踪输入（含 apps/desktop/package.json 与 composite action 自身），串行后
-# 后跑的 run 直接命中。
+# 互补：壳改动只跑发版 workflow（它本身包含同样的测试与产物校验，冒烟是冗余的）；引擎改动只跑
+# 本冒烟，docs-only 提交两者都不跑。上游同步会同时触及两边路径；两条 workflow 使用不同
+# concurrency group，测试 run 不再占用发版队列。两者共用 prepare-desktop-engine 的内容 key，
+# 同时命中时可能各建一次引擎；缓存写入失败不影响 job，最多产生一份重复构建。PR 上不做路径过滤：
+# PR 不会触发发版 workflow，本冒烟是 PR 唯一的打包验证。
 
 on:
   push:
@@ -38,12 +35,12 @@ on:
 permissions:
   contents: read
 
-# 与 package-deb.yml 共用同一个 group：上游同步这类 push 同时命中两条 workflow 的路径，并行时
-# 两边都会 miss 引擎缓存、各建一遍，后到的 run 还会抢写同一个 key。同 group 串行后，后跑的 run
-# 直接命中先跑者保存的缓存。PR 上按 ref 分组并允许取消（新提交顶掉运行中的旧 run）；push 上
-# 进行中的 run 不取消，但 group 只保留一个 pending run，排队中的 run 被后入队的 run 顶替。
+# 与 package-deb.yml 分开 group：测试排队不会顶掉发版 run。PR 上按 ref 分组并允许取消（新提交
+# 顶掉运行中的旧 run）；push 上进行中的 run 不取消，但 group 只保留一个 pending run，排队中的 run
+# 被后入队的 run 顶替。上游同步同时命中两条 workflow 时，可能并行准备一次引擎并写入同一内容 key；
+# 缓存写入失败不影响 job，最多产生一份重复构建。
 concurrency:
-  group: package-${{ github.ref }}
+  group: package-test-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
@@ -130,6 +127,8 @@ jobs:
       # 都退化成全量下载（0.2.2-alpha.2 合并后的 main run 因此多花了 11 分钟）。
       - name: Save pnpm store
         if: github.event_name == 'push' && steps.pnpm-cache.outputs.cache-hit != 'true'
+        # A concurrent release/test run may own this key; cache writes are performance-only.
+        continue-on-error: true
         uses: actions/cache/save@v6
         with:
           path: ${{ steps.pnpm-store.outputs.dir }}
@@ -158,6 +157,8 @@ jobs:
       # 空目录写进 key，之后的 run 命中空缓存就不再写入。
       - name: Save electron & electron-builder binaries
         if: github.event_name == 'push' && steps.eb-cache.outputs.cache-hit != 'true'
+        # A concurrent release/test run may own this key; cache writes are performance-only.
+        continue-on-error: true
         uses: actions/cache/save@v6
         with:
           path: |

@@ -66,7 +66,11 @@ function createProductApi(): DshDesktopProductApi {
       },
     },
     updates: {
+      // This fork publishes one latest-linux.yml feed. Keep the bridge for channel
+      // persistence and error recovery, but mark selection unavailable so the shared
+      // Settings UI does not render a control that cannot change the feed.
       channels: {
+        selectable: false,
         get: () => ipcRenderer.invoke(DESKTOP_IPC.updatesChannelGet) as Promise<DesktopChannelState>,
         set: channel => ipcRenderer.invoke(DESKTOP_IPC.updatesChannelSet, channel) as Promise<DesktopChannelChangeResult>,
         subscribe(listener) {

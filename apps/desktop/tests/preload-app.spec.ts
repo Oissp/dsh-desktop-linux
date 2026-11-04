@@ -294,10 +294,11 @@ void imageProtocol
 void imageProtocolBack
 
 
-it('exposes channel choices and scoped subscriptions without exposing updater objects', async () => {
+it('marks channel selection unavailable while keeping scoped update state', async () => {
   vi.stubGlobal('location', new URL('dsh-app://app/index.html'))
   await import('../src/preload-app.ts')
   const api = electron.contextBridge.exposeInMainWorld.mock.calls.find(([name]) => name === 'dshDesktop')?.[1] as DshDesktopProductApi
+  expect(api.updates.channels.selectable).toBe(false)
   await api.updates.channels.get()
   await api.updates.channels.set('stable')
   expect(electron.ipcRenderer.invoke.mock.calls).toEqual([[DESKTOP_IPC.updatesChannelGet], [DESKTOP_IPC.updatesChannelSet, 'stable']])

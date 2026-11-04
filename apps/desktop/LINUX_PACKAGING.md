@@ -86,6 +86,7 @@ DSH_DESKTOP_LINUX_FORMATS=AppImage pnpm run package:desktop:linux:x64:builder
 - **发布**：发到 `Oissp/dsh-desktop-linux-release` 的 `v<version>` Release
 - **幂等**：release 已存在则跳过
 - **引擎缓存**：`git ls-files` 哈希 prepare 读取的已跟踪输入作为 key，命中时跳过引擎准备。输入含 `apps/desktop/package.json`（壳版本写进 `runtime.json`）、`apps/desktop/cli/**`、`apps/desktop/tsconfig*.json` 与 composite action 自身，排除 `**/*.spec.ts`、`**/*.spec.tsx` 与 `**/tests/**`；版本 bump 因此必定重新 prepare
+- **下载缓存**：`apps/desktop/.desktop-build/downloads` 单独缓存 Electron、Node、Python、pnpm 与 wheel 归档，key 为 `pnpm-lock.yaml` 与 `scripts/primary-runtime/lock.json` 的哈希；源码改动不会让它失效。PR 只恢复，push 写入
 
 ### 冒烟 workflow: `package-deb-test.yml`
 
@@ -93,7 +94,7 @@ DSH_DESKTOP_LINUX_FORMATS=AppImage pnpm run package:desktop:linux:x64:builder
 - **产物**：仅 deb
 - **不发布**
 
-两个 workflow 共用 `.github/actions/prepare-desktop-engine` composite action，共享引擎缓存，也共用 `concurrency` group `package-${{ github.ref }}`：同一 ref 同时只有一个 run 在跑，后跑的 run 直接命中先跑者保存的缓存。
+两个 workflow 共用 `.github/actions/prepare-desktop-engine` composite action 和同一内容缓存 key，但使用独立的 `concurrency` group（`package-release-${{ github.ref }}` / `package-test-${{ github.ref }}`）：测试 run 不会顶掉发版 run。上游同步同时命中两条 workflow 时可能并行准备一次引擎；缓存写入失败不影响 job，最多产生一份重复构建。
 
 ## 产物验证
 
@@ -150,7 +151,7 @@ Desktop 打包内含一个由内置引擎驱动的 `dsh` CLI。用户可从托�
 - **命令管理 worker**：`runtime/cli/command-manager.js` 是 `command-manager-entry.ts` 打出的**自包含** bundle（`codeSplitting: false`，只依赖 Node 内建模块），因为它是 `prepare-runtime.ts` 复制的单一文件，用打包运行时自带的裸 Node 运行。
 - **提权**：写入 `/usr/local/bin` 需要 root，通过 `pkexec --disable-internal-agent` 提权（PolicyKit 弹窗）；取消映射为 `ECANCELED`，不弹错误对话框。
 - **仅 deb 可靠**：AppImage 挂载点路径每次运行可能不同，symlink 指向其内部路径不可靠；AppImage 用户应使用 deb 安装包。
-- 该功能的决策记录见 [desktop-cli Linux 同步](../.agents/notes/implemented/feature/2026-09-30-desktop-cli-linux-sync.md)（Linux 适配）及其历史方案 [desktop-cli-linux-sync-plan](../.agents/notes/archived/feature/2026-09-30-desktop-cli-linux-sync-plan.md)。
+- 该功能的决策记录见 [desktop-cli Linux 同步](../../.agents/notes/implemented/feature/2026-09-30-desktop-cli-linux-sync.md)（Linux 适配）及其历史方案 [desktop-cli-linux-sync-plan](../../.agents/notes/archived/feature/2026-09-30-desktop-cli-linux-sync-plan.md)。
 
 ## 应用 ID
 
@@ -187,3 +188,5 @@ sudo apt-get install -y --no-install-recommends libasound2
 | 发版 CI | `package-deb.yml` | `release.yml` + `release-publish.yml` |
 
 运行时核心（引擎、Office、Python、Node、pnpm、插件管理、Host 启动、原生恢复）与上游**完全同源**，fork 只在外层打包壳和发版管线上分叉。
+
+> 注意：fork 只发布一个 `latest-linux.yml`，没有上游的 nightly/stable 双 feed。因此 preload 将渠道标记为不可切换，设置中不显示“更新渠道”选择器；`updates.channel` 仍作为启动时读取的配置文件字段保留，但两种值都使用同一个 feed，且都接受预发布版本。
