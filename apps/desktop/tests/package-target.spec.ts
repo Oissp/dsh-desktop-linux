@@ -103,9 +103,11 @@ describe('desktop package target', () => {
     const repositoryRoot = join(import.meta.dirname, '..', '..', '..')
     const action = readFileSync(join(repositoryRoot, '.github', 'actions', 'prepare-desktop-engine', 'action.yml'), 'utf8')
     const packages = packagedWorkspacePackages(join(repositoryRoot, 'apps', 'desktop', 'package.json'), repositoryRoot)
-    expect(packages.filter(entry => entry.missingEntries.length > 0)).toEqual([])
+    // CI 在 prepare 之前运行本测试，闭包的 lib/ 此时不存在；是否已构建由 --builder-only 断言负责，
+    // 这里只锁缓存清单与闭包一致。
+    expect(packages.filter(entry => entry.directory === undefined).map(entry => entry.name)).toEqual([])
     for (const { name, directory } of packages) {
-      const cached = new RegExp(`^\\s+${directory ?? name}/lib$`, 'gmu')
+      const cached = new RegExp(`^\\s+${directory}/lib$`, 'gmu')
       // restore 与 save 两步各列一次。
       expect(action.match(cached), name).toHaveLength(2)
     }
