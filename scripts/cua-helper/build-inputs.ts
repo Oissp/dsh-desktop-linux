@@ -26,7 +26,8 @@ function isSourceFile(path: string): boolean {
 function trackedSources(root: string): string[] {
   const files = execFileSync('git', ['ls-files', '-z'], { cwd: root, encoding: 'utf8', maxBuffer: 32 * 1024 * 1024 })
     .split('\0').filter(isSourceFile).sort()
-  for (const required of ['packages/experimental/cua-macos/native/Package.swift', 'scripts/cua-helper/package.ts',
+  // This fork trims scripts/cua-helper/package.ts, so it is not a tracked build input here.
+  for (const required of ['packages/experimental/cua-macos/native/Package.swift',
     'package.json', 'pnpm-lock.yaml']) {
     if (!files.includes(required)) throw new Error(`CUA source: missing tracked build input ${required}`)
   }

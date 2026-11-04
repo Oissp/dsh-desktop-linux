@@ -635,3 +635,14 @@ apps/desktop/tests/publish-website-ci.spec.ts
 # cua-helper/build-inputs.spec.ts 导入已裁剪的 desktop-package-environment.mjs；
 # build-inputs.ts 本身不依赖它，仍被保留的 cua-helper 模块使用。
 scripts/cua-helper/build-inputs.spec.ts
+# 下列新增夹具与共享 helper 的唯一读取者都在本清单内：publication-*、stable-prerelease-* 与
+# website-purge-* 由已裁剪的 desktop-publication-summary.spec.ts、desktop-upload-plan.spec.ts 与
+# publish-website-ci.spec.ts 读取；desktop-archive-workflow-test.ts 只被已裁剪的 macOS/Windows
+# package workflow spec 导入。fork 中没有任何调用方，随读取者一起裁剪。
+apps/desktop/tests/expected/publication-production-website.md
+apps/desktop/tests/expected/stable-prerelease-mac-arm64.json
+apps/desktop/tests/expected/stable-prerelease-mac-x64.json
+apps/desktop/tests/expected/stable-prerelease-win-x64.json
+apps/desktop/tests/expected/website-purge-accepted.md
+apps/desktop/tests/expected/website-purge-unconfirmed.md
+scripts/desktop-archive-workflow-test.ts
