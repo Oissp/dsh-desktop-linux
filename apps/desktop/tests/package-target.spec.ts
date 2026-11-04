@@ -1,7 +1,10 @@
-import { join } from 'node:path'
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { dirname, join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import {
   desktopElectronBuilderArguments,
+  packagedWorkspacePackages,
   parseDesktopPackageInvocation,
   resolveDesktopPackageTarget,
   shellRuntimeImports,
@@ -61,6 +64,51 @@ describe('desktop package target', () => {
       'import "@deepseek-ai/dsh-brand";',
       'const lazy = await import("ws");',
     ].join('\n'))).toEqual(['@deepseek-ai/cordis', '@deepseek-ai/dsh-api-gateway/stream-protocol', '@deepseek-ai/dsh-brand', 'electron', 'ws'])
+  })
+
+  it('follows the packed workspace closure and reports entries the prepare step never built', () => {
+    const root = mkdtempSync(join(tmpdir(), 'dsh-packaged-workspace-'))
+    const writeJson = (path: string, value: unknown): void => {
+      mkdirSync(dirname(path), { recursive: true })
+      writeFileSync(path, JSON.stringify(value))
+    }
+    try {
+      const alpha = join(root, 'app', 'node_modules', '@deepseek-ai', 'alpha')
+      const beta = join(alpha, 'node_modules', '@deepseek-ai', 'beta')
+      writeJson(join(root, 'app', 'package.json'), { dependencies: { '@deepseek-ai/alpha': 'workspace:*', ws: '^8.21.3' } })
+      // 命中引擎缓存时 prepare 不跑，包目录照常解析；只有清单声明的入口文件证明它被构建过。
+      writeJson(join(alpha, 'package.json'), {
+        exports: { '.': { types: './lib/types/index.d.ts', default: './lib/index.js' } },
+        dependencies: { '@deepseek-ai/beta': 'workspace:*' },
+      })
+      mkdirSync(join(alpha, 'lib'), { recursive: true })
+      writeFileSync(join(alpha, 'lib', 'index.js'), 'export {}\n')
+      writeJson(join(beta, 'package.json'), {
+        module: 'lib/index.mjs',
+        dependencies: { '@deepseek-ai/gamma': 'workspace:*', zod: '^4.4.3' },
+      })
+      expect(packagedWorkspacePackages(join(root, 'app', 'package.json'), root)).toEqual([
+        { name: '@deepseek-ai/alpha', directory: 'app/node_modules/@deepseek-ai/alpha', missingEntries: [] },
+        { name: '@deepseek-ai/beta', directory: 'app/node_modules/@deepseek-ai/alpha/node_modules/@deepseek-ai/beta', missingEntries: ['lib/index.mjs'] },
+        { name: '@deepseek-ai/gamma', directory: undefined, missingEntries: ['package.json'] },
+      ])
+    } finally {
+      rmSync(root, { recursive: true, force: true })
+    }
+  })
+
+  it('caches a lib/ directory for every workspace package electron-builder packs', () => {
+    // 引擎缓存命中时 prepare 不跑，缓存里没有的 lib/ 就不会出现在 app.asar；alpha.3 因此发过
+    // 一个主进程 ERR_MODULE_NOT_FOUND、没有窗口的安装包。缓存清单必须跟着生产依赖闭包走。
+    const repositoryRoot = join(import.meta.dirname, '..', '..', '..')
+    const action = readFileSync(join(repositoryRoot, '.github', 'actions', 'prepare-desktop-engine', 'action.yml'), 'utf8')
+    const packages = packagedWorkspacePackages(join(repositoryRoot, 'apps', 'desktop', 'package.json'), repositoryRoot)
+    expect(packages.filter(entry => entry.missingEntries.length > 0)).toEqual([])
+    for (const { name, directory } of packages) {
+      const cached = new RegExp(`^\\s+${directory ?? name}/lib$`, 'gmu')
+      // restore 与 save 两步各列一次。
+      expect(action.match(cached), name).toHaveLength(2)
+    }
   })
 
   it('selects the Linux x64 target selectors', () => {

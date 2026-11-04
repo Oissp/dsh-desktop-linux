@@ -1,10 +1,10 @@
 /** Build one release target with matching Electron, Node.js, and dsh architecture. */
 
 import { spawn } from 'node:child_process'
-import { existsSync, mkdirSync, readFileSync, rmSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, realpathSync, rmSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { parseArgs } from 'node:util'
-import { join, resolve } from 'node:path'
+import { dirname, join, relative, resolve } from 'node:path'
 import { shellVersionExtendsEngine } from '../src/release-version.ts'
 import { desktopTargetBuildPaths, type DesktopTargetBuildPaths } from './desktop-build-paths.mjs'
 import { DESKTOP_BUILD_VERSION_ENV, resolveDesktopBuildVersion, validateDesktopBuildVersion } from './desktop-build-version.mjs'
@@ -259,6 +259,103 @@ export function shellRuntimeImports(bundle: string): string[] {
   return [...specifiers].sort()
 }
 
+/** One workspace package electron-builder copies into the packaged application's node_modules. */
+export interface PackagedWorkspacePackage {
+  readonly name: string
+  /** Package directory relative to the repository root; `undefined` when no dependency link resolves. */
+  readonly directory: string | undefined
+  /** Declared runtime entries absent from disk; `package.json` alone when the package is not installed. */
+  readonly missingEntries: readonly string[]
+}
+
+const WORKSPACE_PREFIX = '@deepseek-ai/'
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+function readManifest(path: string): Record<string, unknown> {
+  const parsed: unknown = JSON.parse(readFileSync(path, 'utf8'))
+  if (!isRecord(parsed)) throw new Error(`desktop package: ${path} is not a package manifest`)
+  return parsed
+}
+
+/** Runtime entry paths one manifest declares; type declarations never load at runtime. */
+function runtimeEntries(manifest: Record<string, unknown>): string[] {
+  const entries = new Set<string>()
+  const collect = (value: unknown): void => {
+    if (typeof value === 'string') {
+      if (!value.endsWith('.d.ts')) entries.add(value.replace(/^\.\//u, ''))
+      return
+    }
+    if (!isRecord(value)) return
+    for (const [condition, target] of Object.entries(value)) if (condition !== 'types') collect(target)
+  }
+  const { exports } = manifest
+  if (typeof exports === 'string') collect(exports)
+  else if (isRecord(exports) && Object.hasOwn(exports, '.')) collect(exports['.'])
+  for (const field of ['module', 'main']) {
+    const entry = manifest[field]
+    if (typeof entry === 'string') entries.add(entry.replace(/^\.\//u, ''))
+  }
+  return [...entries]
+}
+
+/** Manifest of `name` installed below `fromDirectory`, following Node's `node_modules` directory walk. */
+function locateWorkspaceManifest(fromDirectory: string, name: string): string | undefined {
+  let directory = fromDirectory
+  for (;;) {
+    const candidate = join(directory, 'node_modules', name, 'package.json')
+    if (existsSync(candidate)) return realpathSync(candidate)
+    const parent = dirname(directory)
+    if (parent === directory) return undefined
+    directory = parent
+  }
+}
+
+function workspaceDependencies(manifest: Record<string, unknown>): string[] {
+  const names = new Set<string>()
+  for (const field of ['dependencies', 'optionalDependencies']) {
+    const dependencies = manifest[field]
+    if (!isRecord(dependencies)) continue
+    for (const name of Object.keys(dependencies)) if (name.startsWith(WORKSPACE_PREFIX)) names.add(name)
+  }
+  return [...names]
+}
+
+/**
+ * Workspace packages electron-builder packs beside the shell, with the declared entries missing on disk.
+ *
+ * electron-builder copies the application manifest's production dependency closure into
+ * `app.asar/node_modules`, and each workspace package imports its own workspace dependencies at
+ * runtime. A prepare step that skipped their compilation still resolves the package directory, so
+ * only each manifest's declared entries prove a package usable.
+ * @param appManifest - The packaged application's `package.json`.
+ * @param repositoryRoot - Root that package directories are reported relative to.
+ * @returns One record per workspace package in the closure, sorted by name.
+ */
+export function packagedWorkspacePackages(appManifest: string, repositoryRoot: string): PackagedWorkspacePackage[] {
+  const packages = new Map<string, PackagedWorkspacePackage>()
+  const pending = [appManifest]
+  while (pending.length > 0) {
+    const manifestPath = pending.shift()!
+    for (const name of workspaceDependencies(readManifest(manifestPath))) {
+      if (packages.has(name)) continue
+      const dependencyManifest = locateWorkspaceManifest(dirname(manifestPath), name)
+      if (dependencyManifest === undefined) {
+        packages.set(name, { name, directory: undefined, missingEntries: ['package.json'] })
+        continue
+      }
+      const directory = dirname(dependencyManifest)
+      const missingEntries = runtimeEntries(readManifest(dependencyManifest))
+        .filter(entry => !existsSync(resolve(directory, entry)))
+      packages.set(name, { name, directory: relative(repositoryRoot, directory), missingEntries })
+      pending.push(dependencyManifest)
+    }
+  }
+  return [...packages.values()].sort((left, right) => left.name.localeCompare(right.name))
+}
+
 /**
  * Verify every prepared input electron-builder consumes exists before a cache-backed build.
  * @param buildPaths - Target paths whose prepared engine and runtime directories are required.
@@ -278,6 +375,12 @@ function assertBuilderInputsPresent(buildPaths: DesktopTargetBuildPaths): void {
       resolve(specifier)
     } catch {
       missing.push([`${specifier} build output`, specifier])
+    }
+  }
+  for (const workspacePackage of packagedWorkspacePackages(join(APP_ROOT, 'package.json'), REPOSITORY_ROOT)) {
+    for (const entry of workspacePackage.missingEntries) {
+      missing.push([`${workspacePackage.name} build output`,
+        workspacePackage.directory === undefined ? workspacePackage.name : join(workspacePackage.directory, entry)])
     }
   }
   if (missing.length > 0) {
