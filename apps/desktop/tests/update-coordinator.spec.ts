@@ -261,6 +261,19 @@ it('accepts prereleases on both channels without pinning a feed', async () => {
   expect(stable.downloadUpdate).not.toHaveBeenCalled()
 })
 
+it.each(['nightly', 'stable'] as const)('rejects older, equal and malformed versions on %s', async (channel) => {
+  for (const version of ['0.9.0', '1.0.0-rc.1', '1.0.0', 'invalid']) {
+    const f = fixture(channel, '1.0.0')
+    expect(f.updater.channel).toBeUndefined()
+    f.checkForUpdates.mockResolvedValueOnce({ isUpdateAvailable: true, updateInfo: { version } })
+    expect((await f.coordinator.check()).phase).toBe(version === 'invalid' ? 'error' : 'idle')
+    await expect(f.coordinator.download(version)).rejects.toThrow(/no checked update/u)
+    await expect(f.coordinator.install(version)).rejects.toThrow(/confirmed target is not ready/u)
+    expect(f.downloadUpdate).not.toHaveBeenCalled()
+    expect(f.quitAndInstall).not.toHaveBeenCalled()
+  }
+})
+
 
 it('retires a downloaded target and rejects its old confirmation after switching', async () => {
   const f = fixture()

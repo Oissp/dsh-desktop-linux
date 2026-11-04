@@ -156,3 +156,7 @@ scripts/verify-repository-references.ts # 排除 python/sdk/uv.lock 的生成数
 THIRD_PARTY_NOTICES.md # 移除 COS/notarize、补录 libreoffice-kit 补丁
 pnpm-workspace.yaml # libreoffice-kit 补丁 pin + verifyDepsBeforeRun
 tsdown.config.ts # 注释-only：保留 fork 的裁剪说明，不改变构建入口
+
+# ── 0.2.2-rc.1 合并补录 ──
+# required 列表不再要求 fork 已裁剪的 scripts/cua-helper/package.ts；其余摘要内容与上游一致。
+scripts/cua-helper/build-inputs.ts

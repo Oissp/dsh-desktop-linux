@@ -1,0 +1,22 @@
+# Bilingual-pair consistency record for 2026-11-04-merge-0.2.2-rc.1-linux-desktop.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-11-04-merge-0.2.2-rc.1-linux-desktop.md
+/agent-note-0-2-2-rc-1-upstream-sync-the-fork-keeps-its-single-update-feed-and-linux-shell:
+  en: 6e7a68166a694611
+  zh: 184c82399b830619
+/agent-note-0-2-2-rc-1-upstream-sync-the-fork-keeps-its-single-update-feed-and-linux-shell/problem:
+  en: 847c436094f7ceb8
+  zh: 92d4d5fe3e5e4c8f
+/agent-note-0-2-2-rc-1-upstream-sync-the-fork-keeps-its-single-update-feed-and-linux-shell/decision:
+  en: 1b776a42d950b207
+  zh: fad95d89f9efe6a4
+/agent-note-0-2-2-rc-1-upstream-sync-the-fork-keeps-its-single-update-feed-and-linux-shell/alternatives-considered:
+  en: 2915af3139619b2d
+  zh: b1c979e15d8d368d
+/agent-note-0-2-2-rc-1-upstream-sync-the-fork-keeps-its-single-update-feed-and-linux-shell/consequences:
+  en: a7f17f179e797234
+  zh: 2c6be20685861db3
+/agent-note-0-2-2-rc-1-upstream-sync-the-fork-keeps-its-single-update-feed-and-linux-shell/testing:
+  en: b91afc10825390b2
+  zh: 09db092544f4a260
