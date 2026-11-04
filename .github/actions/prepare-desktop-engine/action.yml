@@ -24,11 +24,14 @@ description: Restore, build, and save the cached dsh engine and Electron runtime
 # tsc 按 apps/desktop/tsconfig.{host,client}.json 产出被缓存的 lib/，本 action 自己定义
 # 缓存路径与 prepare 命令。三者都在 pathspec 内，因此改它们（含本文件的注释）会让缓存失效。
 #
-# 缓存路径必须覆盖 package-target.ts --builder-only 断言的每一份产物（壳 bundle、
-# Electron 运行时、dsh 运行时清单，以及壳 workspace 依赖构建出的 vendor/cordis/lib、
-# packages/api/gateway/lib——--builder-only 会用 createRequire.resolve 解析 main.js 的
-# 裸导入），缺一份命中缓存时就会直接失败。即使是非源码的 apps/desktop 改动（如文档）
-# 命中缓存，也是同一份 main.js 的依赖链，故这些依赖 lib 一并缓存。
+# 缓存路径必须覆盖 package-target.ts --builder-only 断言的每一份产物：壳 bundle、
+# Electron 运行时、dsh 运行时清单，以及 apps/desktop 生产依赖闭包里每个 workspace 包的
+# lib/（electron-builder 会把它们整体打进 app.asar/node_modules）。闭包不是只看 main.js 的
+# 裸导入：@deepseek-ai/cordis 等包在运行时再 import 自己的 workspace 依赖（cosmokit、
+# schemastery、dsh-deque、dsh-timeout、dsh-typert-protocol、dsh-brand），少缓存一份，
+# 命中缓存的产物就在主进程加载时 ERR_MODULE_NOT_FOUND，窗口不出现（0.2.2-alpha.3 即为此：
+# alpha.3 发版 run 命中了同 key 的引擎缓存）。--builder-only 按同一闭包校验，缺任一份即失败。
+# 即使是非源码的 apps/desktop 改动（如文档）命中缓存，也是同一份依赖链，故这些 lib 一并缓存。
 
 runs:
   using: composite
@@ -61,7 +64,13 @@ runs:
           apps/desktop/.desktop-build/targets/linux-x64/runtime
           apps/desktop/.desktop-build/targets/linux-x64/dsh
           vendor/cordis/lib
+          vendor/cosmokit/lib
+          vendor/schemastery/lib
           packages/api/gateway/lib
+          packages/util/brand/lib
+          packages/util/deque/lib
+          packages/util/timeout/lib
+          packages/typert/protocol/lib
         key: ${{ steps.engine-key.outputs.key }}
 
     - name: Prepare engine + runtime (linux x64)
@@ -84,5 +93,11 @@ runs:
           apps/desktop/.desktop-build/targets/linux-x64/runtime
           apps/desktop/.desktop-build/targets/linux-x64/dsh
           vendor/cordis/lib
+          vendor/cosmokit/lib
+          vendor/schemastery/lib
           packages/api/gateway/lib
+          packages/util/brand/lib
+          packages/util/deque/lib
+          packages/util/timeout/lib
+          packages/typert/protocol/lib
         key: ${{ steps.engine-key.outputs.key }}
