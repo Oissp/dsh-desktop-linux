@@ -102,6 +102,17 @@ it.each(['missing manifest', 'dangling symlink', 'absent'] as const)(
   },
 )
 
+it('keeps the absent-package error when Electron asar reports null for missing directories', () => {
+  const fixture = engineTree()
+  // Electron's asar fs shim returns null instead of undefined for missing archive-internal
+  // directories, violating the throwIfNoEntry contract; null must count as absent so the
+  // packaged native-engine miss falls back to WASM instead of failing the conversion.
+  vi.mocked(lstatSync).mockImplementation(() => null as never)
+  const error = thrownBy(() => fixture.resolveEnginePackage(fixture.name))
+  expect(error).toBe(fixture.resolve.mock.results[0]?.value)
+  expect(error).toMatchObject({ code: 'MODULE_NOT_FOUND' })
+})
+
 it('keeps a Node resolution error other than MODULE_NOT_FOUND unchanged', () => {
   const fixture = engineTree()
   mkdirSync(fixture.directory, { recursive: true })

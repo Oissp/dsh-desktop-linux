@@ -60,8 +60,11 @@ export function createEnginePackageResolver(kitEntry: string | URL): EnginePacka
       manifest = fromKit.resolve(`${name}/package.json`)
     } catch (error) {
       if (error instanceof Error && 'code' in error && error.code === 'MODULE_NOT_FOUND') {
+        // Electron's asar fs shim violates the throwIfNoEntry contract for archive-internal
+        // paths: missing directories surface as null instead of undefined, which would misread
+        // an absent native engine package as an incomplete install and block WASM fallback.
         const installed = (fromKit.resolve.paths(name) ?? []).some(directory =>
-          lstatSync(join(directory, name), { throwIfNoEntry: false }) !== undefined,
+          Boolean(lstatSync(join(directory, name), { throwIfNoEntry: false })),
         )
         if (installed) throw new Error(`Installed LibreOfficeKit package is incomplete: ${name}. Reinstall the package.`, { cause: error })
       }
