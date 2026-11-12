@@ -1,0 +1,22 @@
+# Bilingual-pair consistency record for 2026-11-12-merge-0.2.2-rc.2-linux-desktop.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-11-12-merge-0.2.2-rc.2-linux-desktop.md
+/agent-note-0-2-2-rc-2-upstream-sync-the-fork-follows-the-office-kit-rework-and-trims-the-rollout-pipeline:
+  en: ef1a1f94d6db6411
+  zh: e21a37083928783a
+/agent-note-0-2-2-rc-2-upstream-sync-the-fork-follows-the-office-kit-rework-and-trims-the-rollout-pipeline/problem:
+  en: 06dda91677d847a5
+  zh: 55e8b7d113bc5429
+/agent-note-0-2-2-rc-2-upstream-sync-the-fork-follows-the-office-kit-rework-and-trims-the-rollout-pipeline/decision:
+  en: 1f984ae16985225a
+  zh: 3e0c761e92cd677f
+/agent-note-0-2-2-rc-2-upstream-sync-the-fork-follows-the-office-kit-rework-and-trims-the-rollout-pipeline/alternatives-considered:
+  en: 0a42a66fce13594c
+  zh: 3f1d905f13f525d4
+/agent-note-0-2-2-rc-2-upstream-sync-the-fork-follows-the-office-kit-rework-and-trims-the-rollout-pipeline/consequences:
+  en: 925d3b664df280aa
+  zh: 810572e9029e1531
+/agent-note-0-2-2-rc-2-upstream-sync-the-fork-follows-the-office-kit-rework-and-trims-the-rollout-pipeline/testing:
+  en: c69de2ab3b40a04e
+  zh: dcc5ab34248dc05d
