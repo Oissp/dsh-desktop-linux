@@ -57,10 +57,10 @@ export function createElectronBuilderConfig(
       '**/@vscode/ripgrep-*/bin/rg',
       '**/node_modules/@deepseek-ai/libreoffice-kit-*/**/*',
     ],
-    // 上面的通配只命中引擎包（libreoffice-kit-*），kit 本体仍留在 asar 内。而 desktop-host
-    // 把 kit 的 CLI 路径映射到 app.asar.unpacked 下交给 skill-office，后者在插件加载时
-    // stat 该文件，缺失会让宿主启动直接失败。这里按上游同一处逻辑解包完整 Office 闭包
-    // （kit 本体、其依赖与选定引擎），使映射到的路径真实存在。
+    // 上面的通配只命中引擎包（libreoffice-kit-*），kit 本体及其运行时依赖仍会进入 asar。
+    // kit 在转换与字体清点时从自身目录启动 Node worker（lib/worker.js、
+    // lib/font-snapshot-worker.js），worker 只能加载真实文件，asar 内的脚本无法作为入口启动。
+    // 这里按上游同一处逻辑解包完整 Office 闭包（kit 本体、其依赖与选定引擎）。
     beforePack: async context => {
       const patterns = await officeAsarUnpackPatterns(buildPaths.dsh, payloadTarget)
       const existing = context.packager.config.asarUnpack ?? []

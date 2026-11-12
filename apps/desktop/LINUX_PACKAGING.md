@@ -135,7 +135,6 @@ deepseek-harness-desktop/
         runtime.json                      # 运行时清单
       pnpm/                               # pnpm CLI
       bin/node                            # Node bin 目录入口
-      office-skills/                      # Office 技能资产
       cli/
         bin/dsh                           # dsh CLI 启动器（「管理 dsh 命令」的 symlink 目标）
         command-manager.js                # 命令管理 worker（自包含 bundle）

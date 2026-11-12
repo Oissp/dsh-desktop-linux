@@ -37,7 +37,7 @@ describe('desktop package target', () => {
     const { createElectronBuilderConfig } = await import('../electron-builder.config.mjs')
     const config = createElectronBuilderConfig({ DSH_DESKTOP_APP_ID: 'com.example.desktop-test' }, 'linux', 'x64')
     // 静态 asarUnpack 只命中引擎包（libreoffice-kit-*），kit 本体靠 beforePack 在打包期
-    // 追加闭包模式解包；缺失该钩子会让 skill-office 的 CLI 路径不存在、宿主启动即失败。
+    // 追加闭包模式解包；缺失该钩子时 kit 的 Node worker 入口留在 asar 内，无法启动。
     expect(typeof config.beforePack).toBe('function')
   })
 
