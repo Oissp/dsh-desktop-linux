@@ -4,7 +4,7 @@ import { spawn, execFile } from 'node:child_process'
 import { copyFileSync, cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync, appendFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { createRequire } from 'node:module'
-import { dirname, join, relative, resolve } from 'node:path'
+import { join, relative, resolve } from 'node:path'
 import { load } from 'js-yaml'
 import { desktopNodeEnvironment } from '../src/node-environment.ts'
 import { createRuntimeProjectMetadata } from '../src/project-manager.ts'
@@ -217,12 +217,6 @@ async function main(): Promise<void> {
       recursive: true, dereference: true,
       filter: source => desktopRuntimeFileExclusion(relative(modules, source), target, officeEngine) === undefined,
     })
-    // Office 技能资产必须作为 runtime 资源随包携带：desktop-host 的 office 插件在启动时
-    // 读取 runtime/office-skills，缺失会让 Host 启动失败（packages/skill/skill-office 的
-    // 资产校验）。与上游 primary-runtime 准备流程中的 prepareOfficeSkillAssets 一致。
-    const hostRequire = createRequire(resolve(APP_ROOT, '..', 'desktop-host', 'package.json'))
-    cpSync(join(dirname(hostRequire.resolve('@deepseek-ai/dsh-skill-office/package.json')), 'assets'),
-      join(RUNTIME_ROOT, 'office-skills'), { recursive: true, dereference: true })
     if (!existsSync(join(DSH_OUTPUT_ROOT, 'node_modules', '@deepseek-ai', `libreoffice-kit-${officeEngine}`, 'prebuilds.json'))) {
       throw new Error(`desktop runtime: missing required LibreOffice engine ${officeEngine}`)
     }
