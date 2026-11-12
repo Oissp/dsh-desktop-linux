@@ -117,15 +117,12 @@ packages/experimental/cua-macos/native/README.zh.md # macOS 打包配置链接�
 apps/desktop-host/package.json # 移除 koffi（fork 的 Linux 运行时不需要原生模块）
 apps/desktop/tests/update-coordinator.spec.ts # 单一 feed：两渠道都接受预发布，断言不钉 updater.channel
 apps/desktop/tests/mandatory-update-policy.spec.ts # 新增 DesktopPolicyIdentity 校验用例（含 macOS arm64）
-apps/desktop/tests/welcome-flow.e2e.ts # 打包目标用 linux-x64
-apps/desktop/tests/welcome-startup.spec.ts # nativeTheme mock 补充 on/removeListener（托盘语言控制器订阅）
 docs/development.md # CI 说明改为 fork 的 package-deb*.yml 与手工合并上游发布
 docs/development.zh.md # 同上
 package.json # 删除 mac/win 打包脚本，只保留 Linux 目标
 packages/experimental/browser-use-stagehand-native/tsdown.config.ts # inlineDynamicImports → outputOptions.codeSplitting: false
 packages/experimental/inspector/tsdown.config.ts # 同上
 packages/experimental/webworker-runtime/tsdown.config.ts # noExternal → deps.alwaysBundle；codeSplitting: false
-packages/skill/skill-office/tests/skill-office.spec.ts # libreoffice-kit 版本从已安装 manifest 读取，不写死 0.1.5
 
 # ── 同步基线补录（审计） ──
 # 以下文件在 0.2.2-alpha.3 合并后仍与上游不同，但此前未列入基线。只补录需要
@@ -160,3 +157,14 @@ tsdown.config.ts # 注释-only：保留 fork 的裁剪说明，不改变构建�
 # ── 0.2.2-rc.1 合并补录 ──
 # required 列表不再要求 fork 已裁剪的 scripts/cua-helper/package.ts；其余摘要内容与上游一致。
 scripts/cua-helper/build-inputs.ts
+
+# ── 0.2.2-rc.2 合并补录 ──
+# 合成项目描述符的 target 用 linux-x64：fork 的 prepareDevelopmentProject 只接受该目标，
+# 该 e2e 只在打包流程之外检查平台/架构，其余内容与上游一致。
+apps/desktop/tests/harness.ts
+# Office kit 中文 README 的 Desktop 打包链接指向英文目标：打包双语对已裁剪，
+# 按配对规则两侧解析到同一目标。
+packages/document/office-kit/README.zh.md
+# 0.2.2-alpha.3 补录的三条随上游吸收而移除：welcome-flow.e2e.ts 的 linux-x64 目标移入
+# harness.ts；welcome-startup.spec.ts 的 nativeTheme mock 与 skill-office.spec.ts 的
+# libreoffice-kit 版本断言已由上游采用或删除，两文件因此与上游一致。

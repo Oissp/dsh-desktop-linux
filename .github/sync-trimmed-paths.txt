@@ -646,3 +646,26 @@ apps/desktop/tests/expected/stable-prerelease-win-x64.json
 apps/desktop/tests/expected/website-purge-accepted.md
 apps/desktop/tests/expected/website-purge-unconfirmed.md
 scripts/desktop-archive-workflow-test.ts
+
+# ── 0.2.2-rc.2 合并新增裁剪：desktop 分阶段发布管线与 Windows 重启提示 ──
+# 上游新增的 desktop-rollout 发布管线（网站安装器 + COS + EdgeOne 分阶段放量）导入 fork 已裁剪的
+# desktop-auto-update-environment、desktop-upload-plan、desktop-publish-record、
+# resolve-retained-desktop-publish-ci、desktop-publication-failure、publish-website-ci 与
+# desktop-publish-cos（见 0.2.2-rc.1 分组），在 fork 中无法通过类型检查；对应 workflow 与
+# spec 是这些脚本的调用方。fork 的发版由 package-deb.yml 用 gh release 直接创建 Release。
+.github/workflows/desktop-rollout.yml
+apps/desktop/scripts/desktop-rollout.ts
+apps/desktop/scripts/publish-desktop-rollout-ci.ts
+apps/desktop/tests/desktop-rollout.spec.ts
+# cua-helper-package-windows.yml 在 Windows runner 上打包 CUA helper；fork 只运行自己的
+# package-deb.yml 与 package-deb-test.yml，不运行上游的 Windows 打包流程。
+.github/workflows/cua-helper-package-windows.yml
+# Windows 安装器的重启提示源文件只由 Windows NSIS 编译（installer.nsh 与本目录的
+# window-frame.cpp 均已裁剪），standalone 的 restart-status 测试脚本与 NSIS 夹具在 fork 中
+# 没有调用方；fork 从不构建 Windows 安装器。
+apps/desktop/installer/restart-banner.h
+apps/desktop/installer/restart-status.h
+apps/desktop/installer/restart-text.h
+apps/desktop/scripts/restart-banner.nsh
+apps/desktop/tests/fixtures/restart-status-owner.nsi
+apps/desktop/tests/windows-restart-status.ps1
