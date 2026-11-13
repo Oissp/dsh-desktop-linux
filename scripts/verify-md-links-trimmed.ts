@@ -65,7 +65,7 @@ export function trimmedKey(source: string, violation: Pick<Violation, 'url' | 'r
   let path = raw
   try {
     path = decodeURIComponent(raw)
-  } catch {
+  } catch (_malformedEscape) {
     // decodeURIComponent throws only on a malformed percent-escape, which names no
     // file; the raw text then keys a lookup that matches no manifest entry.
   }

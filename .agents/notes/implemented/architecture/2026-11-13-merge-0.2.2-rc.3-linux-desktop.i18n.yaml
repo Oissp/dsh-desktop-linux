@@ -1,0 +1,22 @@
+# Bilingual-pair consistency record for 2026-11-13-merge-0.2.2-rc.3-linux-desktop.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-11-13-merge-0.2.2-rc.3-linux-desktop.md
+/agent-note-0-2-2-rc-3-upstream-sync-the-fork-trims-the-publisher-workspace-and-follows-upstream-s-desktop-authentication:
+  en: dd81b8b078490937
+  zh: b2fa5b2bbc7cca12
+/agent-note-0-2-2-rc-3-upstream-sync-the-fork-trims-the-publisher-workspace-and-follows-upstream-s-desktop-authentication/problem:
+  en: 92cb266c7eb2a071
+  zh: 98aa6c7efaa12e98
+/agent-note-0-2-2-rc-3-upstream-sync-the-fork-trims-the-publisher-workspace-and-follows-upstream-s-desktop-authentication/decision:
+  en: 8bea6c50fdb46565
+  zh: 5d1b1517f58d35db
+/agent-note-0-2-2-rc-3-upstream-sync-the-fork-trims-the-publisher-workspace-and-follows-upstream-s-desktop-authentication/alternatives-considered:
+  en: d04cead3b0cf7f78
+  zh: 68e926b6180bcc02
+/agent-note-0-2-2-rc-3-upstream-sync-the-fork-trims-the-publisher-workspace-and-follows-upstream-s-desktop-authentication/consequences:
+  en: 76b9f273a72d9634
+  zh: 0469d23387e0d3f3
+/agent-note-0-2-2-rc-3-upstream-sync-the-fork-trims-the-publisher-workspace-and-follows-upstream-s-desktop-authentication/testing:
+  en: 316a00db24d126ce
+  zh: a21db2a6766ff5ad

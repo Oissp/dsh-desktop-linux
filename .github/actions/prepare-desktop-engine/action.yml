@@ -82,6 +82,7 @@ runs:
           packages/api/gateway/lib
           packages/util/brand/lib
           packages/util/deque/lib
+          packages/util/error/lib
           packages/util/timeout/lib
           packages/typert/protocol/lib
         key: ${{ steps.engine-key.outputs.key }}
@@ -122,6 +123,7 @@ runs:
           packages/api/gateway/lib
           packages/util/brand/lib
           packages/util/deque/lib
+          packages/util/error/lib
           packages/util/timeout/lib
           packages/typert/protocol/lib
         key: ${{ steps.engine-key.outputs.key }}

@@ -168,3 +168,19 @@ packages/document/office-kit/README.zh.md
 # 0.2.2-alpha.3 补录的三条随上游吸收而移除：welcome-flow.e2e.ts 的 linux-x64 目标移入
 # harness.ts；welcome-startup.spec.ts 的 nativeTheme mock 与 skill-office.spec.ts 的
 # libreoffice-kit 版本断言已由上游采用或删除，两文件因此与上游一致。
+
+# ── 0.2.2-rc.3 合并补录 ──
+# 上游把 Desktop 发布工具拆成 apps/desktop-publisher workspace，fork 整目录裁剪；下列四份
+# 构建与门禁文件随之只保留 fork 侧（无 publisher 成员/路径）的内容。
+# CI 说明仍描述上游三个 Policy workflow 与 publisher 运行手册，但 fork 不运行这些 workflow。
+.github/AGENTS.md
+tsconfig.base.json # 去掉 apps/desktop-publisher 的 paths 别名
+tsconfig.host.json # 去掉 apps/desktop-publisher 的 src/tests 编译输入
+scripts/check-workspace-constraints.ts # 去掉 desktop-publisher 的私有工具豁免
+scripts/check-workspace-constraints.spec.ts # 同上，用例恢复为只覆盖 plugin-market-generator
+# 引擎缓存清单补 dsh-error 的 lib/：上游把 dsh-error 变成 apps/desktop 的生产依赖，
+# electron-builder 会打包它，prepare 跳过时缓存必须带上它的构建输出。
+# prepare-desktop-engine action 是 fork 自有文件（上游没有同名路径），不进本基线。
+# fork 自补的 patchedDependencies 用例改用 DESKTOP_HOST_PROTOCOL_VERSION 常量：
+# 上游把 Host 生命周期协议推进到 5，硬编码的 4 会让 parseDesktopRelease 拒绝。
+apps/desktop/tests/core-package-set.spec.ts
