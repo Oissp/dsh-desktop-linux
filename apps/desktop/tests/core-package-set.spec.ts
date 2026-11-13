@@ -15,6 +15,7 @@ import {
 } from '../src/core-package-set.ts'
 import { createRuntimeProjectMetadata } from '../src/project-manager.ts'
 import { parseDesktopRelease } from '../src/release.ts'
+import { DESKTOP_HOST_PROTOCOL_VERSION } from '../src/host-protocol.ts'
 
 const roots: string[] = []
 
@@ -119,7 +120,7 @@ describe('desktop runtime project patched-package pins', () => {
       '  node-pty@1.2.0-beta.15: patches/node-pty@1.2.0-beta.15.patch',
     ].join('\n'))
     const release = parseDesktopRelease({
-      schemaVersion: 1, version: '1.2.3', hostProtocolVersion: 4, nodeVersion: '24.17.0', pnpmVersion: '11.7.0',
+      schemaVersion: 1, version: '1.2.3', hostProtocolVersion: DESKTOP_HOST_PROTOCOL_VERSION, nodeVersion: '24.17.0', pnpmVersion: '11.7.0',
     })
     createRuntimeProjectMetadata(root, release, repo)
     const workspace = readFileSync(join(root, 'pnpm-workspace.yaml'), 'utf8')
@@ -136,7 +137,7 @@ describe('desktop runtime project patched-package pins', () => {
     roots.push(repo)
     writeFileSync(join(repo, 'pnpm-workspace.yaml'), 'packages:\n  - .\n')
     const release = parseDesktopRelease({
-      schemaVersion: 1, version: '1.2.3', hostProtocolVersion: 4, nodeVersion: '24.17.0', pnpmVersion: '11.7.0',
+      schemaVersion: 1, version: '1.2.3', hostProtocolVersion: DESKTOP_HOST_PROTOCOL_VERSION, nodeVersion: '24.17.0', pnpmVersion: '11.7.0',
     })
     createRuntimeProjectMetadata(root, release, repo)
     const manifest = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8')) as { dependencies: Record<string, string> }

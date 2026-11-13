@@ -103,7 +103,8 @@ export default defineConfig([
     fixedExtension: false,
     dts: false,
     clean: false,
-    deps: { neverBundle: ['electron'] },
+    // The standalone worker has no node_modules; inline even production dependencies.
+    deps: { neverBundle: ['electron'], alwaysBundle: ['@deepseek-ai/dsh-atomic-write', '@deepseek-ai/dsh-error'] },
   },
   ...(['preload-app', 'preload-welcome', 'preload-platform-account', 'preload-mandatory', 'preload-update-dialog'] as const).map(name => ({
     // Sandboxed Electron preloads run as CommonJS even though the application package is ESM.
