@@ -52,10 +52,6 @@ apps/desktop/scripts/windows-sign.mjs
 # desktop-auto-update-environment.*）：fork 的发版由 package-deb.yml 用 gh release 直接
 # 创建 Release，没有任何步骤调用 upload:linux:x64，该管线连同其 spec 与孤儿夹具一并裁剪。
 apps/desktop/scripts/build-installed-update-worker.mjs
-apps/desktop/scripts/cos-operation.ts
-apps/desktop/scripts/desktop-auto-update-environment.d.mts
-apps/desktop/scripts/desktop-auto-update-environment.mjs
-apps/desktop/scripts/desktop-cos.ts
 apps/desktop/scripts/desktop-package-environment.d.mts
 apps/desktop/scripts/desktop-package-environment.mjs
 apps/desktop/scripts/desktop-policy-environment.d.mts
@@ -114,9 +110,6 @@ apps/desktop/scripts/windows-signing-state.mjs
 
 # 对应的 macOS/Windows 桌面测试与夹具：package-deb 的桌面测试门槛会收集
 # apps/desktop/tests 全部 spec，带入即失败。
-apps/desktop/tests/cos-loopback.ts
-apps/desktop/tests/cos-operation.spec.ts
-apps/desktop/tests/desktop-auto-update-environment.spec.ts
 apps/desktop/tests/desktop-package-environment.spec.ts
 apps/desktop/tests/desktop-policy-environment.spec.ts
 apps/desktop/tests/desktop-upload-plan.spec.ts
@@ -345,34 +338,17 @@ apps/desktop/tests/runtime-preparation.spec.ts
 .github/workflows/macos-package.yml
 apps/desktop/scripts/desktop-ci-version.d.mts
 apps/desktop/scripts/desktop-ci-version.mjs
-apps/desktop/scripts/desktop-publication-failure.ts
 apps/desktop/scripts/desktop-publication-summary.ts
-apps/desktop/scripts/desktop-publish-config.ts
-apps/desktop/scripts/desktop-publish-cos.ts
-apps/desktop/scripts/desktop-publish-record.ts
-apps/desktop/scripts/desktop-publish-route.ts
 apps/desktop/scripts/desktop-publish-tag.ts
-apps/desktop/scripts/desktop-publish.ts
-apps/desktop/scripts/desktop-release-store.ts
 apps/desktop/scripts/desktop-rollback.ts
 apps/desktop/scripts/publish-desktop-ci.ts
 apps/desktop/scripts/read-desktop-app-key.mjs
-apps/desktop/scripts/resolve-desktop-publish-ci.ts
-apps/desktop/scripts/resolve-retained-desktop-publish-ci.ts
 apps/desktop/scripts/retain-desktop-ci.ts
 apps/desktop/scripts/rollback-desktop-channel.ts
 apps/desktop/scripts/verify-retained-desktop.ts
-apps/desktop/tests/desktop-package-selection.spec.ts
-apps/desktop/tests/desktop-publication-failure.spec.ts
 apps/desktop/tests/desktop-publication-preflight.spec.ts
 apps/desktop/tests/desktop-publication-summary.spec.ts
-apps/desktop/tests/desktop-publish-config.spec.ts
-apps/desktop/tests/desktop-publish-cos.spec.ts
-apps/desktop/tests/desktop-publish-record.spec.ts
-apps/desktop/tests/desktop-publish-route.spec.ts
 apps/desktop/tests/desktop-publish-tag.spec.ts
-apps/desktop/tests/desktop-publish.spec.ts
-apps/desktop/tests/desktop-release-store.spec.ts
 apps/desktop/tests/desktop-rollback.spec.ts
 apps/desktop/tests/expected/publication-mac-arm64.md
 apps/desktop/tests/expected/publication-production.md
@@ -445,13 +421,7 @@ scripts/desktop-package-source.spec.ts
 # spec 断言该 workflow 的 preflight 步骤。fork 用 package-deb.yml 直接发 Release，
 # 不经过这条管线。cos-* 与 retained-* 快照夹具只被上面裁剪的 desktop-publish-cos.spec.ts
 # 和 retain-desktop-ci.spec.ts 的 toMatchFileSnapshot 使用，一并裁剪。
-apps/desktop/scripts/desktop-publish-qualification.d.mts
-apps/desktop/scripts/desktop-publish-qualification.mjs
-apps/desktop/scripts/preflight-desktop-publish.d.mts
-apps/desktop/scripts/preflight-desktop-publish.mjs
 apps/desktop/tests/desktop-publish-preflight.spec.ts
-apps/desktop/tests/expected/cos-GetObject-denied.json
-apps/desktop/tests/expected/cos-PutObject-denied.json
 apps/desktop/tests/expected/retained-unnotarized.md
 apps/desktop/tests/expected/retained-unsigned.md
 
@@ -554,8 +524,6 @@ apps/desktop/tests/windows-installer-render.cpp
 # 选项、固定走 build:official + release:pack，且 desktop-publish.yml 在裁剪清单内，
 # 两个脚本在 fork 中没有任何调用方；随附 spec 是唯一的引用者，一并裁剪。
 apps/desktop/scripts/pack-local-packages.ts
-apps/desktop/scripts/preflight-desktop-publish-local.d.mts
-apps/desktop/scripts/preflight-desktop-publish-local.mjs
 apps/desktop/tests/desktop-publish-local-preflight.spec.ts
 apps/desktop/tests/pack-local-packages.spec.ts
 
@@ -575,7 +543,6 @@ apps/desktop/tests/pack-local-packages.spec.ts
 .github/workflows/pr-check-on-base-branch.yml
 .github/workflows/pr-check-on-head-branch.yml
 apps/desktop/scripts/desktop-edgeone.ts
-apps/desktop/scripts/desktop-publish-targets.ts
 apps/desktop/tests/desktop-edgeone.spec.ts
 apps/desktop/tests/purge-command.spec.ts
 scripts/desktop-package-forms.spec.ts
@@ -594,7 +561,6 @@ scripts/macos-package-workflow.spec.ts
 # 由已裁剪的 release-publish.yml 以 workflow_call 调用；fork 不运行 macOS 打包，裁剪该 workflow。
 # 四个 publishing 模板只被 desktop-publish-templates.spec.ts 读取，而该 spec 导入已裁剪的
 # desktop-publish-config.ts；模板与 spec 一起裁剪。
-.github/workflows/cua-helper-package.yml
 apps/desktop/config/publishing/macos/production.json.example
 apps/desktop/config/publishing/macos/test.json.example
 apps/desktop/config/publishing/windows/production.json.example
@@ -625,13 +591,7 @@ apps/desktop/src/updates/electron-updater/channel.ts
 # 类型检查。desktop-channel-version.spec.ts 只覆盖已裁剪的 desktop-ci-version.mjs 与上游的
 # electron-builder-config.mjs，其余 spec 是这些脚本的唯一引用者，一并裁剪。
 apps/desktop/scripts/archive-desktop-ci.ts
-apps/desktop/scripts/desktop-purge-recovery.ts
-apps/desktop/scripts/desktop-website-installer.ts
-apps/desktop/scripts/publish-website-ci.ts
 apps/desktop/tests/desktop-channel-version.spec.ts
-apps/desktop/tests/desktop-purge-recovery.spec.ts
-apps/desktop/tests/desktop-website-installer.spec.ts
-apps/desktop/tests/publish-website-ci.spec.ts
 # cua-helper/build-inputs.spec.ts 导入已裁剪的 desktop-package-environment.mjs；
 # build-inputs.ts 本身不依赖它，仍被保留的 cua-helper 模块使用。
 scripts/cua-helper/build-inputs.spec.ts
@@ -643,8 +603,6 @@ apps/desktop/tests/expected/publication-production-website.md
 apps/desktop/tests/expected/stable-prerelease-mac-arm64.json
 apps/desktop/tests/expected/stable-prerelease-mac-x64.json
 apps/desktop/tests/expected/stable-prerelease-win-x64.json
-apps/desktop/tests/expected/website-purge-accepted.md
-apps/desktop/tests/expected/website-purge-unconfirmed.md
 scripts/desktop-archive-workflow-test.ts
 
 # ── 0.2.2-rc.2 合并新增裁剪：desktop 分阶段发布管线与 Windows 重启提示 ──
@@ -654,8 +612,6 @@ scripts/desktop-archive-workflow-test.ts
 # desktop-publish-cos（见 0.2.2-rc.1 分组），在 fork 中无法通过类型检查；对应 workflow 与
 # spec 是这些脚本的调用方。fork 的发版由 package-deb.yml 用 gh release 直接创建 Release。
 .github/workflows/desktop-rollout.yml
-apps/desktop/scripts/desktop-rollout.ts
-apps/desktop/scripts/publish-desktop-rollout-ci.ts
 apps/desktop/tests/desktop-rollout.spec.ts
 # cua-helper-package-windows.yml 在 Windows runner 上打包 CUA helper；fork 只运行自己的
 # package-deb.yml 与 package-deb-test.yml，不运行上游的 Windows 打包流程。
@@ -669,3 +625,14 @@ apps/desktop/installer/restart-text.h
 apps/desktop/scripts/restart-banner.nsh
 apps/desktop/tests/fixtures/restart-status-owner.nsi
 apps/desktop/tests/windows-restart-status.ps1
+
+# ── 0.2.2-rc.3 合并新增裁剪：Desktop 发布工具 workspace 与 CUA helper 打包 workflow 改名 ──
+# 上游在 rc.3 把 apps/desktop/scripts 与 apps/desktop/tests 下的整套 mac/win 打包、COS 发布、
+# 分阶段放量与 Windows 安装器代码搬进独立 workspace apps/desktop-publisher（由 apps/desktop
+# 以 devDependency 引用）。上面各分组按原路径逐条裁剪的这些文件因此在上游树里消失，条目随
+# 搬迁退场，改由本节的整目录条目覆盖：该 workspace 一被引入，tsconfig 的 apps/* 通配、
+# workspace 约束门禁与 pnpm-lock 都会把它当成真实成员，所以整目录一起裁剪。
+apps/desktop-publisher/
+# 上游把 cua-helper-package.yml 拆成按平台命名的 cua-helper-package-macos.yml 与
+# cua-helper-package-windows.yml；fork 不运行 macOS 打包流程，裁剪改名后的 macOS 一侧。
+.github/workflows/cua-helper-package-macos.yml
