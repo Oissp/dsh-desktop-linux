@@ -184,3 +184,13 @@ scripts/check-workspace-constraints.spec.ts # 同上，用例恢复为只覆盖 
 # fork 自补的 patchedDependencies 用例改用 DESKTOP_HOST_PROTOCOL_VERSION 常量：
 # 上游把 Host 生命周期协议推进到 5，硬编码的 4 会让 parseDesktopRelease 拒绝。
 apps/desktop/tests/core-package-set.spec.ts
+
+# ── 0.2.2-rc.3 后补录：Linux Office 预览修复 ──
+# Electron 的 asar 垫层把归档内缺失目录 lstat 成 null（违反 throwIfNoEntry 契约），
+# office-kit 的 createEnginePackageResolver 用 !== undefined 判定，把未随包发布的
+# Linux 原生引擎误读为「安装不完整」并拒绝 WASM 回退——上游 rc.2 的 office-kit 重构
+# 引入；kit 补丁（patches/@deepseek-ai__libreoffice-kit@0.2.3.patch）覆盖不到
+# provider 侧副本。上游收紧该解析器后，随合并退役本条与对应提交（47e8e0cd53）。
+packages/document/office-kit/src/locate.ts # Boolean() 判空：null 视为包不存在，保留 WASM 回退；真实目录与 EACCES 行为不变
+packages/document/office-kit/tests/engine-package.spec.ts # null-as-absent 回归用例，兼作上游同步后的退役探测器
+packages/document/office-kit/README.md # 补一句 asar null 行为说明（en/zh 配对）
