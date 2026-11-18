@@ -1,0 +1,22 @@
+# Bilingual-pair consistency record for 2026-11-18-merge-0.2.2-rc.5-linux-desktop.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-11-18-merge-0.2.2-rc.5-linux-desktop.md
+/agent-note-0-2-2-rc-5-upstream-sync-the-fork-keeps-its-trimmed-installer-tree-while-upstream-adds-two-connectors:
+  en: 0060551054595156
+  zh: 06db5d4560478369
+/agent-note-0-2-2-rc-5-upstream-sync-the-fork-keeps-its-trimmed-installer-tree-while-upstream-adds-two-connectors/problem:
+  en: 12415f57746ddecc
+  zh: f1bc073924267282
+/agent-note-0-2-2-rc-5-upstream-sync-the-fork-keeps-its-trimmed-installer-tree-while-upstream-adds-two-connectors/decision:
+  en: 2b12d9d45f24fa09
+  zh: 18a0d898b9b45736
+/agent-note-0-2-2-rc-5-upstream-sync-the-fork-keeps-its-trimmed-installer-tree-while-upstream-adds-two-connectors/alternatives-considered:
+  en: 7f763bb5a2217b8e
+  zh: 49410d21d9e1e8e3
+/agent-note-0-2-2-rc-5-upstream-sync-the-fork-keeps-its-trimmed-installer-tree-while-upstream-adds-two-connectors/consequences:
+  en: 36cb8465841e96c5
+  zh: 9257a056142e8170
+/agent-note-0-2-2-rc-5-upstream-sync-the-fork-keeps-its-trimmed-installer-tree-while-upstream-adds-two-connectors/testing:
+  en: 9ac14bcc22fab1ca
+  zh: 4c48214d11147450
