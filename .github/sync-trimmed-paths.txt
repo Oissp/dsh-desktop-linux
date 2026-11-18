@@ -26,6 +26,7 @@
 .github/workflows/release-vendor.yml
 .github/workflows/release.yml
 .github/workflows/sandbox.yml
+.github/workflows/stale-pull-requests.yml
 .github/workflows/weighted-approval-review-event.yml
 .github/workflows/weighted-approval.yml
 
