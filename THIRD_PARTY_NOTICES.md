@@ -89,7 +89,6 @@ External packages installed for runtime use or embedded in distributed Host or b
 | [`clsx`](https://github.com/lukeed/clsx) | MIT |
 | [`commander`](https://github.com/tj/commander.js) | MIT |
 | [`compression`](https://github.com/expressjs/compression) | MIT |
-| [`cos-nodejs-sdk-v5`](https://github.com/tencentyun/cos-nodejs-sdk-v5) | ISC |
 | [`cross-spawn`](https://github.com/moxystudio/node-cross-spawn) | MIT |
 | [`d3-time`](https://github.com/d3/d3-time) | ISC |
 | [`diff`](https://github.com/kpdecker/jsdiff) | BSD-3-Clause |
@@ -149,7 +148,6 @@ External packages installed for runtime use or embedded in distributed Host or b
 | [`string_decoder`](https://github.com/nodejs/string_decoder) | MIT |
 | [`supports-color`](https://github.com/chalk/supports-color) | MIT |
 | [`tar`](https://github.com/isaacs/node-tar) | BlueOak-1.0.0 |
-| [`tencentcloud-sdk-nodejs-teo`](https://github.com/tencentcloud/tencentcloud-sdk-nodejs) | Apache-2.0 |
 | [`tsx`](https://github.com/privatenumber/tsx) | MIT |
 | [`turndown`](https://github.com/mixmark-io/turndown) | MIT |
 | [`typescript`](https://github.com/microsoft/TypeScript) | Apache-2.0 |
