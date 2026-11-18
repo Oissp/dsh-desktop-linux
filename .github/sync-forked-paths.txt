@@ -190,7 +190,7 @@ apps/desktop/tests/core-package-set.spec.ts
 # office-kit 的 createEnginePackageResolver 用 !== undefined 判定，把未随包发布的
 # Linux 原生引擎误读为「安装不完整」并拒绝 WASM 回退——上游 rc.2 的 office-kit 重构
 # 引入；kit 补丁（patches/@deepseek-ai__libreoffice-kit@0.2.3.patch）覆盖不到
-# provider 侧副本。上游收紧该解析器后，随合并退役本条与对应提交（47e8e0cd53）。
+# provider 侧副本。上游收紧该解析器后，随合并退役本条与对应的 office-kit 修复提交。
 packages/document/office-kit/src/locate.ts # Boolean() 判空：null 视为包不存在，保留 WASM 回退；真实目录与 EACCES 行为不变
 packages/document/office-kit/tests/engine-package.spec.ts # null-as-absent 回归用例，兼作上游同步后的退役探测器
 packages/document/office-kit/README.md # 补一句 asar null 行为说明（en/zh 配对）

@@ -1,0 +1,22 @@
+# Bilingual-pair consistency record for 2026-11-18-merge-0.2.2-rc.4-linux-desktop.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-11-18-merge-0.2.2-rc.4-linux-desktop.md
+/agent-note-0-2-2-rc-4-upstream-sync-the-fork-follows-the-account-package-split-and-trims-one-more-ci-workflow:
+  en: 998063e98f334f38
+  zh: a412bcbb172d1dce
+/agent-note-0-2-2-rc-4-upstream-sync-the-fork-follows-the-account-package-split-and-trims-one-more-ci-workflow/problem:
+  en: afe3340e870a9f84
+  zh: 23463bd65f781525
+/agent-note-0-2-2-rc-4-upstream-sync-the-fork-follows-the-account-package-split-and-trims-one-more-ci-workflow/decision:
+  en: 0011b19d9599750c
+  zh: 9085714b4bea6f2a
+/agent-note-0-2-2-rc-4-upstream-sync-the-fork-follows-the-account-package-split-and-trims-one-more-ci-workflow/alternatives-considered:
+  en: be0d3e44283a7e34
+  zh: 8982b2288048a4da
+/agent-note-0-2-2-rc-4-upstream-sync-the-fork-follows-the-account-package-split-and-trims-one-more-ci-workflow/consequences:
+  en: 065070c575f153cc
+  zh: 85a1d2ee3816ce9d
+/agent-note-0-2-2-rc-4-upstream-sync-the-fork-follows-the-account-package-split-and-trims-one-more-ci-workflow/testing:
+  en: 2894340c66d17e3b
+  zh: fecc7637c81c1af0
