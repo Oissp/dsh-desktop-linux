@@ -485,8 +485,9 @@ apps/desktop/installer/window-frame.cpp
 # packaging-run.mjs / windows-signing-stage.mjs / windows-signing-state.mjs /
 # windows-timestamp.mjs / desktop-package-environment.mjs。fork 用 GitHub Releases
 # 发版、从不运行 Windows 签名实验，删除后清单自洽。
-# 保留 apps/desktop/tests/windows-signing-experiment.spec.ts 及其 helper：那是纯 Node
-# 的受限调度单元测试，不依赖任何已裁剪模块，在 Linux 上正常通过。
+# 0.2.2-rc.5 同步后清理：原先保留的 windows-signing-experiment.spec.ts 及其 helper
+# 也一并裁剪。该实验的全部生产入口（perf/spec/corpus/token-identity）已在清单内，
+# helper 在 fork 中不再有任何调用方；纯 Node 单测虽可在 Linux 通过，但只覆盖不可达代码。
 apps/desktop/scripts/windows-token-identity.ts
 apps/desktop/scripts/windows-token-public-key.cs
 apps/desktop/scripts/windows-token-public-key.ps1
@@ -497,6 +498,8 @@ apps/desktop/tests/windows-signing-concurrency.perf.ts
 apps/desktop/tests/windows-signing-concurrency.spec.ts
 apps/desktop/tests/windows-signing-corpus.spec.ts
 apps/desktop/tests/windows-token-identity.spec.ts
+apps/desktop/tests/windows-signing-experiment.spec.ts
+apps/desktop/tests/helpers/windows-signing-experiment.ts
 
 # ── 0.2.1-rc.3 合并新增裁剪：Windows 打包 runner 网络监管与优先级验收脚本 ──
 # 上游新增一组 PowerShell/C# 脚本维护自托管 Windows 打包 runner 的网络监管、

@@ -220,6 +220,10 @@ done
 
 `packages/<group>/<pkg>/` 下只剩 `lib/` 与 `node_modules/`，是更早同步删除的包留下的本地残留（未被 git 跟踪）。删除这些目录或运行 `pnpm run clean` 后恢复。
 
+### Q: `pnpm run hygiene` 有门禁因 JavaScript 堆内存耗尽而失败
+
+`verify-plugin-entry-exports` 与 `verify-optional-dependency-imports` 在本机默认堆上限下会报 `FATAL ERROR: Ineffective mark-compacts near heap limit`。用 `NODE_OPTIONS=--max-old-space-size=8192 pnpm run hygiene` 重跑；这是本机资源限制而非合并缺陷，与 `lint` 需要 `DSH_OXLINT_THREADS=2` 同源。
+
 ### Q: `test:docs` 的 `translation pairing` 失败
 
 运行 `scripts/verify-sync-pairing-after-merge.sh` 修复配对哈希。如果仍有失败，检查双语文件内容是否一致。
