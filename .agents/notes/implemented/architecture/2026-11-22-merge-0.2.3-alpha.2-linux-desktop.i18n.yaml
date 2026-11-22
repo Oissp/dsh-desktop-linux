@@ -1,0 +1,22 @@
+# Bilingual-pair consistency record for 2026-11-22-merge-0.2.3-alpha.2-linux-desktop.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-11-22-merge-0.2.3-alpha.2-linux-desktop.md
+/agent-note-0-2-3-alpha-2-upstream-sync-the-fork-raises-its-node-js-and-electron-floors-while-the-vendor-set-moves-to-the-4-2-alpha-line:
+  en: 2acb348c8e4b4e34
+  zh: fa83043ac9f7bc09
+/agent-note-0-2-3-alpha-2-upstream-sync-the-fork-raises-its-node-js-and-electron-floors-while-the-vendor-set-moves-to-the-4-2-alpha-line/problem:
+  en: 3e6b07d77d91dce6
+  zh: 76ceaaa900061061
+/agent-note-0-2-3-alpha-2-upstream-sync-the-fork-raises-its-node-js-and-electron-floors-while-the-vendor-set-moves-to-the-4-2-alpha-line/decision:
+  en: e64bf17792b15b64
+  zh: a8dc6be3187e1d34
+/agent-note-0-2-3-alpha-2-upstream-sync-the-fork-raises-its-node-js-and-electron-floors-while-the-vendor-set-moves-to-the-4-2-alpha-line/alternatives-considered:
+  en: 472247fb49adb479
+  zh: d298012ab98a8239
+/agent-note-0-2-3-alpha-2-upstream-sync-the-fork-raises-its-node-js-and-electron-floors-while-the-vendor-set-moves-to-the-4-2-alpha-line/consequences:
+  en: 00ede5c0269978bb
+  zh: 46be56499cb80b61
+/agent-note-0-2-3-alpha-2-upstream-sync-the-fork-raises-its-node-js-and-electron-floors-while-the-vendor-set-moves-to-the-4-2-alpha-line/testing:
+  en: 288455732d35b944
+  zh: 0475d8c80b61a120
