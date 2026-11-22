@@ -1,0 +1,22 @@
+# Bilingual-pair consistency record for 2026-11-22-merge-0.2.3-alpha.1-linux-desktop.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-11-22-merge-0.2.3-alpha.1-linux-desktop.md
+/agent-note-0-2-3-alpha-1-upstream-sync-the-fork-adopts-five-connectors-and-a-promoted-recommendation-stack-while-trimming-the-new-windows-packaging-tools:
+  en: 378072342520d2d1
+  zh: 2ec52ffcf4447fd2
+/agent-note-0-2-3-alpha-1-upstream-sync-the-fork-adopts-five-connectors-and-a-promoted-recommendation-stack-while-trimming-the-new-windows-packaging-tools/problem:
+  en: 95e49b874a48cea1
+  zh: e93baf987788fad7
+/agent-note-0-2-3-alpha-1-upstream-sync-the-fork-adopts-five-connectors-and-a-promoted-recommendation-stack-while-trimming-the-new-windows-packaging-tools/decision:
+  en: dcd773a3d32aa9d8
+  zh: f6d4b2c9280f54b1
+/agent-note-0-2-3-alpha-1-upstream-sync-the-fork-adopts-five-connectors-and-a-promoted-recommendation-stack-while-trimming-the-new-windows-packaging-tools/alternatives-considered:
+  en: 02675be7191c7ca0
+  zh: 3c4b63e0dd937e6d
+/agent-note-0-2-3-alpha-1-upstream-sync-the-fork-adopts-five-connectors-and-a-promoted-recommendation-stack-while-trimming-the-new-windows-packaging-tools/consequences:
+  en: d3230769e2cab2dc
+  zh: b79a9f666317975a
+/agent-note-0-2-3-alpha-1-upstream-sync-the-fork-adopts-five-connectors-and-a-promoted-recommendation-stack-while-trimming-the-new-windows-packaging-tools/testing:
+  en: fa173f32238c7d19
+  zh: 10516a18ec28ffde
