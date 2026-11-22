@@ -640,3 +640,24 @@ apps/desktop-publisher/
 # 上游把 cua-helper-package.yml 拆成按平台命名的 cua-helper-package-macos.yml 与
 # cua-helper-package-windows.yml；fork 不运行 macOS 打包流程，裁剪改名后的 macOS 一侧。
 .github/workflows/cua-helper-package-macos.yml
+
+# ── 0.2.3-alpha.1 合并新增裁剪：Windows 打包摘要、卸载注册与 CI runner 进程工具 ──
+# 上游把 Windows 打包摘要写入与 workflow 检查拆成 windows-packaging-summary.{mjs,d.mts}，
+# 唯一调用方是已裁剪的 windows-package.yml 与 scripts/windows-package-workflow.spec.ts。
+# 卸载注册 PowerShell 与卸载报告头文件只由已裁剪的 uninstall.nsh、window-frame.cpp 与
+# command-path.ps1 调用；installer 目录的原生源文件在 fork 中从不编译。
+# windows-runner-* 是 Windows CI runner 的进程调度、启动与恢复脚本，由已裁剪的 ci-windows.yml
+# 与 windows-runner-task.ps1 调用；它们 .NET/C# 与 PowerShell 只在 Windows runner 上运行。
+# 对应的 Windows 安装器进程与打包摘要 spec 一并裁剪，否则 vitest 会加载只服务 Windows 的用例。
+apps/desktop/installer/uninstall-report.h
+apps/desktop/scripts/uninstall-registration.ps1
+apps/desktop/scripts/windows-packaging-summary.d.mts
+apps/desktop/scripts/windows-packaging-summary.mjs
+apps/desktop/scripts/windows-runner-processes.cs
+apps/desktop/scripts/windows-runner-scheduler.ps1
+apps/desktop/tests/windows-installer-process-test.ps1
+apps/desktop/tests/windows-installer-process.ps1
+apps/desktop/tests/windows-packaging-summary.spec.ts
+apps/desktop/tests/windows-runner-boot.ps1
+apps/desktop/tests/windows-runner-processes.ps1
+apps/desktop/tests/windows-runner-recovery.ps1
