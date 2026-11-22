@@ -76,7 +76,7 @@ jobs:
 
       - uses: actions/setup-node@v7
         with:
-          # 根 engines 要求 >=24.9.0；corepack 也不再随 Node 25 提供。
+          # 根 engines 要求 ^24.22.3 || >=26.13.1；corepack 也不再随 Node 25 提供。
           node-version: 24
           package-manager-cache: false
 
